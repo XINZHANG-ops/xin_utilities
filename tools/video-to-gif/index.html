@@ -812,8 +812,8 @@
       updateSelectionUI();
     }
 
-    // Minimum gap between handles (in pixels)
-    const MIN_HANDLE_GAP = 24;
+    // Minimum time gap between handles (in seconds)
+    const MIN_TIME_GAP = 0.1;
 
     handleStart.addEventListener('mousedown', (e) => {
       isDragging = 'start';
@@ -864,14 +864,11 @@
       percent = Math.max(0, Math.min(1, percent));
       const time = percent * duration;
 
-      // Calculate minimum time gap based on pixel gap
-      const minTimeGap = (MIN_HANDLE_GAP / rect.width) * duration;
-
       if (isDragging === 'start') {
-        startTime = Math.min(time, endTime - minTimeGap);
+        startTime = Math.min(time, endTime - MIN_TIME_GAP);
         startTime = Math.max(0, startTime);
       } else if (isDragging === 'end') {
-        endTime = Math.max(time, startTime + minTimeGap);
+        endTime = Math.max(time, startTime + MIN_TIME_GAP);
         endTime = Math.min(duration, endTime);
       }
 
