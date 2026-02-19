@@ -279,9 +279,9 @@
         </div>
       </div>
 
-      <!-- Text Tools Category (Coming Soon) -->
-      <div class="category-card reveal" style="opacity: 0.6;">
-        <div class="category-header" style="cursor: default;">
+      <!-- Text Tools Category -->
+      <div class="category-card reveal" data-category="text">
+        <div class="category-header" onclick="toggleCategory('text')">
           <div class="flex items-center gap-4">
             <div class="category-icon gradient-purple">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -293,10 +293,29 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold">文字工具</h3>
-              <p class="text-sm text-gray-500">即将推出</p>
+              <p class="text-sm text-gray-500">文本处理、对比、转换</p>
             </div>
           </div>
-          <span class="text-xs px-3 py-1 rounded-full bg-gray-800 text-gray-400">Coming Soon</span>
+          <svg class="chevron w-6 h-6 text-gray-500" id="chevron-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="category-tools" id="tools-text">
+          <a href="tools/text-diff/index.html" class="tool-item">
+            <div class="tool-icon gradient-purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M16 3h5v5M8 3H3v5M3 16v5h5M21 16v5h-5"/>
+                <line x1="12" y1="3" x2="12" y2="21"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-medium">文本对比</h4>
+              <p class="text-sm text-gray-500">对比两段文本差异，支持合并选择</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </a>
         </div>
       </div>
 

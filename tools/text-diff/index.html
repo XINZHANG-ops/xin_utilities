@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文本对比 - Xin Utilities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-card: #141414;
+      --bg-code: #0a0a0a;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --accent: #bf5af2;
+      --accent-hover: #9945ff;
+      --border: rgba(255,255,255,0.08);
+      --del-bg: rgba(248,81,73,0.15);
+      --del-border: #f85149;
+      --add-bg: rgba(63,185,80,0.15);
+      --add-border: #3fb950;
+      --selected-bg: rgba(191,90,242,0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #6e6e73; border-radius: 4px; }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 980px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(191,90,242,0.05);
+    }
+
+    .upload-zone.has-file {
+      border-color: var(--add-border);
+      background: var(--add-bg);
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--fg);
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+      min-height: 200px;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .diff-container {
+      display: flex;
+      overflow: auto;
+      max-height: calc(100vh - 300px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-code);
+    }
+
+    .diff-side {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .diff-side:first-child {
+      border-right: 1px solid var(--border);
+    }
+
+    .diff-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 0.5rem 1rem;
+      background: rgba(20,20,20,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .diff-content {
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .diff-line {
+      display: flex;
+      min-height: 20px;
+      transition: background 0.15s ease;
+    }
+
+    .diff-line:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .line-num {
+      width: 50px;
+      min-width: 50px;
+      padding: 0 8px;
+      text-align: right;
+      color: var(--fg-muted);
+      user-select: none;
+      border-right: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .line-code {
+      flex: 1;
+      padding: 0 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .diff-line.del {
+      background: var(--del-bg);
+    }
+
+    .diff-line.del .line-num {
+      background: rgba(248,81,73,0.2);
+      color: var(--del-border);
+    }
+
+    .diff-line.add {
+      background: var(--add-bg);
+    }
+
+    .diff-line.add .line-num {
+      background: rgba(63,185,80,0.2);
+      color: var(--add-border);
+    }
+
+    .diff-line.empty {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .diff-line.empty .line-code {
+      color: var(--fg-muted);
+    }
+
+    .block-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      background: rgba(191,90,242,0.1);
+      border-top: 1px solid var(--accent);
+      border-bottom: 1px solid var(--accent);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .block-marker:hover {
+      background: rgba(191,90,242,0.2);
+    }
+
+    .block-marker.selected {
+      background: var(--selected-bg);
+    }
+
+    .diff-line.in-selected-block {
+      border-left: 3px solid var(--accent);
+    }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--fg-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--fg);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+    }
+
+    .stat-add {
+      color: var(--add-border);
+    }
+
+    .stat-del {
+      color: var(--del-border);
+    }
+
+    @media (max-width: 768px) {
+      .diff-container {
+        flex-direction: column;
+      }
+      .diff-side:first-child {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../../index.html" class="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="font-medium">返回工具集</span>
+      </a>
+      <h1 class="text-lg font-semibold">文本对比</h1>
+      <div class="w-24"></div>
+    </div>
+  </nav>
+
+  <main class="pt-20 pb-12 px-4">
+    <div class="max-w-7xl mx-auto">
+
+      <!-- Input Section -->
+      <div id="inputSection" class="space-y-6">
+        <!-- Tabs -->
+        <div class="flex gap-4 border-b border-white/10">
+          <button class="tab-btn active" data-tab="paste" onclick="switchTab('paste')">粘贴文本</button>
+          <button class="tab-btn" data-tab="file" onclick="switchTab('file')">上传文件</button>
+        </div>
+
+        <!-- Paste Tab -->
+        <div id="pasteTab" class="grid md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-400">原始文本</label>
+            <textarea id="text1" placeholder="粘贴或输入原始文本..."></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-400">修改后文本</label>
+            <textarea id="text2" placeholder="粘贴或输入修改后的文本..."></textarea>
+          </div>
+        </div>
+
+        <!-- File Tab -->
+        <div id="fileTab" class="hidden grid md:grid-cols-2 gap-6">
+          <div class="upload-zone" id="dropZone1">
+            <input type="file" id="fileInput1" class="hidden" accept=".txt,.js,.py,.html,.css,.json,.md,.xml,.yml,.yaml,.java,.cpp,.c,.h,.go,.rs,.ts,.tsx,.jsx,.vue,.svelte">
+            <svg class="w-10 h-10 mx-auto mb-3 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p class="text-sm font-medium" id="file1Name">原始文件</p>
+            <p class="text-xs text-gray-500 mt-1">拖拽或点击选择</p>
+          </div>
+          <div class="upload-zone" id="dropZone2">
+            <input type="file" id="fileInput2" class="hidden" accept=".txt,.js,.py,.html,.css,.json,.md,.xml,.yml,.yaml,.java,.cpp,.c,.h,.go,.rs,.ts,.tsx,.jsx,.vue,.svelte">
+            <svg class="w-10 h-10 mx-auto mb-3 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p class="text-sm font-medium" id="file2Name">修改后文件</p>
+            <p class="text-xs text-gray-500 mt-1">拖拽或点击选择</p>
+          </div>
+        </div>
+
+        <!-- Compare Button -->
+        <div class="flex justify-center">
+          <button class="btn btn-primary" onclick="compareDiff()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5M8 3H3v5M3 16v5h5M21 16v5h-5M12 3v18"/>
+            </svg>
+            对比差异
+          </button>
+        </div>
+      </div>
+
+      <!-- Result Section -->
+      <div id="resultSection" class="hidden space-y-4">
+        <!-- Controls -->
+        <div class="card p-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <button class="btn btn-secondary btn-sm" onclick="backToInput()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                返回
+              </button>
+              <div class="stats">
+                <span class="stat-add" id="statAdd">+0 行</span>
+                <span class="stat-del" id="statDel">-0 行</span>
+                <span class="text-gray-500" id="statBlocks">0 处差异</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">默认选择:</span>
+              <button class="btn btn-secondary btn-sm" id="btnDefaultLeft" onclick="setDefault('left')">左侧</button>
+              <button class="btn btn-secondary btn-sm" id="btnDefaultRight" onclick="setDefault('right')">右侧</button>
+              <button class="btn btn-primary btn-sm" onclick="downloadMerged()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                下载合并结果
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diff View -->
+        <div class="diff-container" id="diffContainer">
+          <div class="diff-side">
+            <div class="diff-header" id="leftHeader">原始文本</div>
+            <div class="diff-content" id="leftContent"></div>
+          </div>
+          <div class="diff-side">
+            <div class="diff-header" id="rightHeader">修改后文本</div>
+            <div class="diff-content" id="rightContent"></div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex justify-center gap-6 text-xs text-gray-500">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background: var(--del-bg); border: 1px solid var(--del-border);"></div>
+            <span>删除</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background: var(--add-bg); border: 1px solid var(--add-border);"></div>
+            <span>新增</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background: var(--selected-bg); border: 1px solid var(--accent);"></div>
+            <span>已选择</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let file1Content = '';
+    let file2Content = '';
+    let file1Name = '原始文本';
+    let file2Name = '修改后文本';
+    let diffBlocks = [];
+    let selections = {};
+    let defaultSide = null;
+    let opcodes = [];
+    let lines1 = [];
+    let lines2 = [];
+
+    // Tab switching
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('pasteTab').classList.toggle('hidden', tab !== 'paste');
+      document.getElementById('fileTab').classList.toggle('hidden', tab !== 'file');
+    }
+
+    // File upload setup
+    ['1', '2'].forEach(num => {
+      const zone = document.getElementById(`dropZone${num}`);
+      const input = document.getElementById(`fileInput${num}`);
+
+      zone.addEventListener('click', () => input.click());
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handleFile(num, e.dataTransfer.files[0]);
+      });
+      input.addEventListener('change', e => {
+        if (e.target.files[0]) handleFile(num, e.target.files[0]);
+      });
+    });
+
+    function handleFile(num, file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        if (num === '1') {
+          file1Content = e.target.result;
+          file1Name = file.name;
+          document.getElementById('file1Name').textContent = file.name;
+        } else {
+          file2Content = e.target.result;
+          file2Name = file.name;
+          document.getElementById('file2Name').textContent = file.name;
+        }
+        document.getElementById(`dropZone${num}`).classList.add('has-file');
+      };
+      reader.readAsText(file);
+    }
+
+    function compareDiff() {
+      const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+
+      if (activeTab === 'paste') {
+        file1Content = document.getElementById('text1').value;
+        file2Content = document.getElementById('text2').value;
+        file1Name = '原始文本';
+        file2Name = '修改后文本';
+      }
+
+      if (!file1Content && !file2Content) {
+        alert('请输入或上传要对比的内容');
+        return;
+      }
+
+      lines1 = file1Content.split('\n');
+      lines2 = file2Content.split('\n');
+
+      // Compute diff using LCS-based algorithm
+      opcodes = computeDiff(lines1, lines2);
+
+      renderDiff();
+
+      document.getElementById('inputSection').classList.add('hidden');
+      document.getElementById('resultSection').classList.remove('hidden');
+      document.getElementById('leftHeader').textContent = file1Name;
+      document.getElementById('rightHeader').textContent = file2Name;
+    }
+
+    function computeDiff(a, b) {
+      // Simple diff algorithm based on LCS
+      const m = a.length;
+      const n = b.length;
+
+      // Build LCS table
+      const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          if (a[i - 1] === b[j - 1]) {
+            dp[i][j] = dp[i - 1][j - 1] + 1;
+          } else {
+            dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+          }
+        }
+      }
+
+      // Backtrack to get opcodes
+      const result = [];
+      let i = m, j = n;
+      const ops = [];
+
+      while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+          ops.push(['equal', i - 1, i, j - 1, j]);
+          i--; j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+          ops.push(['insert', i, i, j - 1, j]);
+          j--;
+        } else {
+          ops.push(['delete', i - 1, i, j, j]);
+          i--;
+        }
+      }
+
+      ops.reverse();
+
+      // Merge consecutive operations of same type
+      const merged = [];
+      for (const op of ops) {
+        const last = merged[merged.length - 1];
+        if (last && last[0] === op[0] && last[2] === op[1] && last[4] === op[3]) {
+          last[2] = op[2];
+          last[4] = op[4];
+        } else {
+          merged.push([...op]);
+        }
+      }
+
+      return merged;
+    }
+
+    function renderDiff() {
+      const leftContent = document.getElementById('leftContent');
+      const rightContent = document.getElementById('rightContent');
+      leftContent.innerHTML = '';
+      rightContent.innerHTML = '';
+
+      diffBlocks = [];
+      selections = {};
+      defaultSide = null;
+
+      let addCount = 0;
+      let delCount = 0;
+      let blockId = 0;
+
+      for (const [tag, i1, i2, j1, j2] of opcodes) {
+        if (tag === 'equal') {
+          for (let i = i1; i < i2; i++) {
+            const k = j1 + (i - i1);
+            leftContent.appendChild(createLine(i + 1, lines1[i], ''));
+            rightContent.appendChild(createLine(k + 1, lines2[k], ''));
+          }
+        } else {
+          // Create block marker
+          const leftMarker = createBlockMarker(blockId, 'left');
+          const rightMarker = createBlockMarker(blockId, 'right');
+          leftContent.appendChild(leftMarker);
+          rightContent.appendChild(rightMarker);
+
+          const leftLines = [];
+          const rightLines = [];
+
+          if (tag === 'delete') {
+            for (let i = i1; i < i2; i++) {
+              const line = createLine(i + 1, lines1[i], 'del', blockId);
+              leftContent.appendChild(line);
+              leftLines.push(line);
+              delCount++;
+            }
+            // Empty placeholder on right
+            const emptyLine = createLine('', '', 'empty');
+            rightContent.appendChild(emptyLine);
+          } else if (tag === 'insert') {
+            // Empty placeholder on left
+            const emptyLine = createLine('', '', 'empty');
+            leftContent.appendChild(emptyLine);
+
+            for (let j = j1; j < j2; j++) {
+              const line = createLine(j + 1, lines2[j], 'add', blockId);
+              rightContent.appendChild(line);
+              rightLines.push(line);
+              addCount++;
+            }
+          } else if (tag === 'replace') {
+            const maxLen = Math.max(i2 - i1, j2 - j1);
+            for (let k = 0; k < maxLen; k++) {
+              if (k < i2 - i1) {
+                const line = createLine(i1 + k + 1, lines1[i1 + k], 'del', blockId);
+                leftContent.appendChild(line);
+                leftLines.push(line);
+                delCount++;
+              } else {
+                leftContent.appendChild(createLine('', '', 'empty'));
+              }
+
+              if (k < j2 - j1) {
+                const line = createLine(j1 + k + 1, lines2[j1 + k], 'add', blockId);
+                rightContent.appendChild(line);
+                rightLines.push(line);
+                addCount++;
+              } else {
+                rightContent.appendChild(createLine('', '', 'empty'));
+              }
+            }
+          }
+
+          diffBlocks.push({
+            id: blockId,
+            tag: tag,
+            i1, i2, j1, j2,
+            leftMarker,
+            rightMarker,
+            leftLines,
+            rightLines
+          });
+
+          blockId++;
+        }
+      }
+
+      document.getElementById('statAdd').textContent = `+${addCount} 行`;
+      document.getElementById('statDel').textContent = `-${delCount} 行`;
+      document.getElementById('statBlocks').textContent = `${diffBlocks.length} 处差异`;
+    }
+
+    function createLine(num, code, type, blockId) {
+      const div = document.createElement('div');
+      div.className = `diff-line ${type}`;
+      if (blockId !== undefined) div.dataset.block = blockId;
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'line-num';
+      numSpan.textContent = num;
+
+      const codeSpan = document.createElement('span');
+      codeSpan.className = 'line-code';
+      codeSpan.textContent = code;
+
+      div.appendChild(numSpan);
+      div.appendChild(codeSpan);
+      return div;
+    }
+
+    function createBlockMarker(blockId, side) {
+      const div = document.createElement('div');
+      div.className = 'block-marker';
+      div.dataset.block = blockId;
+      div.dataset.side = side;
+      div.textContent = `差异 #${blockId + 1} - 点击选择此侧`;
+      div.onclick = () => selectBlock(blockId, side);
+      return div;
+    }
+
+    function selectBlock(blockId, side) {
+      selections[blockId] = side;
+      updateBlockDisplay();
+    }
+
+    function setDefault(side) {
+      defaultSide = side;
+      document.getElementById('btnDefaultLeft').classList.toggle('btn-primary', side === 'left');
+      document.getElementById('btnDefaultLeft').classList.toggle('btn-secondary', side !== 'left');
+      document.getElementById('btnDefaultRight').classList.toggle('btn-primary', side === 'right');
+      document.getElementById('btnDefaultRight').classList.toggle('btn-secondary', side !== 'right');
+      updateBlockDisplay();
+    }
+
+    function updateBlockDisplay() {
+      for (const block of diffBlocks) {
+        const selected = selections[block.id] || defaultSide;
+
+        block.leftMarker.classList.toggle('selected', selected === 'left');
+        block.rightMarker.classList.toggle('selected', selected === 'right');
+
+        block.leftLines.forEach(line => {
+          line.classList.toggle('in-selected-block', selected === 'left');
+        });
+        block.rightLines.forEach(line => {
+          line.classList.toggle('in-selected-block', selected === 'right');
+        });
+      }
+    }
+
+    function downloadMerged() {
+      const result = [];
+      let blockIdx = 0;
+
+      for (const [tag, i1, i2, j1, j2] of opcodes) {
+        if (tag === 'equal') {
+          for (let i = i1; i < i2; i++) {
+            result.push(lines1[i]);
+          }
+        } else {
+          const selected = selections[blockIdx] || defaultSide || 'left';
+
+          if (selected === 'left') {
+            for (let i = i1; i < i2; i++) {
+              result.push(lines1[i]);
+            }
+          } else {
+            for (let j = j1; j < j2; j++) {
+              result.push(lines2[j]);
+            }
+          }
+
+          blockIdx++;
+        }
+      }
+
+      const blob = new Blob([result.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Get file extension from original file
+      const ext = file1Name.includes('.') ? file1Name.split('.').pop() : 'txt';
+      a.download = `merged.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function backToInput() {
+      document.getElementById('inputSection').classList.remove('hidden');
+      document.getElementById('resultSection').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
