@@ -172,6 +172,13 @@
       color: white;
     }
 
+    .ratio-btn {
+      width: auto;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 0.75rem;
+    }
+
     .slider-container {
       display: flex;
       align-items: center;
@@ -353,9 +360,25 @@
               </h3>
               <div class="tab-group mb-4">
                 <button class="tab-btn active" id="tabRect" onclick="setCropMode('rect')">矩形</button>
+                <button class="tab-btn" id="tabCircle" onclick="setCropMode('circle')">圆形</button>
                 <button class="tab-btn" id="tabPolygon" onclick="setCropMode('polygon')">多边形</button>
               </div>
               <p class="text-xs text-gray-500 mb-3" id="cropHint">拖拽画布上的方框来选择剪裁区域</p>
+              <div id="rectControls" class="space-y-2 mb-3">
+                <div class="flex flex-wrap gap-2">
+                  <button class="ratio-btn tool-btn text-xs active" onclick="setAspectRatio(null)" data-ratio="free">自由</button>
+                  <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(1, 1)" data-ratio="1:1">1:1</button>
+                  <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(4, 3)" data-ratio="4:3">4:3</button>
+                  <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(16, 9)" data-ratio="16:9">16:9</button>
+                  <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(3, 2)" data-ratio="3:2">3:2</button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="customRatioW" placeholder="宽" min="1" max="100" class="w-16 text-center text-xs">
+                  <span class="text-gray-500">:</span>
+                  <input type="number" id="customRatioH" placeholder="高" min="1" max="100" class="w-16 text-center text-xs">
+                  <button class="btn btn-secondary text-xs py-1 px-3" onclick="applyCustomRatio()">应用</button>
+                </div>
+              </div>
               <div id="polygonControls" class="hidden space-y-2">
                 <p class="text-xs text-gray-500">点击画布添加顶点，至少需要 3 个点</p>
                 <div class="flex gap-2">
@@ -510,12 +533,16 @@
 
     // Rect crop state
     let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+    let cropAspectRatio = null; // null = free, otherwise w/h ratio
     let isDraggingCrop = false;
     let dragType = null;
     let dragStart = { x: 0, y: 0 };
 
     // Polygon crop state
     let polygonPoints = [];
+
+    // Circle crop state
+    let cropCircle = { cx: 0, cy: 0, r: 0 };
 
     // Canvas elements
     const mainCanvas = document.getElementById('mainCanvas');
@@ -610,6 +637,8 @@
       aspectRatio = currentImage.width / currentImage.height;
 
       cropRect = { x: 0, y: 0, w: mainCanvas.width, h: mainCanvas.height };
+      const r = Math.min(mainCanvas.width, mainCanvas.height) / 2 - 10;
+      cropCircle = { cx: mainCanvas.width / 2, cy: mainCanvas.height / 2, r: r };
 
       document.getElementById('resizeWidth').value = currentImage.width;
       document.getElementById('resizeHeight').value = currentImage.height;
@@ -717,6 +746,32 @@
           overlayCtx.lineWidth = 2;
           overlayCtx.stroke();
         });
+      } else if (cropMode === 'circle') {
+        overlayCtx.fillStyle = 'rgba(0,0,0,0.5)';
+        overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        overlayCtx.save();
+        overlayCtx.globalCompositeOperation = 'destination-out';
+        overlayCtx.beginPath();
+        overlayCtx.arc(cropCircle.cx, cropCircle.cy, cropCircle.r, 0, Math.PI * 2);
+        overlayCtx.fill();
+        overlayCtx.restore();
+
+        overlayCtx.strokeStyle = '#2997ff';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.setLineDash([5, 5]);
+        overlayCtx.beginPath();
+        overlayCtx.arc(cropCircle.cx, cropCircle.cy, cropCircle.r, 0, Math.PI * 2);
+        overlayCtx.stroke();
+        overlayCtx.setLineDash([]);
+
+        overlayCtx.beginPath();
+        overlayCtx.arc(cropCircle.cx, cropCircle.cy, 8, 0, Math.PI * 2);
+        overlayCtx.fillStyle = '#2997ff';
+        overlayCtx.fill();
+        overlayCtx.strokeStyle = 'white';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.stroke();
       }
     }
 
@@ -732,6 +787,12 @@
             isDraggingCrop = true;
             dragStart = { x, y, rect: { ...cropRect } };
           }
+        } else if (cropMode === 'circle') {
+          dragType = getCircleHandleAtPoint(x, y);
+          if (dragType) {
+            isDraggingCrop = true;
+            dragStart = { x, y, circle: { ...cropCircle } };
+          }
         } else if (cropMode === 'polygon') {
           polygonPoints.push({ x, y });
           document.getElementById('undoPointBtn').disabled = false;
@@ -740,46 +801,99 @@
       };
 
       overlayCanvas.onmousemove = (e) => {
-        if (cropMode !== 'rect') return;
-
         const rect = overlayCanvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        if (isDraggingCrop && dragType) {
-          const dx = x - dragStart.x;
-          const dy = y - dragStart.y;
+        if (cropMode === 'rect') {
+          if (isDraggingCrop && dragType) {
+            const dx = x - dragStart.x;
+            const dy = y - dragStart.y;
 
-          if (dragType === 'move') {
-            cropRect.x = Math.max(0, Math.min(overlayCanvas.width - cropRect.w, dragStart.rect.x + dx));
-            cropRect.y = Math.max(0, Math.min(overlayCanvas.height - cropRect.h, dragStart.rect.y + dy));
+            if (dragType === 'move') {
+              cropRect.x = Math.max(0, Math.min(overlayCanvas.width - cropRect.w, dragStart.rect.x + dx));
+              cropRect.y = Math.max(0, Math.min(overlayCanvas.height - cropRect.h, dragStart.rect.y + dy));
+            } else if (cropAspectRatio !== null) {
+              let newW = dragStart.rect.w;
+              let newH = dragStart.rect.h;
+              let newX = dragStart.rect.x;
+              let newY = dragStart.rect.y;
+
+              if (dragType.includes('e')) {
+                newW = Math.max(40, dragStart.rect.w + dx);
+                newH = newW / cropAspectRatio;
+              } else if (dragType.includes('w')) {
+                newW = Math.max(40, dragStart.rect.w - dx);
+                newH = newW / cropAspectRatio;
+                newX = dragStart.rect.x + dragStart.rect.w - newW;
+              } else if (dragType.includes('s')) {
+                newH = Math.max(40, dragStart.rect.h + dy);
+                newW = newH * cropAspectRatio;
+              } else if (dragType.includes('n')) {
+                newH = Math.max(40, dragStart.rect.h - dy);
+                newW = newH * cropAspectRatio;
+                newY = dragStart.rect.y + dragStart.rect.h - newH;
+              }
+
+              if (newX >= 0 && newY >= 0 && newX + newW <= overlayCanvas.width && newY + newH <= overlayCanvas.height) {
+                cropRect.x = newX;
+                cropRect.y = newY;
+                cropRect.w = newW;
+                cropRect.h = newH;
+              }
+            } else {
+              if (dragType.includes('n')) {
+                const newY = Math.max(0, dragStart.rect.y + dy);
+                const newH = dragStart.rect.h - (newY - dragStart.rect.y);
+                if (newH > 20) { cropRect.y = newY; cropRect.h = newH; }
+              }
+              if (dragType.includes('s')) {
+                cropRect.h = Math.max(20, Math.min(overlayCanvas.height - cropRect.y, dragStart.rect.h + dy));
+              }
+              if (dragType.includes('w')) {
+                const newX = Math.max(0, dragStart.rect.x + dx);
+                const newW = dragStart.rect.w - (newX - dragStart.rect.x);
+                if (newW > 20) { cropRect.x = newX; cropRect.w = newW; }
+              }
+              if (dragType.includes('e')) {
+                cropRect.w = Math.max(20, Math.min(overlayCanvas.width - cropRect.x, dragStart.rect.w + dx));
+              }
+            }
+            drawOverlay();
           } else {
-            if (dragType.includes('n')) {
-              const newY = Math.max(0, dragStart.rect.y + dy);
-              const newH = dragStart.rect.h - (newY - dragStart.rect.y);
-              if (newH > 20) { cropRect.y = newY; cropRect.h = newH; }
-            }
-            if (dragType.includes('s')) {
-              cropRect.h = Math.max(20, Math.min(overlayCanvas.height - cropRect.y, dragStart.rect.h + dy));
-            }
-            if (dragType.includes('w')) {
-              const newX = Math.max(0, dragStart.rect.x + dx);
-              const newW = dragStart.rect.w - (newX - dragStart.rect.x);
-              if (newW > 20) { cropRect.x = newX; cropRect.w = newW; }
-            }
-            if (dragType.includes('e')) {
-              cropRect.w = Math.max(20, Math.min(overlayCanvas.width - cropRect.x, dragStart.rect.w + dx));
-            }
+            const handle = getHandleAtPoint(x, y);
+            if (handle === 'move') overlayCanvas.style.cursor = 'move';
+            else if (handle === 'nw' || handle === 'se') overlayCanvas.style.cursor = 'nwse-resize';
+            else if (handle === 'ne' || handle === 'sw') overlayCanvas.style.cursor = 'nesw-resize';
+            else if (handle === 'n' || handle === 's') overlayCanvas.style.cursor = 'ns-resize';
+            else if (handle === 'e' || handle === 'w') overlayCanvas.style.cursor = 'ew-resize';
+            else overlayCanvas.style.cursor = 'crosshair';
           }
-          drawOverlay();
-        } else {
-          const handle = getHandleAtPoint(x, y);
-          if (handle === 'move') overlayCanvas.style.cursor = 'move';
-          else if (handle === 'nw' || handle === 'se') overlayCanvas.style.cursor = 'nwse-resize';
-          else if (handle === 'ne' || handle === 'sw') overlayCanvas.style.cursor = 'nesw-resize';
-          else if (handle === 'n' || handle === 's') overlayCanvas.style.cursor = 'ns-resize';
-          else if (handle === 'e' || handle === 'w') overlayCanvas.style.cursor = 'ew-resize';
-          else overlayCanvas.style.cursor = 'crosshair';
+        } else if (cropMode === 'circle') {
+          if (isDraggingCrop && dragType) {
+            const dx = x - dragStart.x;
+            const dy = y - dragStart.y;
+
+            if (dragType === 'move') {
+              cropCircle.cx = Math.max(cropCircle.r, Math.min(overlayCanvas.width - cropCircle.r, dragStart.circle.cx + dx));
+              cropCircle.cy = Math.max(cropCircle.r, Math.min(overlayCanvas.height - cropCircle.r, dragStart.circle.cy + dy));
+            } else if (dragType === 'edge') {
+              const distFromCenter = Math.sqrt(Math.pow(x - cropCircle.cx, 2) + Math.pow(y - cropCircle.cy, 2));
+              const maxR = Math.min(
+                cropCircle.cx,
+                cropCircle.cy,
+                overlayCanvas.width - cropCircle.cx,
+                overlayCanvas.height - cropCircle.cy
+              );
+              cropCircle.r = Math.max(20, Math.min(maxR, distFromCenter));
+            }
+            drawOverlay();
+          } else {
+            const handle = getCircleHandleAtPoint(x, y);
+            if (handle === 'move') overlayCanvas.style.cursor = 'move';
+            else if (handle === 'edge') overlayCanvas.style.cursor = 'ew-resize';
+            else overlayCanvas.style.cursor = 'crosshair';
+          }
         }
       };
 
@@ -792,6 +906,17 @@
         isDraggingCrop = false;
         dragType = null;
       };
+    }
+
+    function getCircleHandleAtPoint(x, y) {
+      const dist = Math.sqrt(Math.pow(x - cropCircle.cx, 2) + Math.pow(y - cropCircle.cy, 2));
+      const margin = 12;
+
+      if (dist <= 12) return 'move';
+      if (Math.abs(dist - cropCircle.r) <= margin) return 'edge';
+      if (dist < cropCircle.r) return 'move';
+
+      return null;
     }
 
     function getHandleAtPoint(x, y) {
@@ -816,16 +941,93 @@
     function setCropMode(mode) {
       cropMode = mode;
       document.getElementById('tabRect').classList.toggle('active', mode === 'rect');
+      document.getElementById('tabCircle').classList.toggle('active', mode === 'circle');
       document.getElementById('tabPolygon').classList.toggle('active', mode === 'polygon');
-      document.getElementById('cropHint').textContent = mode === 'rect'
-        ? '拖拽画布上的方框来选择剪裁区域'
-        : '点击画布添加顶点，至少需要 3 个点';
-      document.getElementById('polygonControls').classList.toggle('hidden', mode === 'rect');
+
+      const hints = {
+        rect: '拖拽画布上的方框来选择剪裁区域',
+        circle: '拖拽圆形边缘调整大小，拖拽中心移动位置',
+        polygon: '点击画布添加顶点，至少需要 3 个点'
+      };
+      document.getElementById('cropHint').textContent = hints[mode];
+      document.getElementById('polygonControls').classList.toggle('hidden', mode !== 'polygon');
+      document.getElementById('rectControls').classList.toggle('hidden', mode !== 'rect');
 
       if (mode === 'rect') {
         polygonPoints = [];
+        cropAspectRatio = null;
+        updateRatioBtnState();
         cropRect = { x: 0, y: 0, w: mainCanvas.width, h: mainCanvas.height };
+      } else if (mode === 'circle') {
+        polygonPoints = [];
+        const r = Math.min(mainCanvas.width, mainCanvas.height) / 2 - 10;
+        cropCircle = { cx: mainCanvas.width / 2, cy: mainCanvas.height / 2, r: r };
+      } else {
+        cropCircle = { cx: 0, cy: 0, r: 0 };
       }
+      drawOverlay();
+    }
+
+    function setAspectRatio(w, h) {
+      if (w === null) {
+        cropAspectRatio = null;
+      } else {
+        cropAspectRatio = w / h;
+      }
+      updateRatioBtnState();
+      applyAspectRatioToRect();
+    }
+
+    function applyCustomRatio() {
+      const w = parseInt(document.getElementById('customRatioW').value);
+      const h = parseInt(document.getElementById('customRatioH').value);
+      if (w > 0 && h > 0) {
+        cropAspectRatio = w / h;
+        updateRatioBtnState();
+        applyAspectRatioToRect();
+      }
+    }
+
+    function updateRatioBtnState() {
+      document.querySelectorAll('.ratio-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      if (cropAspectRatio === null) {
+        document.querySelector('.ratio-btn[data-ratio="free"]').classList.add('active');
+      }
+    }
+
+    function applyAspectRatioToRect() {
+      if (cropAspectRatio === null) return;
+
+      const centerX = cropRect.x + cropRect.w / 2;
+      const centerY = cropRect.y + cropRect.h / 2;
+
+      let newW, newH;
+      if (cropRect.w / cropRect.h > cropAspectRatio) {
+        newH = cropRect.h;
+        newW = newH * cropAspectRatio;
+      } else {
+        newW = cropRect.w;
+        newH = newW / cropAspectRatio;
+      }
+
+      newW = Math.min(newW, mainCanvas.width);
+      newH = Math.min(newH, mainCanvas.height);
+
+      if (newW / newH !== cropAspectRatio) {
+        if (newW / newH > cropAspectRatio) {
+          newW = newH * cropAspectRatio;
+        } else {
+          newH = newW / cropAspectRatio;
+        }
+      }
+
+      cropRect.w = newW;
+      cropRect.h = newH;
+      cropRect.x = Math.max(0, Math.min(mainCanvas.width - newW, centerX - newW / 2));
+      cropRect.y = Math.max(0, Math.min(mainCanvas.height - newH, centerY - newH / 2));
+
       drawOverlay();
     }
 
@@ -941,6 +1143,27 @@
         tempCanvas.height = sh;
 
         tempCtx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+      } else if (cropMode === 'circle') {
+        const scale = rotatedDims.width / mainCanvas.width;
+        const scaledCx = cropCircle.cx * scale;
+        const scaledCy = cropCircle.cy * scale;
+        const scaledR = Math.floor(cropCircle.r * scale);
+
+        const size = scaledR * 2;
+
+        tempCanvas.width = size;
+        tempCanvas.height = size;
+
+        tempCtx.beginPath();
+        tempCtx.arc(scaledR, scaledR, scaledR, 0, Math.PI * 2);
+        tempCtx.closePath();
+        tempCtx.clip();
+
+        tempCtx.drawImage(
+          sourceCanvas,
+          Math.round(scaledCx) - scaledR, Math.round(scaledCy) - scaledR, size, size,
+          0, 0, size, size
+        );
       } else if (cropMode === 'polygon' && polygonPoints.length >= 3) {
         const scaledPoints = polygonPoints.map(p => ({
           x: p.x * scaleX,
