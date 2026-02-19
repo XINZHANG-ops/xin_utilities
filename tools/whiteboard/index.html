@@ -192,24 +192,6 @@
       background: rgba(255, 159, 10, 0.1);
     }
 
-    /* Sticky note colors */
-    .sticky-color {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .sticky-color:hover {
-      transform: scale(1.1);
-    }
-
-    .sticky-color.active {
-      border-color: var(--fg);
-    }
-
     /* Text edit overlay */
     .text-edit-overlay {
       position: fixed;
@@ -310,14 +292,6 @@
         <button class="btn-icon" style="background: #34c759;" data-color="#34c759" title="绿色"></button>
         <button class="btn-icon" style="background: #ff9500;" data-color="#ff9500" title="橙色"></button>
 
-        <!-- Sticky note colors (shown when sticky tool active or sticky selected) -->
-        <div id="stickyColors" style="display: none; align-items: center; gap: 0.25rem; margin-left: 0.25rem;">
-          <div class="sticky-color active" data-sticky-color="#fff59d" style="background: #fff59d;" title="黄色"></div>
-          <div class="sticky-color" data-sticky-color="#f48fb1" style="background: #f48fb1;" title="粉色"></div>
-          <div class="sticky-color" data-sticky-color="#81d4fa" style="background: #81d4fa;" title="蓝色"></div>
-          <div class="sticky-color" data-sticky-color="#a5d6a7" style="background: #a5d6a7;" title="绿色"></div>
-          <div class="sticky-color" data-sticky-color="#ffcc80" style="background: #ffcc80;" title="橙色"></div>
-        </div>
 
         <div class="toolbar-divider"></div>
 
@@ -389,26 +363,37 @@
     const opacitySlider = document.getElementById('opacity');
     const saveIndicator = document.getElementById('saveIndicator');
 
-    // Canvas size - full screen
-    function resizeCanvas() {
-      const w = window.innerWidth;
-      const h = window.innerHeight - 60;
-      if (canvas.width !== w || canvas.height !== h) {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        canvas.width = w;
-        canvas.height = h;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
-        ctx.putImageData(imageData, 0, 0);
-        redraw();
-      }
+    // UI elements
+    const textSizeControl = document.getElementById('textSizeControl');
+    const textSizeSlider = document.getElementById('textSizeSlider');
+    const textBoldBtn = document.getElementById('textBoldBtn');
+
+    // High DPI support
+    const dpr = window.devicePixelRatio || 1;
+
+    // Canvas size - full screen with high DPI support
+    let canvasLogicalWidth = window.innerWidth;
+    let canvasLogicalHeight = window.innerHeight - 60;
+
+    function setupCanvas() {
+      // Set display size (CSS)
+      canvas.style.width = canvasLogicalWidth + 'px';
+      canvas.style.height = canvasLogicalHeight + 'px';
+
+      // Set actual size in memory (scaled for DPI)
+      canvas.width = canvasLogicalWidth * dpr;
+      canvas.height = canvasLogicalHeight * dpr;
+
+      // Scale context to match DPI
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Fill with white
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
     }
 
     // Initialize canvas
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - 60;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setupCanvas();
 
     let currentTool = 'select';
     let currentColor = '#1d1d1f';
@@ -416,13 +401,6 @@
     let opacity = 1;
     let isDrawing = false;
     let startX, startY;
-
-    // UI elements
-    let stickyColor = '#fff59d';
-    const stickyColorsContainer = document.getElementById('stickyColors');
-    const textSizeControl = document.getElementById('textSizeControl');
-    const textSizeSlider = document.getElementById('textSizeSlider');
-    const textBoldBtn = document.getElementById('textBoldBtn');
 
     // Objects array (shapes, images, brush strokes, sticky notes, text boxes)
     let objects = [];
@@ -459,22 +437,6 @@
       });
     });
 
-    // Sticky color selection - for new or selected sticky notes
-    document.querySelectorAll('[data-sticky-color]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-sticky-color]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        stickyColor = btn.dataset.stickyColor;
-
-        // Apply to selected sticky if any
-        if (selectedObject && selectedObject.type === 'sticky') {
-          selectedObject.color = stickyColor;
-          saveState();
-          redraw();
-        }
-      });
-    });
-
     // Text controls
     textSizeSlider.addEventListener('input', e => {
       if (selectedObject && selectedObject.type === 'textbox') {
@@ -501,11 +463,6 @@
     }
 
     function updateSelectedControls() {
-      // Show sticky colors when sticky tool active OR sticky selected
-      const showStickyColors = currentTool === 'sticky' ||
-                               (selectedObject && selectedObject.type === 'sticky');
-      stickyColorsContainer.style.display = showStickyColors ? 'flex' : 'none';
-
       // Show text controls when textbox selected
       const showTextControls = selectedObject && selectedObject.type === 'textbox';
       textSizeControl.style.display = showTextControls ? 'flex' : 'none';
@@ -513,10 +470,7 @@
       // Update controls to reflect selected object's properties
       if (selectedObject) {
         if (selectedObject.type === 'sticky') {
-          // Highlight current sticky color
-          document.querySelectorAll('[data-sticky-color]').forEach(b => {
-            b.classList.toggle('active', b.dataset.stickyColor === selectedObject.color);
-          });
+          setColor(selectedObject.color || '#fff59d');
         } else if (selectedObject.type === 'textbox') {
           setColor(selectedObject.color || '#1d1d1f');
           textSizeSlider.value = selectedObject.fontSize || 18;
@@ -538,7 +492,8 @@
       // Apply to selected object only if user clicked (not just updating UI)
       if (fromUserAction && selectedObject) {
         if (selectedObject.type === 'textbox' || selectedObject.type === 'rect' ||
-            selectedObject.type === 'circle' || selectedObject.type === 'arrow') {
+            selectedObject.type === 'circle' || selectedObject.type === 'arrow' ||
+            selectedObject.type === 'sticky') {
           selectedObject.color = color;
           saveState();
           redraw();
@@ -662,8 +617,8 @@
     function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
       return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: (e.clientX - rect.left),
+        y: (e.clientY - rect.top)
       };
     }
 
@@ -703,7 +658,7 @@
           y: pos.y,
           width: 200,
           height: 150,
-          color: stickyColor,
+          color: currentColor,
           text: '',
           fontSize: 16
         };
@@ -1172,7 +1127,7 @@
 
     function redraw() {
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
 
       // Layer 1: Brush strokes and eraser (can be erased)
       for (const obj of objects) {
@@ -1444,19 +1399,10 @@
       const h = window.innerHeight - 60;
 
       // Only expand, never shrink to avoid losing content
-      if (w > canvas.width || h > canvas.height) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
-
-        canvas.width = Math.max(w, canvas.width);
-        canvas.height = Math.max(h, canvas.height);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(tempCanvas, 0, 0);
-
+      if (w > canvasLogicalWidth || h > canvasLogicalHeight) {
+        canvasLogicalWidth = Math.max(w, canvasLogicalWidth);
+        canvasLogicalHeight = Math.max(h, canvasLogicalHeight);
+        setupCanvas();
         redraw();
       }
     });
