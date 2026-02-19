@@ -5,7 +5,267 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>视频转 GIF - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+  <script>
+    // Simple GIF Encoder - no Web Workers needed
+    (function() {
+      function GIFEncoder(width, height) {
+        this.width = width;
+        this.height = height;
+        this.frames = [];
+        this.quality = 10;
+        this.delay = 100;
+      }
+
+      GIFEncoder.prototype.setQuality = function(q) {
+        this.quality = Math.max(1, Math.min(30, q));
+      };
+
+      GIFEncoder.prototype.setDelay = function(d) {
+        this.delay = d;
+      };
+
+      GIFEncoder.prototype.addFrame = function(imageData) {
+        this.frames.push({
+          data: new Uint8Array(imageData.data),
+          delay: this.delay
+        });
+      };
+
+      GIFEncoder.prototype.render = function(callback) {
+        const encoder = this;
+        setTimeout(function() {
+          try {
+            const data = encoder._encode();
+            const blob = new Blob([data], { type: 'image/gif' });
+            callback(blob);
+          } catch (e) {
+            console.error('GIF encoding error:', e);
+          }
+        }, 10);
+      };
+
+      GIFEncoder.prototype._encode = function() {
+        const width = this.width;
+        const height = this.height;
+        const frames = this.frames;
+        const output = [];
+
+        // GIF Header
+        this._writeString(output, 'GIF89a');
+
+        // Logical Screen Descriptor
+        this._writeShort(output, width);
+        this._writeShort(output, height);
+        output.push(0x70); // No global color table
+        output.push(0);    // Background color
+        output.push(0);    // Pixel aspect ratio
+
+        // Netscape extension for looping
+        output.push(0x21); // Extension
+        output.push(0xFF); // Application Extension
+        output.push(11);   // Block size
+        this._writeString(output, 'NETSCAPE2.0');
+        output.push(3);    // Sub-block size
+        output.push(1);    // Loop sub-block ID
+        this._writeShort(output, 0); // Loop count (0 = infinite)
+        output.push(0);    // Block terminator
+
+        for (let i = 0; i < frames.length; i++) {
+          const frame = frames[i];
+          const palette = this._buildPalette(frame.data);
+          const indexed = this._indexPixels(frame.data, palette);
+
+          // Graphic Control Extension
+          output.push(0x21); // Extension
+          output.push(0xF9); // Graphic Control
+          output.push(4);    // Block size
+          output.push(0);    // Flags
+          this._writeShort(output, Math.round(frame.delay / 10)); // Delay in 1/100 sec
+          output.push(0);    // Transparent color
+          output.push(0);    // Block terminator
+
+          // Image Descriptor
+          output.push(0x2C); // Image separator
+          this._writeShort(output, 0); // Left
+          this._writeShort(output, 0); // Top
+          this._writeShort(output, width);
+          this._writeShort(output, height);
+          output.push(0x87); // Local color table, 256 colors
+
+          // Local Color Table
+          for (let j = 0; j < 256; j++) {
+            output.push(palette[j * 3] || 0);
+            output.push(palette[j * 3 + 1] || 0);
+            output.push(palette[j * 3 + 2] || 0);
+          }
+
+          // Image Data with LZW
+          this._writeLZW(output, indexed, 8);
+        }
+
+        // Trailer
+        output.push(0x3B);
+
+        return new Uint8Array(output);
+      };
+
+      GIFEncoder.prototype._writeString = function(output, str) {
+        for (let i = 0; i < str.length; i++) {
+          output.push(str.charCodeAt(i));
+        }
+      };
+
+      GIFEncoder.prototype._writeShort = function(output, val) {
+        output.push(val & 0xFF);
+        output.push((val >> 8) & 0xFF);
+      };
+
+      GIFEncoder.prototype._buildPalette = function(pixels) {
+        const colorCounts = {};
+        const step = Math.max(1, Math.floor(this.quality / 2));
+
+        for (let i = 0; i < pixels.length; i += 4 * step) {
+          const r = pixels[i] & 0xF8;
+          const g = pixels[i + 1] & 0xF8;
+          const b = pixels[i + 2] & 0xF8;
+          const key = (r << 16) | (g << 8) | b;
+          colorCounts[key] = (colorCounts[key] || 0) + 1;
+        }
+
+        const sorted = Object.keys(colorCounts)
+          .map(k => ({ color: parseInt(k), count: colorCounts[k] }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 256);
+
+        const palette = new Uint8Array(768);
+        for (let i = 0; i < sorted.length; i++) {
+          palette[i * 3] = (sorted[i].color >> 16) & 0xFF;
+          palette[i * 3 + 1] = (sorted[i].color >> 8) & 0xFF;
+          palette[i * 3 + 2] = sorted[i].color & 0xFF;
+        }
+
+        this._paletteColors = sorted.map(s => s.color);
+        return palette;
+      };
+
+      GIFEncoder.prototype._indexPixels = function(pixels, palette) {
+        const indexed = new Uint8Array(pixels.length / 4);
+        const colors = this._paletteColors;
+
+        for (let i = 0, j = 0; i < pixels.length; i += 4, j++) {
+          const r = pixels[i] & 0xF8;
+          const g = pixels[i + 1] & 0xF8;
+          const b = pixels[i + 2] & 0xF8;
+          const key = (r << 16) | (g << 8) | b;
+
+          let best = 0;
+          let bestDist = Infinity;
+          for (let k = 0; k < colors.length; k++) {
+            const cr = (colors[k] >> 16) & 0xFF;
+            const cg = (colors[k] >> 8) & 0xFF;
+            const cb = colors[k] & 0xFF;
+            const dist = (r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb);
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = k;
+            }
+            if (dist === 0) break;
+          }
+          indexed[j] = best;
+        }
+
+        return indexed;
+      };
+
+      GIFEncoder.prototype._writeLZW = function(output, indexed, minCodeSize) {
+        output.push(minCodeSize);
+
+        const clearCode = 1 << minCodeSize;
+        const eoiCode = clearCode + 1;
+        let codeSize = minCodeSize + 1;
+        let nextCode = eoiCode + 1;
+        const maxCode = 4096;
+
+        let buffer = 0;
+        let bufferBits = 0;
+        const subBlock = [];
+
+        const dict = {};
+        for (let i = 0; i < clearCode; i++) {
+          dict[String.fromCharCode(i)] = i;
+        }
+
+        const flushBits = () => {
+          while (bufferBits >= 8) {
+            subBlock.push(buffer & 0xFF);
+            buffer >>= 8;
+            bufferBits -= 8;
+            if (subBlock.length === 255) {
+              output.push(255);
+              for (let i = 0; i < 255; i++) output.push(subBlock[i]);
+              subBlock.length = 0;
+            }
+          }
+        };
+
+        const writeCode = (code) => {
+          buffer |= code << bufferBits;
+          bufferBits += codeSize;
+          flushBits();
+        };
+
+        writeCode(clearCode);
+
+        let pattern = '';
+        for (let i = 0; i < indexed.length; i++) {
+          const char = String.fromCharCode(indexed[i]);
+          const newPattern = pattern + char;
+
+          if (dict.hasOwnProperty(newPattern)) {
+            pattern = newPattern;
+          } else {
+            writeCode(dict[pattern]);
+
+            if (nextCode < maxCode) {
+              dict[newPattern] = nextCode++;
+              if (nextCode > (1 << codeSize) && codeSize < 12) {
+                codeSize++;
+              }
+            } else {
+              writeCode(clearCode);
+              codeSize = minCodeSize + 1;
+              nextCode = eoiCode + 1;
+              for (let k in dict) {
+                if (k.length > 1) delete dict[k];
+              }
+            }
+
+            pattern = char;
+          }
+        }
+
+        if (pattern.length > 0) {
+          writeCode(dict[pattern]);
+        }
+
+        writeCode(eoiCode);
+
+        // Flush remaining bits
+        if (bufferBits > 0) {
+          subBlock.push(buffer & 0xFF);
+        }
+
+        if (subBlock.length > 0) {
+          output.push(subBlock.length);
+          for (let i = 0; i < subBlock.length; i++) output.push(subBlock[i]);
+        }
+
+        output.push(0); // Block terminator
+      };
+
+      window.GIFEncoder = GIFEncoder;
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -623,13 +883,8 @@
       canvas.height = gifHeight;
       const ctx = canvas.getContext('2d');
 
-      const gif = new GIF({
-        workers: 2,
-        quality: quality,
-        width: gifWidth,
-        height: gifHeight,
-        workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
-      });
+      const gif = new GIFEncoder(gifWidth, gifHeight);
+      gif.setQuality(quality);
 
       const captureVideo = document.createElement('video');
       captureVideo.src = videoPlayer.src;
@@ -648,20 +903,19 @@
         });
 
         ctx.drawImage(captureVideo, 0, 0, gifWidth, gifHeight);
-        gif.addFrame(ctx, { copy: true, delay: delay });
+        const imageData = ctx.getImageData(0, 0, gifWidth, gifHeight);
+        gif.setDelay(delay);
+        gif.addFrame(imageData);
 
-        const progress = ((i + 1) / frameCount) * 50;
+        const progress = ((i + 1) / frameCount) * 80;
         document.getElementById('progressFill').style.width = `${progress}%`;
         document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
       }
 
-      gif.on('progress', (p) => {
-        const progress = 50 + p * 50;
-        document.getElementById('progressFill').style.width = `${progress}%`;
-        document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
-      });
+      document.getElementById('progressFill').style.width = '85%';
+      document.getElementById('progressText').textContent = '编码中...';
 
-      gif.on('finished', (blob) => {
+      gif.render((blob) => {
         if (generatedGifUrl) URL.revokeObjectURL(generatedGifUrl);
         generatedGifUrl = URL.createObjectURL(blob);
 
@@ -673,8 +927,6 @@
         document.getElementById('resultContainer').classList.remove('hidden');
         document.getElementById('generateBtn').disabled = false;
       });
-
-      gif.render();
     }
 
     function downloadGif() {
