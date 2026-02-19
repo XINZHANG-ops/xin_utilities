@@ -314,13 +314,21 @@
                 <span class="info-badge" id="imageDimensions">0 × 0</span>
                 <span class="info-badge" id="imageFormat">-</span>
               </div>
-              <button class="btn btn-secondary text-sm" onclick="resetImage()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-                  <path d="M21 3v5h-5"/>
-                </svg>
-                重置
-              </button>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary text-sm" onclick="resetImage()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                  </svg>
+                  重置
+                </button>
+                <button class="btn btn-secondary text-sm" onclick="clearImage()" title="删除图片">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div class="flex justify-center overflow-auto bg-zinc-900/50 rounded-xl p-4 min-h-[400px]" id="canvasWrapper">
@@ -991,6 +999,20 @@
       document.getElementById('rotationSlider').value = 0;
       document.getElementById('rotationInput').value = 0;
       initCanvas();
+    }
+
+    function clearImage() {
+      originalImage = null;
+      currentImage = null;
+      rotation = 0;
+      flipH = false;
+      flipV = false;
+      polygonPoints = [];
+      document.getElementById('rotationSlider').value = 0;
+      document.getElementById('rotationInput').value = 0;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('editor').classList.add('hidden');
+      document.getElementById('uploadZone').classList.remove('hidden');
     }
 
     function exportImage() {
