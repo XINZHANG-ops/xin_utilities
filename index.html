@@ -216,6 +216,7 @@
     .card-blue .card-icon { background: linear-gradient(135deg, #2997ff 0%, #0077ed 100%); }
     .card-purple .card-icon { background: linear-gradient(135deg, #bf5af2 0%, #9945ff 100%); }
     .card-green .card-icon { background: linear-gradient(135deg, #30d158 0%, #28a745 100%); }
+    .card-orange { --card-accent: #ff9f0a; }
     .card-orange .card-icon { background: linear-gradient(135deg, #ff9f0a 0%, #ff6b00 100%); }
 
     /* Shine effect line */
@@ -341,7 +342,7 @@
             </svg>
           </div>
           <h2 class="category-title">图片工具</h2>
-          <span class="category-count">3 个工具</span>
+          <span class="category-count">4 个工具</span>
         </div>
 
         <div class="card-grid">
@@ -429,6 +430,39 @@
               <div class="card-body">
                 <h3 class="card-title">视频转 GIF</h3>
                 <p class="card-desc">可视化时间轴选择片段。自定义帧数、宽度、质量。纯浏览器编码。</p>
+              </div>
+              <div class="card-footer">
+                <span class="card-action">
+                  开始使用
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </span>
+                <div class="card-arrow">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </a>
+
+          <!-- Image Annotate -->
+          <a href="tools/image-annotate/index.html" class="tool-card card-orange reveal reveal-delay-4">
+            <div class="card-shine"></div>
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="card-icon">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  </svg>
+                </div>
+                <span class="card-badge">标注</span>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">图片标注</h3>
+                <p class="card-desc">画笔涂鸦，添加矩形、圆形、箭头。可调整形状大小和位置。Ctrl+Z 撤销。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">

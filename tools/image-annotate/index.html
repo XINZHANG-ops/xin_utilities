@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片标注 - Xin Utilities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-card: #141414;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --accent: #ff9f0a;
+      --accent-hover: #ff8c00;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #6e6e73; border-radius: 4px; }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--fg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover { background: rgba(255,255,255,0.15); }
+    .btn-icon.active { background: var(--accent); color: #000; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 4rem 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(255,159,10,0.05);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      margin: 0 0.25rem;
+    }
+
+    .color-picker-wrapper {
+      position: relative;
+      width: 36px;
+      height: 36px;
+    }
+
+    .color-picker-display {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.2);
+      cursor: pointer;
+      transition: border-color 0.2s ease;
+    }
+
+    .color-picker-display:hover {
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .color-picker-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .canvas-container {
+      position: relative;
+      display: inline-block;
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    .size-slider {
+      width: 80px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .size-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../../index.html" class="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="font-medium">返回工具集</span>
+      </a>
+      <h1 class="text-lg font-semibold">图片标注</h1>
+      <div class="w-24"></div>
+    </div>
+  </nav>
+
+  <main class="pt-20 pb-12 px-4">
+    <div class="mx-auto" style="max-width: calc(100vw - 2rem);">
+
+      <!-- Upload Zone -->
+      <div id="uploadZone" class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <path d="M21 15l-5-5L5 21"/>
+        </svg>
+        <p class="text-lg font-medium mb-2">拖拽图片到这里</p>
+        <p class="text-sm text-gray-500">或者点击选择文件</p>
+      </div>
+
+      <!-- Editor -->
+      <div id="editor" class="hidden space-y-4">
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <!-- Tools -->
+          <button class="btn-icon active" data-tool="brush" title="画笔">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+            </svg>
+          </button>
+          <button class="btn-icon" data-tool="rect" title="矩形">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </button>
+          <button class="btn-icon" data-tool="circle" title="圆形">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+          </button>
+          <button class="btn-icon" data-tool="arrow" title="箭头">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Color Picker -->
+          <div class="color-picker-wrapper">
+            <div class="color-picker-display" id="colorDisplay" style="background: #ff3b30;"></div>
+            <input type="color" class="color-picker-input" id="colorPicker" value="#ff3b30">
+          </div>
+
+          <!-- Quick Colors -->
+          <button class="btn-icon" style="background: #ff3b30;" data-color="#ff3b30" title="红色"></button>
+          <button class="btn-icon" style="background: #ff9500;" data-color="#ff9500" title="橙色"></button>
+          <button class="btn-icon" style="background: #ffcc00;" data-color="#ffcc00" title="黄色"></button>
+          <button class="btn-icon" style="background: #34c759;" data-color="#34c759" title="绿色"></button>
+          <button class="btn-icon" style="background: #007aff;" data-color="#007aff" title="蓝色"></button>
+          <button class="btn-icon" style="background: #ffffff;" data-color="#ffffff" title="白色"></button>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Stroke Size -->
+          <span class="text-xs text-gray-500">粗细</span>
+          <input type="range" class="size-slider" id="strokeSize" min="1" max="20" value="3">
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Selected Shape Controls -->
+          <div id="shapeControls" class="hidden" style="display: none; align-items: center; gap: 0.5rem;">
+            <span class="text-xs text-gray-400">选中形状:</span>
+            <div class="color-picker-wrapper">
+              <div class="color-picker-display" id="shapeColorDisplay" style="background: #ff3b30;"></div>
+              <input type="color" class="color-picker-input" id="shapeColorPicker" value="#ff3b30">
+            </div>
+            <span class="text-xs text-gray-500">粗细</span>
+            <input type="range" class="size-slider" id="shapeStrokeSize" min="1" max="20" value="3">
+            <button class="btn-icon" id="deleteShapeBtn" title="删除形状" style="background: rgba(255,59,48,0.2);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+            <div class="toolbar-divider"></div>
+          </div>
+
+          <!-- Actions -->
+          <button class="btn-icon" id="undoBtn" title="撤销 (Ctrl+Z)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 7v6h6"/>
+              <path d="M3 13a9 9 0 1 0 3-7.5"/>
+            </svg>
+          </button>
+          <button class="btn-icon" id="resetBtn" title="重置编辑">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2.5 2v6h6"/>
+              <path d="M2.5 8a10 10 0 1 0 2.5-5"/>
+            </svg>
+          </button>
+          <button class="btn-icon" id="clearBtn" title="删除图片">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+
+          <div class="toolbar-divider"></div>
+
+          <button class="btn btn-primary" id="downloadBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            下载
+          </button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="flex justify-center">
+          <div class="canvas-container" id="canvasContainer">
+            <canvas id="canvas"></canvas>
+          </div>
+        </div>
+
+        <p class="hint text-center">提示：按 Ctrl+Z 撤销 | 拖拽形状中心移动，拖拽边缘调整大小</p>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const editor = document.getElementById('editor');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const colorDisplay = document.getElementById('colorDisplay');
+    const strokeSizeSlider = document.getElementById('strokeSize');
+
+    let originalImage = null;
+    let currentTool = 'brush';
+    let currentColor = '#ff3b30';
+    let strokeSize = 3;
+    let isDrawing = false;
+    let startX, startY;
+
+    // History for undo
+    let history = [];
+    let shapes = []; // Store shapes for manipulation
+    let selectedShape = null;
+    let dragHandle = null; // 'move', 'resize-tl', 'resize-br', etc.
+    let dragStartX, dragStartY;
+
+    // File upload
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => {
+      if (e.target.files[0]) loadImage(e.target.files[0]);
+    });
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+
+          // Calculate available space - use full screen
+          const maxWidth = window.innerWidth - 48;
+          const maxHeight = window.innerHeight - 220;
+
+          // Calculate scale to fit the available space (scale up or down)
+          const scaleX = maxWidth / img.width;
+          const scaleY = maxHeight / img.height;
+          const scale = Math.min(scaleX, scaleY, 3); // Max 3x scale up to avoid pixelation
+
+          let width = img.width * scale;
+          let height = img.height * scale;
+
+          // Ensure minimum size
+          const minSize = 400;
+          if (width < minSize && height < minSize) {
+            const upscale = minSize / Math.max(width, height);
+            width *= upscale;
+            height *= upscale;
+          }
+
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
+
+          shapes = [];
+          history = [];
+          redraw();
+          saveState();
+
+          uploadZone.classList.add('hidden');
+          editor.classList.remove('hidden');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Tool selection
+    document.querySelectorAll('[data-tool]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+        selectedShape = null;
+        updateShapeControls();
+        redraw();
+      });
+    });
+
+    // Color selection
+    colorPicker.addEventListener('input', e => {
+      currentColor = e.target.value;
+      colorDisplay.style.background = currentColor;
+    });
+
+    document.querySelectorAll('[data-color]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentColor = btn.dataset.color;
+        colorPicker.value = currentColor;
+        colorDisplay.style.background = currentColor;
+      });
+    });
+
+    // Stroke size
+    strokeSizeSlider.addEventListener('input', e => {
+      strokeSize = parseInt(e.target.value);
+    });
+
+    // Shape controls
+    const shapeControls = document.getElementById('shapeControls');
+    const shapeColorPicker = document.getElementById('shapeColorPicker');
+    const shapeColorDisplay = document.getElementById('shapeColorDisplay');
+    const shapeStrokeSizeSlider = document.getElementById('shapeStrokeSize');
+
+    shapeColorPicker.addEventListener('input', e => {
+      if (selectedShape) {
+        selectedShape.color = e.target.value;
+        shapeColorDisplay.style.background = e.target.value;
+        redraw();
+        saveState();
+      }
+    });
+
+    shapeStrokeSizeSlider.addEventListener('input', e => {
+      if (selectedShape) {
+        selectedShape.size = parseInt(e.target.value);
+        redraw();
+        saveState();
+      }
+    });
+
+    document.getElementById('deleteShapeBtn').addEventListener('click', () => {
+      if (selectedShape) {
+        const idx = shapes.indexOf(selectedShape);
+        if (idx > -1) {
+          shapes.splice(idx, 1);
+          selectedShape = null;
+          updateShapeControls();
+          redraw();
+          saveState();
+        }
+      }
+    });
+
+    function updateShapeControls() {
+      if (selectedShape && selectedShape.type !== 'brush') {
+        shapeControls.style.display = 'flex';
+        shapeColorPicker.value = selectedShape.color;
+        shapeColorDisplay.style.background = selectedShape.color;
+        shapeStrokeSizeSlider.value = selectedShape.size;
+      } else {
+        shapeControls.style.display = 'none';
+      }
+    }
+
+    // Canvas events
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseUp);
+
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function handleMouseDown(e) {
+      const pos = getMousePos(e);
+      startX = pos.x;
+      startY = pos.y;
+
+      // Check if clicking on existing shape
+      const hit = hitTestShapes(pos.x, pos.y);
+
+      if (hit) {
+        selectedShape = hit.shape;
+        dragHandle = hit.handle;
+        dragStartX = pos.x;
+        dragStartY = pos.y;
+        isDrawing = false;
+        updateShapeControls();
+        redraw();
+        return;
+      }
+
+      selectedShape = null;
+      updateShapeControls();
+      isDrawing = true;
+
+      if (currentTool === 'brush') {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = strokeSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Start new brush stroke
+        shapes.push({
+          type: 'brush',
+          color: currentColor,
+          size: strokeSize,
+          points: [{ x: startX, y: startY }]
+        });
+      }
+    }
+
+    function handleMouseMove(e) {
+      const pos = getMousePos(e);
+
+      if (dragHandle && selectedShape) {
+        const dx = pos.x - dragStartX;
+        const dy = pos.y - dragStartY;
+
+        if (dragHandle === 'move') {
+          selectedShape.x1 += dx;
+          selectedShape.y1 += dy;
+          selectedShape.x2 += dx;
+          selectedShape.y2 += dy;
+        } else if (dragHandle === 'start') {
+          selectedShape.x1 += dx;
+          selectedShape.y1 += dy;
+        } else if (dragHandle === 'end') {
+          selectedShape.x2 += dx;
+          selectedShape.y2 += dy;
+        }
+
+        dragStartX = pos.x;
+        dragStartY = pos.y;
+        redraw();
+        return;
+      }
+
+      if (!isDrawing) {
+        // Update cursor based on hover
+        const hit = hitTestShapes(pos.x, pos.y);
+        canvas.style.cursor = hit ? (hit.handle === 'move' ? 'move' : 'nwse-resize') : 'crosshair';
+        return;
+      }
+
+      if (currentTool === 'brush') {
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        shapes[shapes.length - 1].points.push({ x: pos.x, y: pos.y });
+      } else {
+        redraw();
+        drawShape(currentTool, startX, startY, pos.x, pos.y, currentColor, strokeSize);
+      }
+    }
+
+    function handleMouseUp(e) {
+      if (dragHandle) {
+        saveState();
+        dragHandle = null;
+        return;
+      }
+
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      const pos = getMousePos(e);
+
+      if (currentTool !== 'brush') {
+        shapes.push({
+          type: currentTool,
+          x1: startX,
+          y1: startY,
+          x2: pos.x,
+          y2: pos.y,
+          color: currentColor,
+          size: strokeSize
+        });
+      }
+
+      saveState();
+      redraw();
+    }
+
+    function drawShape(type, x1, y1, x2, y2, color, size, selected = false) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (type === 'rect') {
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      } else if (type === 'circle') {
+        const rx = Math.abs(x2 - x1) / 2;
+        const ry = Math.abs(y2 - y1) / 2;
+        const cx = (x1 + x2) / 2;
+        const cy = (y1 + y2) / 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (type === 'arrow') {
+        const headlen = Math.max(size * 3, 15);
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+      }
+
+      // Draw selection handles
+      if (selected) {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+
+        // Start handle
+        ctx.beginPath();
+        ctx.arc(x1, y1, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // End handle
+        ctx.beginPath();
+        ctx.arc(x2, y2, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    function hitTestShapes(x, y) {
+      for (let i = shapes.length - 1; i >= 0; i--) {
+        const s = shapes[i];
+        if (s.type === 'brush') continue;
+
+        const handleRadius = 10;
+
+        // Check end handle
+        if (Math.hypot(x - s.x2, y - s.y2) < handleRadius) {
+          return { shape: s, handle: 'end' };
+        }
+
+        // Check start handle
+        if (Math.hypot(x - s.x1, y - s.y1) < handleRadius) {
+          return { shape: s, handle: 'start' };
+        }
+
+        // Check center (move)
+        const cx = (s.x1 + s.x2) / 2;
+        const cy = (s.y1 + s.y2) / 2;
+        const halfW = Math.abs(s.x2 - s.x1) / 2 + 10;
+        const halfH = Math.abs(s.y2 - s.y1) / 2 + 10;
+
+        if (x >= cx - halfW && x <= cx + halfW && y >= cy - halfH && y <= cy + halfH) {
+          return { shape: s, handle: 'move' };
+        }
+      }
+      return null;
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw original image
+      if (originalImage) {
+        ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+      }
+
+      // Draw all shapes
+      for (const s of shapes) {
+        if (s.type === 'brush') {
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = s.size;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          if (s.points.length > 0) {
+            ctx.moveTo(s.points[0].x, s.points[0].y);
+            for (let i = 1; i < s.points.length; i++) {
+              ctx.lineTo(s.points[i].x, s.points[i].y);
+            }
+          }
+          ctx.stroke();
+        } else {
+          const isSelected = s === selectedShape;
+          drawShape(s.type, s.x1, s.y1, s.x2, s.y2, s.color, s.size, isSelected);
+        }
+      }
+    }
+
+    function saveState() {
+      history.push(JSON.stringify(shapes));
+      if (history.length > 50) history.shift();
+    }
+
+    function undo() {
+      if (history.length > 1) {
+        history.pop();
+        shapes = JSON.parse(history[history.length - 1]);
+        selectedShape = null;
+        updateShapeControls();
+        redraw();
+      }
+    }
+
+    // Undo button
+    document.getElementById('undoBtn').addEventListener('click', undo);
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    });
+
+    // Reset
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      shapes = [];
+      history = [];
+      selectedShape = null;
+      updateShapeControls();
+      redraw();
+      saveState();
+    });
+
+    // Clear
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      originalImage = null;
+      shapes = [];
+      history = [];
+      selectedShape = null;
+      fileInput.value = '';
+      editor.classList.add('hidden');
+      uploadZone.classList.remove('hidden');
+    });
+
+    // Download
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      selectedShape = null;
+      redraw();
+
+      const link = document.createElement('a');
+      link.download = 'annotated-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
+</body>
+</html>
