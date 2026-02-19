@@ -1619,7 +1619,7 @@
       // Don't handle shortcuts while editing text
       if (editingObject) return;
 
-      if (e.ctrlKey && e.key === 'z') {
+      if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
         e.preventDefault();
         // First check if there's a page operation to undo
         if (pageUndoStack.length > 0 && historyIndex <= 0) {
@@ -1628,6 +1628,9 @@
           undo();
         }
       } else if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      } else if (e.ctrlKey && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
         redo();
       } else if (e.ctrlKey && e.key === 'c') {
