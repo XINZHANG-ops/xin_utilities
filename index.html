@@ -239,6 +239,7 @@
     /* Category section */
     .category-section {
       margin-bottom: 4rem;
+      scroll-margin-top: 100px;
     }
 
     .category-header {
@@ -300,6 +301,109 @@
       .card-title { font-size: 1.125rem; }
       .category-title { font-size: 1.25rem; }
     }
+
+    /* Sidebar Navigation */
+    .sidebar-nav {
+      position: fixed;
+      left: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 1rem;
+      border-radius: 12px;
+      background: rgba(29, 29, 31, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-decoration: none;
+      color: var(--fg-muted);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 48px;
+    }
+
+    .sidebar-item:hover {
+      max-width: 200px;
+      background: rgba(45, 45, 47, 0.95);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: var(--fg);
+    }
+
+    .sidebar-item.active {
+      background: rgba(45, 45, 47, 0.95);
+      border-color: var(--item-color, #2997ff);
+      box-shadow: 0 0 20px rgba(var(--item-rgb, 41, 151, 255), 0.2);
+    }
+
+    .sidebar-item.active .sidebar-icon {
+      background: var(--item-color, #2997ff);
+    }
+
+    .sidebar-item.active .sidebar-label {
+      color: var(--fg);
+    }
+
+    .sidebar-icon {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-item:hover .sidebar-icon {
+      background: var(--item-color, #2997ff);
+    }
+
+    .sidebar-label {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sidebar-item:hover .sidebar-label,
+    .sidebar-item.active .sidebar-label {
+      opacity: 1;
+    }
+
+    .sidebar-item.active {
+      max-width: 200px;
+    }
+
+    /* Sidebar color variants */
+    .sidebar-item[data-category="image"] { --item-color: #2997ff; --item-rgb: 41, 151, 255; }
+    .sidebar-item[data-category="text"] { --item-color: #bf5af2; --item-rgb: 191, 90, 242; }
+    .sidebar-item[data-category="canvas"] { --item-color: #30d158; --item-rgb: 48, 209, 88; }
+
+    @media (max-width: 1200px) {
+      .sidebar-nav {
+        left: 0.75rem;
+      }
+      .sidebar-item {
+        padding: 0.5rem 0.75rem;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar-nav {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -313,6 +417,39 @@
         <span>Xin Utilities</span>
       </a>
     </div>
+  </nav>
+
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar-nav" id="sidebarNav">
+    <a href="#image-tools" class="sidebar-item" data-category="image">
+      <div class="sidebar-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <path d="M21 15l-5-5L5 21"/>
+        </svg>
+      </div>
+      <span class="sidebar-label">图片工具</span>
+    </a>
+    <a href="#text-tools" class="sidebar-item" data-category="text">
+      <div class="sidebar-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <span class="sidebar-label">文字工具</span>
+    </a>
+    <a href="#canvas-tools" class="sidebar-item" data-category="canvas">
+      <div class="sidebar-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18"/>
+          <path d="M9 21V9"/>
+        </svg>
+      </div>
+      <span class="sidebar-label">画板工具</span>
+    </a>
   </nav>
 
   <!-- Hero Section -->
@@ -332,7 +469,7 @@
     <div class="max-w-6xl mx-auto">
 
       <!-- Image Tools -->
-      <div class="category-section reveal">
+      <div id="image-tools" class="category-section reveal">
         <div class="category-header">
           <div class="category-icon" style="background: linear-gradient(135deg, #2997ff 0%, #0077ed 100%);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -483,7 +620,7 @@
       </div>
 
       <!-- Text Tools -->
-      <div class="category-section reveal">
+      <div id="text-tools" class="category-section reveal">
         <div class="category-header">
           <div class="category-icon" style="background: linear-gradient(135deg, #bf5af2 0%, #9945ff 100%);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -534,7 +671,7 @@
       </div>
 
       <!-- Canvas Tools -->
-      <div class="category-section reveal">
+      <div id="canvas-tools" class="category-section reveal">
         <div class="category-header">
           <div class="category-icon" style="background: linear-gradient(135deg, #30d158 0%, #28a745 100%);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -555,8 +692,10 @@
               <div class="card-header">
                 <div class="card-icon">
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="7" r="2.5" fill="white"/>
+                    <circle cx="6.5" cy="15" r="2.5" fill="white"/>
+                    <circle cx="17.5" cy="15" r="2.5" fill="white"/>
                   </svg>
                 </div>
                 <span class="card-badge">涂鸦</span>
@@ -626,6 +765,57 @@
         }
       });
     }, 100);
+
+    // Sidebar scroll spy
+    const sections = document.querySelectorAll('.category-section[id]');
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+    function updateActiveSection() {
+      const scrollPos = window.scrollY + window.innerHeight / 3;
+
+      let currentSection = null;
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+        if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+          currentSection = section.id;
+        }
+      });
+
+      // If near bottom, activate last section
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        currentSection = sections[sections.length - 1]?.id;
+      }
+
+      sidebarItems.forEach(item => {
+        const href = item.getAttribute('href').slice(1);
+        if (href === currentSection) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', updateActiveSection);
+    updateActiveSection();
+
+    // Smooth scroll with offset for sidebar clicks
+    sidebarItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = item.getAttribute('href').slice(1);
+        const target = document.getElementById(targetId);
+        if (target) {
+          const offset = 100;
+          const targetPos = target.offsetTop - offset;
+          window.scrollTo({
+            top: targetPos,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
   </script>
 </body>
 </html>
