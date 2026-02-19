@@ -4,7 +4,7 @@
 const API_CONFIG = {
   // Base URLs for different environments
   BASE: {
-    LOCAL: 'http://10.0.0.55:8081',
+    LOCAL: 'http://localhost:8080',
     NGROK: 'https://43b1-99-250-110-81.ngrok-free.app',
     PRODUCTION: 'https://your-api-server.com'
   },
