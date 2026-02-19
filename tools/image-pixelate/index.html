@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片像素化 - Xin Utilities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-elevated: #0d0d0d;
+      --bg-card: #141414;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --fg-subtle: #6e6e73;
+      --accent: #bf5af2;
+      --accent-hover: #9945ff;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--fg-subtle); border-radius: 4px; }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 980px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--fg);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 3rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(191,90,242,0.05);
+    }
+
+    .canvas-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .canvas-box {
+      width: 100%;
+    }
+
+    .canvas-box canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #0a0a0a;
+    }
+
+    .canvas-label {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="number"] {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--fg);
+      font-size: 0.875rem;
+      width: 80px;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--fg);
+      font-size: 0.875rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    .algo-card {
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .algo-card:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .algo-card.active {
+      background: rgba(191,90,242,0.15);
+      border-color: var(--accent);
+    }
+
+    .algo-card h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .algo-card p {
+      font-size: 0.7rem;
+      color: var(--fg-muted);
+      line-height: 1.4;
+    }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+    }
+
+    @media (max-width: 768px) {
+      .canvas-box { max-width: 100%; }
+      .upload-zone { padding: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../../index.html" class="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="font-medium">返回工具集</span>
+      </a>
+      <h1 class="text-lg font-semibold">图片像素化</h1>
+      <div class="w-24"></div>
+    </div>
+  </nav>
+
+  <main class="pt-20 pb-12 px-4">
+    <div class="max-w-6xl mx-auto">
+
+      <div id="uploadZone" class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <p class="text-lg font-medium mb-2">拖拽图片到这里</p>
+        <p class="text-sm text-gray-500 mb-4">或者点击选择文件</p>
+      </div>
+
+      <div id="editor" class="hidden">
+        <div class="grid lg:grid-cols-[1fr,320px] gap-6">
+
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex gap-2">
+                <span class="info-badge" id="imageDimensions">0 × 0</span>
+                <span class="info-badge" id="blockInfo">0 × 0 块</span>
+              </div>
+              <button class="btn btn-secondary text-sm" onclick="clearImage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="canvas-wrapper">
+              <div class="canvas-box">
+                <div class="canvas-label">原图</div>
+                <canvas id="originalCanvas"></canvas>
+              </div>
+              <div class="canvas-box">
+                <div class="canvas-label">像素化</div>
+                <canvas id="resultCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18M9 21V9"/>
+                </svg>
+                块数量
+              </h3>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs text-gray-500">水平块数</label>
+                    <input type="number" id="colsInput" min="1" value="32" class="w-20 text-center text-sm" oninput="updateFromInput()">
+                  </div>
+                  <input type="range" id="colsSlider" min="1" max="100" value="32" oninput="updateFromSlider()">
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 block mb-1">垂直块数: <span id="rowsValue">自动</span></label>
+                  <p class="text-xs text-gray-600">根据图片比例自动计算，1 = 原图</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                颜色算法
+              </h3>
+              <div class="space-y-2" id="algoList">
+                <div class="algo-card active" data-algo="average" onclick="selectAlgo('average')">
+                  <h4>平均值</h4>
+                  <p>计算块内所有像素 RGB 的平均值，效果平衡</p>
+                </div>
+                <div class="algo-card" data-algo="median" onclick="selectAlgo('median')">
+                  <h4>中位数</h4>
+                  <p>取各通道中位数，对噪点更鲁棒</p>
+                </div>
+                <div class="algo-card" data-algo="center" onclick="selectAlgo('center')">
+                  <h4>中心像素</h4>
+                  <p>直接取块中心点颜色，速度最快</p>
+                </div>
+                <div class="algo-card" data-algo="mode" onclick="selectAlgo('mode')">
+                  <h4>众数</h4>
+                  <p>取出现最多的颜色，适合纯色图片</p>
+                </div>
+                <div class="algo-card" data-algo="dominant" onclick="selectAlgo('dominant')">
+                  <h4>主色提取</h4>
+                  <p>找块内的主导颜色，效果最好</p>
+                </div>
+                <div class="algo-card" data-algo="luminance" onclick="selectAlgo('luminance')">
+                  <h4>亮度加权</h4>
+                  <p>根据人眼敏感度加权，更自然</p>
+                </div>
+                <div class="algo-card" data-algo="minmax" onclick="selectAlgo('minmax')">
+                  <h4>最亮/最暗</h4>
+                  <p>取最亮或最暗像素，艺术效果</p>
+                </div>
+              </div>
+              <div id="minmaxOption" class="hidden mt-3">
+                <select id="minmaxSelect" onchange="processImage()">
+                  <option value="max">最亮像素</option>
+                  <option value="min">最暗像素</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                导出
+              </h3>
+              <select id="exportFormat" class="w-full mb-3">
+                <option value="png">PNG (无损)</option>
+                <option value="jpeg">JPEG (压缩)</option>
+                <option value="webp">WebP (推荐)</option>
+              </select>
+              <button class="btn btn-primary w-full" onclick="exportImage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                下载图片
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let originalImage = null;
+    let currentAlgo = 'average';
+    let cols = 32;
+    let rows = 0;
+
+    const originalCanvas = document.getElementById('originalCanvas');
+    const resultCanvas = document.getElementById('resultCanvas');
+    const originalCtx = originalCanvas.getContext('2d');
+    const resultCtx = resultCanvas.getContext('2d');
+
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) loadImage(e.target.files[0]);
+    });
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+          document.getElementById('uploadZone').classList.add('hidden');
+          document.getElementById('editor').classList.remove('hidden');
+          document.getElementById('imageDimensions').textContent = `${img.width} × ${img.height}`;
+
+          originalCanvas.width = img.width;
+          originalCanvas.height = img.height;
+          originalCtx.drawImage(img, 0, 0);
+
+          resultCanvas.width = img.width;
+          resultCanvas.height = img.height;
+
+          const maxCols = img.width;
+          const slider = document.getElementById('colsSlider');
+          const input = document.getElementById('colsInput');
+          slider.max = maxCols;
+          input.max = maxCols;
+
+          const defaultCols = Math.min(32, Math.floor(maxCols / 4));
+          cols = Math.max(1, defaultCols);
+          slider.value = cols;
+          input.value = cols;
+
+          processImage();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+      originalImage = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('editor').classList.add('hidden');
+      document.getElementById('uploadZone').classList.remove('hidden');
+    }
+
+    function updateFromSlider() {
+      cols = parseInt(document.getElementById('colsSlider').value) || 1;
+      cols = Math.max(1, Math.min(cols, originalImage ? originalImage.width : 1000));
+      document.getElementById('colsInput').value = cols;
+      processImage();
+    }
+
+    function updateFromInput() {
+      cols = parseInt(document.getElementById('colsInput').value) || 1;
+      cols = Math.max(1, Math.min(cols, originalImage ? originalImage.width : 1000));
+      document.getElementById('colsSlider').value = cols;
+      document.getElementById('colsInput').value = cols;
+      processImage();
+    }
+
+    function selectAlgo(algo) {
+      currentAlgo = algo;
+      document.querySelectorAll('.algo-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.algo === algo);
+      });
+      document.getElementById('minmaxOption').classList.toggle('hidden', algo !== 'minmax');
+      processImage();
+    }
+
+    function processImage() {
+      if (!originalImage) return;
+
+      const width = originalImage.width;
+      const height = originalImage.height;
+      const blockW = width / cols;
+      rows = Math.round(height / blockW);
+      const blockH = height / rows;
+
+      document.getElementById('rowsValue').textContent = rows;
+      document.getElementById('blockInfo').textContent = `${cols} × ${rows} 块`;
+
+      const imageData = originalCtx.getImageData(0, 0, width, height);
+      const pixels = imageData.data;
+
+      resultCtx.clearRect(0, 0, width, height);
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const startX = Math.floor(col * blockW);
+          const startY = Math.floor(row * blockH);
+          const endX = Math.floor((col + 1) * blockW);
+          const endY = Math.floor((row + 1) * blockH);
+
+          const color = getBlockColor(pixels, width, startX, startY, endX, endY);
+
+          resultCtx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
+          resultCtx.fillRect(startX, startY, endX - startX, endY - startY);
+        }
+      }
+    }
+
+    function getBlockColor(pixels, imgWidth, startX, startY, endX, endY) {
+      const blockPixels = [];
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const idx = (y * imgWidth + x) * 4;
+          blockPixels.push({
+            r: pixels[idx],
+            g: pixels[idx + 1],
+            b: pixels[idx + 2]
+          });
+        }
+      }
+
+      if (blockPixels.length === 0) return { r: 0, g: 0, b: 0 };
+
+      switch (currentAlgo) {
+        case 'average': return algoAverage(blockPixels);
+        case 'median': return algoMedian(blockPixels);
+        case 'center': return algoCenter(blockPixels, endX - startX);
+        case 'mode': return algoMode(blockPixels);
+        case 'dominant': return algoDominant(blockPixels);
+        case 'luminance': return algoLuminance(blockPixels);
+        case 'minmax': return algoMinMax(blockPixels);
+        default: return algoAverage(blockPixels);
+      }
+    }
+
+    function algoAverage(pixels) {
+      let r = 0, g = 0, b = 0;
+      for (const p of pixels) {
+        r += p.r; g += p.g; b += p.b;
+      }
+      const n = pixels.length;
+      return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+    }
+
+    function algoMedian(pixels) {
+      const rs = pixels.map(p => p.r).sort((a, b) => a - b);
+      const gs = pixels.map(p => p.g).sort((a, b) => a - b);
+      const bs = pixels.map(p => p.b).sort((a, b) => a - b);
+      const mid = Math.floor(pixels.length / 2);
+      return { r: rs[mid], g: gs[mid], b: bs[mid] };
+    }
+
+    function algoCenter(pixels, blockWidth) {
+      const blockHeight = Math.floor(pixels.length / blockWidth);
+      const centerIdx = Math.floor(blockHeight / 2) * blockWidth + Math.floor(blockWidth / 2);
+      return pixels[Math.min(centerIdx, pixels.length - 1)];
+    }
+
+    function algoMode(pixels) {
+      const colorCount = {};
+      let maxCount = 0;
+      let modeColor = pixels[0];
+
+      for (const p of pixels) {
+        const key = `${Math.floor(p.r/8)},${Math.floor(p.g/8)},${Math.floor(p.b/8)}`;
+        colorCount[key] = (colorCount[key] || 0) + 1;
+        if (colorCount[key] > maxCount) {
+          maxCount = colorCount[key];
+          modeColor = p;
+        }
+      }
+      return modeColor;
+    }
+
+    function algoDominant(pixels) {
+      const buckets = {};
+      for (const p of pixels) {
+        const key = `${Math.floor(p.r/16)},${Math.floor(p.g/16)},${Math.floor(p.b/16)}`;
+        if (!buckets[key]) buckets[key] = [];
+        buckets[key].push(p);
+      }
+
+      let maxBucket = [];
+      for (const key in buckets) {
+        if (buckets[key].length > maxBucket.length) {
+          maxBucket = buckets[key];
+        }
+      }
+
+      return algoAverage(maxBucket.length > 0 ? maxBucket : pixels);
+    }
+
+    function algoLuminance(pixels) {
+      let r = 0, g = 0, b = 0, totalWeight = 0;
+      for (const p of pixels) {
+        const lum = 0.299 * p.r + 0.587 * p.g + 0.114 * p.b;
+        const weight = lum / 255 + 0.5;
+        r += p.r * weight;
+        g += p.g * weight;
+        b += p.b * weight;
+        totalWeight += weight;
+      }
+      return {
+        r: Math.round(r / totalWeight),
+        g: Math.round(g / totalWeight),
+        b: Math.round(b / totalWeight)
+      };
+    }
+
+    function algoMinMax(pixels) {
+      const mode = document.getElementById('minmaxSelect').value;
+      let result = pixels[0];
+      let targetLum = mode === 'max' ? -1 : 256;
+
+      for (const p of pixels) {
+        const lum = 0.299 * p.r + 0.587 * p.g + 0.114 * p.b;
+        if (mode === 'max' && lum > targetLum) {
+          targetLum = lum;
+          result = p;
+        } else if (mode === 'min' && lum < targetLum) {
+          targetLum = lum;
+          result = p;
+        }
+      }
+      return result;
+    }
+
+    function exportImage() {
+      const format = document.getElementById('exportFormat').value;
+      let mimeType = 'image/png';
+      if (format === 'jpeg') mimeType = 'image/jpeg';
+      else if (format === 'webp') mimeType = 'image/webp';
+
+      const dataUrl = resultCanvas.toDataURL(mimeType, 0.92);
+      const link = document.createElement('a');
+      link.download = `pixelated.${format}`;
+      link.href = dataUrl;
+      link.click();
+    }
+  </script>
+</body>
+</html>
