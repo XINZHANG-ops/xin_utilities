@@ -483,7 +483,7 @@
   </div>
 
   <div class="hint">
-    拖拽图片到画布 | 双击编辑文字 | Ctrl+Z 撤销 | Delete 删除 | 最多 5 页
+    Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+Z 撤销 | Delete 删除 | 双击编辑文字
   </div>
 
   <script>
@@ -550,6 +550,13 @@
     let dragStartX, dragStartY;
     let editingObject = null;
 
+    // Clipboard for copy/paste
+    let clipboard = null;
+    let clipboardType = null; // 'object' or 'page'
+
+    // Global undo stack for page operations
+    let pageUndoStack = [];
+
     // Page navigation elements
     const pageNav = document.getElementById('pageNav');
     const pageThumbnails = document.getElementById('pageThumbnails');
@@ -611,6 +618,20 @@
 
     function deletePage(pageIndex) {
       if (pages.length <= 1) return;
+
+      // Save to undo stack
+      const deletedPage = JSON.parse(JSON.stringify(pages[pageIndex]));
+      deletedPage.objects = pages[pageIndex].objects.map(obj => {
+        if (obj.type === 'image') {
+          return { ...obj, imgSrc: obj.imgSrc, img: undefined };
+        }
+        return { ...obj };
+      });
+      pageUndoStack.push({
+        type: 'deletePage',
+        page: deletedPage,
+        index: pageIndex
+      });
 
       pages.splice(pageIndex, 1);
 
@@ -734,9 +755,7 @@
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const pageIndex = parseInt(btn.dataset.page);
-          if (confirm(`确定要删除第 ${pageIndex + 1} 页吗？`)) {
-            deletePage(pageIndex);
-          }
+          deletePage(pageIndex);
         });
       });
     }
@@ -1572,6 +1591,9 @@
         redraw();
         updatePageUI();
         saveToLocalStorage();
+      } else if (pageUndoStack.length > 0) {
+        // Try to undo page operations
+        undoPageOperation();
       }
     }
 
@@ -1599,10 +1621,21 @@
 
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
-        undo();
+        // First check if there's a page operation to undo
+        if (pageUndoStack.length > 0 && historyIndex <= 0) {
+          undoPageOperation();
+        } else {
+          undo();
+        }
       } else if (e.ctrlKey && e.key === 'y') {
         e.preventDefault();
         redo();
+      } else if (e.ctrlKey && e.key === 'c') {
+        e.preventDefault();
+        copyToClipboard();
+      } else if (e.ctrlKey && e.key === 'v') {
+        e.preventDefault();
+        pasteFromClipboard();
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject) {
         e.preventDefault();
         const idx = objects.indexOf(selectedObject);
@@ -1615,6 +1648,150 @@
         }
       }
     });
+
+    function undoPageOperation() {
+      if (pageUndoStack.length === 0) return;
+
+      const op = pageUndoStack.pop();
+      if (op.type === 'deletePage') {
+        // Restore the deleted page
+        loadState(JSON.stringify(op.page.objects)).then(loadedObjects => {
+          const restoredPage = {
+            objects: loadedObjects,
+            history: op.page.history || [],
+            historyIndex: op.page.historyIndex !== undefined ? op.page.historyIndex : -1
+          };
+
+          // Insert at original position
+          pages.splice(op.index, 0, restoredPage);
+
+          // Switch to restored page
+          currentPageIndex = op.index;
+          loadPageState(currentPageIndex);
+
+          selectedObject = null;
+          updateSelectedControls();
+          redraw();
+          updatePageUI();
+          saveToLocalStorage();
+        });
+      }
+    }
+
+    function copyToClipboard() {
+      if (selectedObject) {
+        // Copy selected object
+        const objCopy = JSON.parse(JSON.stringify(selectedObject));
+        if (objCopy.type === 'image') {
+          objCopy.imgSrc = selectedObject.imgSrc;
+          objCopy.img = undefined;
+        }
+        clipboard = objCopy;
+        clipboardType = 'object';
+      } else {
+        // Copy entire page
+        const pageCopy = objects.map(obj => {
+          const copy = JSON.parse(JSON.stringify(obj));
+          if (copy.type === 'image') {
+            copy.imgSrc = obj.imgSrc;
+            copy.img = undefined;
+          }
+          return copy;
+        });
+        clipboard = pageCopy;
+        clipboardType = 'page';
+      }
+    }
+
+    async function pasteFromClipboard() {
+      if (!clipboard) return;
+
+      if (clipboardType === 'object') {
+        // Paste single object with offset
+        const obj = JSON.parse(JSON.stringify(clipboard));
+        obj.x = (obj.x || 0) + 20;
+        obj.y = (obj.y || 0) + 20;
+        if (obj.x1 !== undefined) { obj.x1 += 20; obj.x2 += 20; }
+        if (obj.y1 !== undefined) { obj.y1 += 20; obj.y2 += 20; }
+
+        if (obj.type === 'image' && obj.imgSrc) {
+          const img = new Image();
+          img.onload = () => {
+            obj.img = img;
+            objects.push(obj);
+            selectedObject = obj;
+            updateSelectedControls();
+            saveState();
+            redraw();
+          };
+          img.src = obj.imgSrc;
+        } else {
+          objects.push(obj);
+          selectedObject = obj;
+          updateSelectedControls();
+          saveState();
+          redraw();
+        }
+        // Update clipboard for next paste offset
+        clipboard.x = obj.x;
+        clipboard.y = obj.y;
+        if (clipboard.x1 !== undefined) { clipboard.x1 = obj.x1; clipboard.x2 = obj.x2; }
+        if (clipboard.y1 !== undefined) { clipboard.y1 = obj.y1; clipboard.y2 = obj.y2; }
+      } else if (clipboardType === 'page') {
+        // Paste entire page content
+        if (pages.length >= MAX_PAGES) {
+          // If at max pages, paste into current page
+          for (const objData of clipboard) {
+            const obj = JSON.parse(JSON.stringify(objData));
+            if (obj.type === 'image' && obj.imgSrc) {
+              const img = new Image();
+              img.src = obj.imgSrc;
+              await new Promise(resolve => {
+                img.onload = () => {
+                  obj.img = img;
+                  resolve();
+                };
+                img.onerror = resolve;
+              });
+            }
+            objects.push(obj);
+          }
+          saveState();
+          redraw();
+        } else {
+          // Create new page with clipboard content
+          saveCurrentPageState();
+
+          const newObjects = [];
+          for (const objData of clipboard) {
+            const obj = JSON.parse(JSON.stringify(objData));
+            if (obj.type === 'image' && obj.imgSrc) {
+              const img = new Image();
+              img.src = obj.imgSrc;
+              await new Promise(resolve => {
+                img.onload = () => {
+                  obj.img = img;
+                  resolve();
+                };
+                img.onerror = resolve;
+              });
+            }
+            newObjects.push(obj);
+          }
+
+          const newPage = { objects: newObjects, history: [], historyIndex: -1 };
+          pages.push(newPage);
+          currentPageIndex = pages.length - 1;
+          loadPageState(currentPageIndex);
+
+          selectedObject = null;
+          updateSelectedControls();
+          saveState();
+          redraw();
+          updatePageUI();
+        }
+      }
+    }
 
     // Clear
     document.getElementById('clearBtn').addEventListener('click', () => {
