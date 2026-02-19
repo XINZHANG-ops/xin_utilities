@@ -761,7 +761,8 @@
         overlayCtx.lineWidth = 2;
         overlayCtx.setLineDash([5, 5]);
         overlayCtx.beginPath();
-        overlayCtx.arc(cropCircle.cx, cropCircle.cy, cropCircle.r, 0, Math.PI * 2);
+        // 边框绘制在 r+1 位置，使边框内边缘正好等于透明区域边界 r
+        overlayCtx.arc(cropCircle.cx, cropCircle.cy, cropCircle.r + 1, 0, Math.PI * 2);
         overlayCtx.stroke();
         overlayCtx.setLineDash([]);
 
