@@ -191,6 +191,48 @@
     .save-indicator.saving {
       background: rgba(255, 159, 10, 0.1);
     }
+
+    /* Sticky note colors */
+    .sticky-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sticky-color:hover {
+      transform: scale(1.1);
+    }
+
+    .sticky-color.active {
+      border-color: var(--fg);
+    }
+
+    /* Text edit overlay */
+    .text-edit-overlay {
+      position: fixed;
+      z-index: 100;
+      background: transparent;
+      border: 2px solid #30d158;
+      border-radius: 4px;
+      padding: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+      overflow: hidden;
+      min-width: 100px;
+      min-height: 40px;
+    }
+
+    .text-edit-overlay.sticky {
+      border: none;
+      border-radius: 2px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body>
@@ -204,7 +246,13 @@
       </a>
 
       <div class="toolbar">
-        <button class="btn-icon active" data-tool="brush" title="画笔">
+        <button class="btn-icon active" data-tool="select" title="选择">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+            <path d="M13 13l6 6"/>
+          </svg>
+        </button>
+        <button class="btn-icon" data-tool="brush" title="画笔">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19l7-7 3 3-7 7-3-3z"/>
             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
@@ -232,9 +280,25 @@
             <polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
+        <button class="btn-icon" data-tool="sticky" title="便利贴">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/>
+            <path d="M15 3v6h6"/>
+          </svg>
+        </button>
+        <button class="btn-icon" data-tool="text" title="文本框">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7V4h16v3"/>
+            <path d="M9 20h6"/>
+            <path d="M12 4v16"/>
+          </svg>
+        </button>
 
         <div class="toolbar-divider"></div>
 
+        <div class="toolbar-divider"></div>
+
+        <!-- Unified color picker -->
         <div class="color-picker-wrapper">
           <div class="color-picker-display" id="colorDisplay" style="background: #1d1d1f;"></div>
           <input type="color" class="color-picker-input" id="colorPicker" value="#1d1d1f">
@@ -246,10 +310,26 @@
         <button class="btn-icon" style="background: #34c759;" data-color="#34c759" title="绿色"></button>
         <button class="btn-icon" style="background: #ff9500;" data-color="#ff9500" title="橙色"></button>
 
+        <!-- Sticky note colors (shown when sticky tool active or sticky selected) -->
+        <div id="stickyColors" style="display: none; align-items: center; gap: 0.25rem; margin-left: 0.25rem;">
+          <div class="sticky-color active" data-sticky-color="#fff59d" style="background: #fff59d;" title="黄色"></div>
+          <div class="sticky-color" data-sticky-color="#f48fb1" style="background: #f48fb1;" title="粉色"></div>
+          <div class="sticky-color" data-sticky-color="#81d4fa" style="background: #81d4fa;" title="蓝色"></div>
+          <div class="sticky-color" data-sticky-color="#a5d6a7" style="background: #a5d6a7;" title="绿色"></div>
+          <div class="sticky-color" data-sticky-color="#ffcc80" style="background: #ffcc80;" title="橙色"></div>
+        </div>
+
         <div class="toolbar-divider"></div>
 
         <span class="text-xs text-gray-500">粗细</span>
         <input type="range" class="slider" id="strokeSize" min="1" max="30" value="3">
+
+        <!-- Text size (shown when text selected) -->
+        <div id="textSizeControl" style="display: none; align-items: center; gap: 0.5rem;">
+          <span class="text-xs text-gray-500">字号</span>
+          <input type="range" class="slider" id="textSizeSlider" min="12" max="48" value="18" style="width: 60px;">
+          <button class="btn-icon" id="textBoldBtn" title="粗体" style="width: 28px; height: 28px; font-weight: bold; font-size: 14px;">B</button>
+        </div>
 
         <span class="text-xs text-gray-500">透明度</span>
         <input type="range" class="slider" id="opacity" min="10" max="100" value="100">
@@ -296,7 +376,7 @@
   </div>
 
   <div class="hint">
-    拖拽图片到画布添加 | Ctrl+Z 撤销 | Ctrl+Y 重做 | 拖拽形状/图片边缘调整大小
+    拖拽图片到画布 | 双击便利贴/文本编辑 | Ctrl+Z 撤销 | Ctrl+Y 重做 | Delete 删除选中
   </div>
 
   <script>
@@ -330,20 +410,28 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    let currentTool = 'brush';
+    let currentTool = 'select';
     let currentColor = '#1d1d1f';
     let strokeSize = 3;
     let opacity = 1;
     let isDrawing = false;
     let startX, startY;
 
-    // Objects array (shapes, images, brush strokes)
+    // UI elements
+    let stickyColor = '#fff59d';
+    const stickyColorsContainer = document.getElementById('stickyColors');
+    const textSizeControl = document.getElementById('textSizeControl');
+    const textSizeSlider = document.getElementById('textSizeSlider');
+    const textBoldBtn = document.getElementById('textBoldBtn');
+
+    // Objects array (shapes, images, brush strokes, sticky notes, text boxes)
     let objects = [];
     let history = [];
     let historyIndex = -1;
     let selectedObject = null;
     let dragHandle = null;
     let dragStartX, dragStartY;
+    let editingObject = null;
 
     // Tool selection
     document.querySelectorAll('[data-tool]').forEach(btn => {
@@ -351,28 +439,130 @@
         document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentTool = btn.dataset.tool;
-        selectedObject = null;
+
+        // Clear selection when switching to drawing tools
+        if (currentTool !== 'select') {
+          selectedObject = null;
+        }
+
+        // Update cursor
+        if (currentTool === 'select') {
+          canvas.style.cursor = 'default';
+        } else if (currentTool === 'sticky' || currentTool === 'text') {
+          canvas.style.cursor = 'cell';
+        } else {
+          canvas.style.cursor = 'crosshair';
+        }
+
+        updateSelectedControls();
         redraw();
       });
     });
 
-    // Color selection
-    colorPicker.addEventListener('input', e => {
-      currentColor = e.target.value;
-      colorDisplay.style.background = currentColor;
-    });
-
-    document.querySelectorAll('[data-color]').forEach(btn => {
+    // Sticky color selection - for new or selected sticky notes
+    document.querySelectorAll('[data-sticky-color]').forEach(btn => {
       btn.addEventListener('click', () => {
-        currentColor = btn.dataset.color;
-        colorPicker.value = currentColor;
-        colorDisplay.style.background = currentColor;
+        document.querySelectorAll('[data-sticky-color]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        stickyColor = btn.dataset.stickyColor;
+
+        // Apply to selected sticky if any
+        if (selectedObject && selectedObject.type === 'sticky') {
+          selectedObject.color = stickyColor;
+          saveState();
+          redraw();
+        }
       });
     });
 
-    // Settings
+    // Text controls
+    textSizeSlider.addEventListener('input', e => {
+      if (selectedObject && selectedObject.type === 'textbox') {
+        selectedObject.fontSize = parseInt(e.target.value);
+        saveState();
+        redraw();
+      }
+    });
+
+    textBoldBtn.addEventListener('click', () => {
+      if (selectedObject && selectedObject.type === 'textbox') {
+        selectedObject.bold = !selectedObject.bold;
+        textBoldBtn.classList.toggle('active', selectedObject.bold);
+        saveState();
+        redraw();
+      }
+    });
+
+    function switchToSelectTool() {
+      document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-tool="select"]').classList.add('active');
+      currentTool = 'select';
+      canvas.style.cursor = 'default';
+    }
+
+    function updateSelectedControls() {
+      // Show sticky colors when sticky tool active OR sticky selected
+      const showStickyColors = currentTool === 'sticky' ||
+                               (selectedObject && selectedObject.type === 'sticky');
+      stickyColorsContainer.style.display = showStickyColors ? 'flex' : 'none';
+
+      // Show text controls when textbox selected
+      const showTextControls = selectedObject && selectedObject.type === 'textbox';
+      textSizeControl.style.display = showTextControls ? 'flex' : 'none';
+
+      // Update controls to reflect selected object's properties
+      if (selectedObject) {
+        if (selectedObject.type === 'sticky') {
+          // Highlight current sticky color
+          document.querySelectorAll('[data-sticky-color]').forEach(b => {
+            b.classList.toggle('active', b.dataset.stickyColor === selectedObject.color);
+          });
+        } else if (selectedObject.type === 'textbox') {
+          setColor(selectedObject.color || '#1d1d1f');
+          textSizeSlider.value = selectedObject.fontSize || 18;
+          textBoldBtn.classList.toggle('active', selectedObject.bold || false);
+        } else if (selectedObject.type === 'rect' || selectedObject.type === 'circle' ||
+                   selectedObject.type === 'arrow') {
+          setColor(selectedObject.color || '#1d1d1f');
+          strokeSizeSlider.value = selectedObject.size || 3;
+        }
+      }
+    }
+
+    // Color selection - applies to current tool or selected object
+    function setColor(color, fromUserAction = false) {
+      currentColor = color;
+      colorPicker.value = color;
+      colorDisplay.style.background = color;
+
+      // Apply to selected object only if user clicked (not just updating UI)
+      if (fromUserAction && selectedObject) {
+        if (selectedObject.type === 'textbox' || selectedObject.type === 'rect' ||
+            selectedObject.type === 'circle' || selectedObject.type === 'arrow') {
+          selectedObject.color = color;
+          saveState();
+          redraw();
+        }
+      }
+    }
+
+    colorPicker.addEventListener('input', e => setColor(e.target.value, true));
+
+    document.querySelectorAll('[data-color]').forEach(btn => {
+      btn.addEventListener('click', () => setColor(btn.dataset.color, true));
+    });
+
+    // Stroke size - applies to current tool or selected shape
     strokeSizeSlider.addEventListener('input', e => {
       strokeSize = parseInt(e.target.value);
+
+      // Apply to selected shape if any
+      if (selectedObject && (selectedObject.type === 'rect' ||
+          selectedObject.type === 'circle' || selectedObject.type === 'arrow')) {
+        selectedObject.size = strokeSize;
+        saveState();
+        redraw();
+      }
     });
 
     opacitySlider.addEventListener('input', e => {
@@ -384,6 +574,90 @@
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('dblclick', handleDoubleClick);
+
+    function handleDoubleClick(e) {
+      const pos = getMousePos(e);
+      const hit = hitTestObjects(pos.x, pos.y);
+
+      if (hit && (hit.obj.type === 'sticky' || hit.obj.type === 'textbox')) {
+        startEditing(hit.obj);
+      }
+    }
+
+    function startEditing(obj) {
+      if (editingObject) {
+        stopEditing();
+      }
+
+      editingObject = obj;
+
+      const rect = canvas.getBoundingClientRect();
+      const textarea = document.createElement('textarea');
+      textarea.className = 'text-edit-overlay' + (obj.type === 'sticky' ? ' sticky' : '');
+      textarea.id = 'textEditOverlay';
+
+      if (obj.type === 'sticky') {
+        textarea.style.left = (rect.left + obj.x) + 'px';
+        textarea.style.top = (rect.top + obj.y) + 'px';
+        textarea.style.width = obj.width + 'px';
+        textarea.style.height = obj.height + 'px';
+        textarea.style.background = obj.color;
+        textarea.style.color = '#1d1d1f';
+        textarea.style.fontSize = (obj.fontSize || 16) + 'px';
+      } else {
+        textarea.style.left = (rect.left + obj.x - 4) + 'px';
+        textarea.style.top = (rect.top + obj.y - 4) + 'px';
+        textarea.style.width = (obj.width + 8) + 'px';
+        textarea.style.height = (obj.height + 8) + 'px';
+        textarea.style.background = 'rgba(255,255,255,0.95)';
+        textarea.style.color = obj.color;
+        textarea.style.fontSize = (obj.fontSize || 18) + 'px';
+        textarea.style.fontWeight = obj.bold ? 'bold' : 'normal';
+      }
+
+      textarea.value = obj.text || '';
+      textarea.placeholder = obj.type === 'sticky' ? '输入便利贴内容...' : '输入文字...';
+
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      textarea.addEventListener('blur', stopEditing);
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          stopEditing();
+        }
+      });
+
+      // Auto-resize for textbox
+      if (obj.type === 'textbox') {
+        textarea.addEventListener('input', () => {
+          textarea.style.height = 'auto';
+          textarea.style.height = textarea.scrollHeight + 'px';
+        });
+      }
+    }
+
+    function stopEditing() {
+      const textarea = document.getElementById('textEditOverlay');
+      if (textarea && editingObject) {
+        editingObject.text = textarea.value;
+
+        // Adjust textbox height based on content
+        if (editingObject.type === 'textbox') {
+          const fontWeight = editingObject.bold ? 'bold' : 'normal';
+          ctx.font = `${fontWeight} ${editingObject.fontSize || 18}px 'Plus Jakarta Sans', sans-serif`;
+          const lines = wrapText(editingObject.text, editingObject.width);
+          editingObject.height = Math.max(40, lines.length * (editingObject.fontSize || 18) * 1.4);
+        }
+
+        textarea.remove();
+        saveState();
+        redraw();
+      }
+      editingObject = null;
+    }
 
     function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
@@ -407,11 +681,64 @@
         dragStartX = pos.x;
         dragStartY = pos.y;
         isDrawing = false;
+        updateSelectedControls();
         redraw();
         return;
       }
 
       selectedObject = null;
+      updateSelectedControls();
+
+      // Select tool - just deselect
+      if (currentTool === 'select') {
+        redraw();
+        return;
+      }
+
+      // Create sticky note or text box on click
+      if (currentTool === 'sticky') {
+        const newSticky = {
+          type: 'sticky',
+          x: pos.x,
+          y: pos.y,
+          width: 200,
+          height: 150,
+          color: stickyColor,
+          text: '',
+          fontSize: 16
+        };
+        objects.push(newSticky);
+        selectedObject = newSticky;
+        saveState();
+        switchToSelectTool();
+        updateSelectedControls();
+        redraw();
+        startEditing(newSticky);
+        return;
+      }
+
+      if (currentTool === 'text') {
+        const newText = {
+          type: 'textbox',
+          x: pos.x,
+          y: pos.y,
+          width: 200,
+          height: 40,
+          color: currentColor,
+          text: '',
+          fontSize: 18,
+          bold: false
+        };
+        objects.push(newText);
+        selectedObject = newText;
+        saveState();
+        switchToSelectTool();
+        updateSelectedControls();
+        redraw();
+        startEditing(newText);
+        return;
+      }
+
       isDrawing = true;
 
       if (currentTool === 'brush' || currentTool === 'eraser') {
@@ -433,18 +760,18 @@
         const dx = pos.x - dragStartX;
         const dy = pos.y - dragStartY;
 
-        if (selectedObject.type === 'image') {
+        if (selectedObject.type === 'image' || selectedObject.type === 'sticky' || selectedObject.type === 'textbox') {
           if (dragHandle === 'move') {
             selectedObject.x += dx;
             selectedObject.y += dy;
           } else {
-            // Resize image
+            // Resize
             if (dragHandle.includes('e')) selectedObject.width += dx;
             if (dragHandle.includes('w')) { selectedObject.x += dx; selectedObject.width -= dx; }
             if (dragHandle.includes('s')) selectedObject.height += dy;
             if (dragHandle.includes('n')) { selectedObject.y += dy; selectedObject.height -= dy; }
-            selectedObject.width = Math.max(20, selectedObject.width);
-            selectedObject.height = Math.max(20, selectedObject.height);
+            selectedObject.width = Math.max(60, selectedObject.width);
+            selectedObject.height = Math.max(40, selectedObject.height);
           }
         } else {
           if (dragHandle === 'move') {
@@ -471,6 +798,10 @@
         const hit = hitTestObjects(pos.x, pos.y);
         if (hit && currentTool !== 'eraser') {
           canvas.style.cursor = hit.handle === 'move' ? 'move' : 'nwse-resize';
+        } else if (currentTool === 'select') {
+          canvas.style.cursor = 'default';
+        } else if (currentTool === 'sticky' || currentTool === 'text') {
+          canvas.style.cursor = 'cell';
         } else {
           canvas.style.cursor = 'crosshair';
         }
@@ -491,6 +822,7 @@
       if (dragHandle) {
         saveState();
         dragHandle = null;
+        updateSelectedControls();
         return;
       }
 
@@ -662,7 +994,7 @@
 
         if (obj.type === 'brush' || obj.type === 'eraser') continue;
 
-        if (obj.type === 'image') {
+        if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox') {
           const handleRadius = 10;
           const corners = [
             { x: obj.x, y: obj.y, h: 'nw' },
@@ -704,10 +1036,145 @@
       return null;
     }
 
+    function drawSticky(obj, selected = false) {
+      ctx.save();
+
+      // Draw shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.15)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      // Draw sticky note background
+      ctx.fillStyle = obj.color;
+      ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+      ctx.shadowColor = 'transparent';
+
+      // Draw folded corner effect
+      const foldSize = 20;
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.beginPath();
+      ctx.moveTo(obj.x + obj.width - foldSize, obj.y);
+      ctx.lineTo(obj.x + obj.width, obj.y + foldSize);
+      ctx.lineTo(obj.x + obj.width, obj.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw text
+      if (obj.text) {
+        ctx.fillStyle = '#1d1d1f';
+        ctx.font = `${obj.fontSize || 16}px 'Plus Jakarta Sans', sans-serif`;
+        ctx.textBaseline = 'top';
+
+        const padding = 12;
+        const maxWidth = obj.width - padding * 2;
+        const lineHeight = (obj.fontSize || 16) * 1.4;
+        const lines = wrapText(obj.text, maxWidth);
+
+        lines.forEach((line, i) => {
+          if (obj.y + padding + i * lineHeight < obj.y + obj.height - padding) {
+            ctx.fillText(line, obj.x + padding, obj.y + padding + i * lineHeight);
+          }
+        });
+      }
+
+      ctx.restore();
+
+      if (selected) {
+        drawRectHandles(obj);
+      }
+    }
+
+    function drawTextBox(obj, selected = false) {
+      ctx.save();
+
+      // Draw text
+      if (obj.text) {
+        ctx.fillStyle = obj.color;
+        const fontWeight = obj.bold ? 'bold' : 'normal';
+        ctx.font = `${fontWeight} ${obj.fontSize || 18}px 'Plus Jakarta Sans', sans-serif`;
+        ctx.textBaseline = 'top';
+
+        const lineHeight = (obj.fontSize || 18) * 1.4;
+        const lines = wrapText(obj.text, obj.width);
+
+        lines.forEach((line, i) => {
+          ctx.fillText(line, obj.x, obj.y + i * lineHeight);
+        });
+      }
+
+      ctx.restore();
+
+      if (selected) {
+        // Draw selection border
+        ctx.strokeStyle = '#30d158';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(obj.x - 4, obj.y - 4, obj.width + 8, obj.height + 8);
+        ctx.setLineDash([]);
+
+        drawRectHandles(obj);
+      }
+    }
+
+    function drawRectHandles(obj) {
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#30d158';
+      ctx.lineWidth = 2;
+
+      const corners = [
+        { x: obj.x, y: obj.y },
+        { x: obj.x + obj.width, y: obj.y },
+        { x: obj.x, y: obj.y + obj.height },
+        { x: obj.x + obj.width, y: obj.y + obj.height }
+      ];
+
+      corners.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+
+    function wrapText(text, maxWidth) {
+      const lines = [];
+      const paragraphs = text.split('\n');
+
+      paragraphs.forEach(paragraph => {
+        if (!paragraph) {
+          lines.push('');
+          return;
+        }
+
+        const words = paragraph.split('');
+        let currentLine = '';
+
+        for (const char of words) {
+          const testLine = currentLine + char;
+          const metrics = ctx.measureText(testLine);
+
+          if (metrics.width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = char;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+      });
+
+      return lines;
+    }
+
     function redraw() {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Layer 1: Brush strokes and eraser (can be erased)
       for (const obj of objects) {
         if (obj.type === 'brush' || obj.type === 'eraser') {
           ctx.save();
@@ -725,10 +1192,24 @@
           }
           ctx.stroke();
           ctx.restore();
-        } else if (obj.type === 'image') {
+        }
+      }
+
+      // Layer 2: Shapes and images
+      for (const obj of objects) {
+        if (obj.type === 'image') {
           drawImage(obj, obj === selectedObject);
-        } else {
+        } else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
           drawShape(obj, obj === selectedObject);
+        }
+      }
+
+      // Layer 3: Sticky notes and text boxes (always on top, not erasable)
+      for (const obj of objects) {
+        if (obj.type === 'sticky') {
+          drawSticky(obj, obj === selectedObject);
+        } else if (obj.type === 'textbox') {
+          drawTextBox(obj, obj === selectedObject);
         }
       }
     }
@@ -780,6 +1261,7 @@
         loadState(history[historyIndex]).then(state => {
           objects = state;
           selectedObject = null;
+          updateSelectedControls();
           redraw();
           saveToLocalStorage();
         });
@@ -787,6 +1269,7 @@
         objects = [];
         selectedObject = null;
         historyIndex = -1;
+        updateSelectedControls();
         redraw();
         saveToLocalStorage();
       }
@@ -798,6 +1281,7 @@
         loadState(history[historyIndex]).then(state => {
           objects = state;
           selectedObject = null;
+          updateSelectedControls();
           redraw();
           saveToLocalStorage();
         });
@@ -808,17 +1292,22 @@
     document.getElementById('redoBtn').addEventListener('click', redo);
 
     document.addEventListener('keydown', e => {
+      // Don't handle shortcuts while editing text
+      if (editingObject) return;
+
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
         undo();
       } else if (e.ctrlKey && e.key === 'y') {
         e.preventDefault();
         redo();
-      } else if (e.key === 'Delete' && selectedObject) {
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject) {
+        e.preventDefault();
         const idx = objects.indexOf(selectedObject);
         if (idx > -1) {
           objects.splice(idx, 1);
           selectedObject = null;
+          updateSelectedControls();
           saveState();
           redraw();
         }
@@ -832,6 +1321,7 @@
         history = [];
         historyIndex = -1;
         selectedObject = null;
+        updateSelectedControls();
         redraw();
         saveToLocalStorage();
       }
