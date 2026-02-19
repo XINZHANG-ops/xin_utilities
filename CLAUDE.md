@@ -20,8 +20,12 @@ xin_utilities/
     │   └── index.html            # Pixelate images with 7 color algorithms
     ├── video-to-gif/
     │   └── index.html            # Convert video clips to GIF
-    └── text-diff/
-        └── index.html            # Compare text differences (git-style)
+    ├── image-annotate/
+    │   └── index.html            # Draw and annotate on images
+    ├── text-diff/
+    │   └── index.html            # Compare text differences (git-style)
+    └── whiteboard/
+        └── index.html            # Online whiteboard for doodling
 ```
 
 ## Current Tools
@@ -30,9 +34,13 @@ xin_utilities/
 - **Image Cropper**: Rectangle/circle/polygon crop, rotate (preserves edges), flip H/V, resize
 - **Image Pixelate**: 7 algorithms (Average, Median, Center, Mode, Dominant, Luminance, Min/Max)
 - **Video to GIF**: Frame selection via timeline, custom width/quality/frame count
+- **Image Annotate**: Draw/brush, shapes (rect, circle, arrow), adjustable color/size per shape
 
 ### Text Tools (gradient-purple)
 - **Text Diff**: Side-by-side comparison, click to select version, download merged result
+
+### Canvas Tools (gradient-green)
+- **Whiteboard**: Full-screen canvas, brush/eraser, shapes, drag-and-drop images, auto-save to localStorage
 
 ## Key Design Patterns
 
@@ -78,3 +86,5 @@ npx serve
 - **Video to GIF**: Uses custom inline GIF encoder (no Web Workers) for file:// compatibility
 - **Image Cropper**: Rotation uses bounding box calculation to preserve full image
 - **Text Diff**: LCS-based diff algorithm with opcode merging
+- **Image Annotate**: Shape selection with hit testing, drag handles for resize
+- **Whiteboard**: Layer-based object system, localStorage persistence, image drag-and-drop with base64 storage
