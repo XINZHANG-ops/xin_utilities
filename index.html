@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xin Utilities - 实用工具集</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-elevated: #0d0d0d;
+      --bg-card: #141414;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --fg-subtle: #6e6e73;
+      --accent: #2997ff;
+      --accent-hover: #0077ed;
+      --border: rgba(255,255,255,0.08);
+      --glow: rgba(41,151,255,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--fg-subtle); border-radius: 4px; }
+
+    .text-display {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    .text-headline {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .text-subhead {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--fg-muted);
+    }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .category-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .category-card:hover {
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 32px 64px -12px rgba(0,0,0,0.5);
+    }
+
+    .category-header {
+      padding: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s ease;
+    }
+
+    .category-header:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .category-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .category-tools {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .category-tools.expanded {
+      max-height: 1000px;
+    }
+
+    .tool-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .tool-item:hover {
+      background: rgba(41,151,255,0.08);
+      padding-left: 2rem;
+    }
+
+    .tool-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .chevron {
+      transition: transform 0.3s ease;
+    }
+
+    .chevron.rotated {
+      transform: rotate(180deg);
+    }
+
+    .gradient-blue { background: linear-gradient(135deg, #2997ff 0%, #0077ed 100%); }
+    .gradient-purple { background: linear-gradient(135deg, #bf5af2 0%, #9945ff 100%); }
+    .gradient-green { background: linear-gradient(135deg, #30d158 0%, #28a745 100%); }
+    .gradient-orange { background: linear-gradient(135deg, #ff9f0a 0%, #ff6b00 100%); }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, var(--glow) 0%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .category-header { padding: 1rem; }
+      .tool-item { padding: 0.875rem 1rem; }
+      .tool-item:hover { padding-left: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#" class="text-xl font-semibold tracking-tight flex items-center gap-2">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>Xin Utilities</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="min-h-[60vh] flex flex-col items-center justify-center px-6 pt-24 pb-12 relative overflow-hidden">
+    <div class="hero-glow"></div>
+    <div class="text-center relative z-10 reveal">
+      <h1 class="text-display mb-4">实用工具集</h1>
+      <p class="text-subhead max-w-xl mx-auto">
+        精心打造的在线小工具，让日常任务变得简单高效
+      </p>
+    </div>
+  </section>
+
+  <!-- Tools Section -->
+  <section class="px-6 pb-24">
+    <div class="max-w-3xl mx-auto space-y-6">
+
+      <!-- Image Tools Category -->
+      <div class="category-card reveal" data-category="image">
+        <div class="category-header" onclick="toggleCategory('image')">
+          <div class="flex items-center gap-4">
+            <div class="category-icon gradient-blue">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold">图片工具</h3>
+              <p class="text-sm text-gray-500">图片处理、编辑、转换</p>
+            </div>
+          </div>
+          <svg class="chevron w-6 h-6 text-gray-500" id="chevron-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="category-tools" id="tools-image">
+          <a href="tools/image-cropper/index.html" class="tool-item">
+            <div class="tool-icon gradient-blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
+                <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-medium">图片修剪器</h4>
+              <p class="text-sm text-gray-500">剪裁、旋转、翻转、调整分辨率</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Text Tools Category (Coming Soon) -->
+      <div class="category-card reveal" style="opacity: 0.6;">
+        <div class="category-header" style="cursor: default;">
+          <div class="flex items-center gap-4">
+            <div class="category-icon gradient-purple">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold">文字工具</h3>
+              <p class="text-sm text-gray-500">即将推出</p>
+            </div>
+          </div>
+          <span class="text-xs px-3 py-1 rounded-full bg-gray-800 text-gray-400">Coming Soon</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-8 px-6">
+    <div class="max-w-5xl mx-auto text-center">
+      <p class="text-sm text-gray-600">Made with care. Open source on GitHub.</p>
+    </div>
+  </footer>
+
+  <script>
+    function toggleCategory(categoryId) {
+      const tools = document.getElementById(`tools-${categoryId}`);
+      const chevron = document.getElementById(`chevron-${categoryId}`);
+
+      tools.classList.toggle('expanded');
+      chevron.classList.toggle('rotated');
+    }
+
+    // Auto-expand image category on load
+    setTimeout(() => {
+      toggleCategory('image');
+    }, 500);
+
+    // Scroll reveal animation
+    const revealElements = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    // Initial reveal
+    setTimeout(() => {
+      revealElements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
+          el.classList.add('active');
+        }
+      });
+    }, 100);
+  </script>
+</body>
+</html>

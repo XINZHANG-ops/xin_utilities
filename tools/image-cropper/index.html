@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片修剪器 - Xin Utilities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-elevated: #0d0d0d;
+      --bg-card: #141414;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --fg-subtle: #6e6e73;
+      --accent: #2997ff;
+      --accent-hover: #0077ed;
+      --border: rgba(255,255,255,0.08);
+      --glow: rgba(41,151,255,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--fg-subtle); border-radius: 4px; }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 980px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--fg);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 3rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(41,151,255,0.05);
+    }
+
+    .upload-zone.dragover {
+      transform: scale(1.02);
+    }
+
+    .canvas-container {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    #mainCanvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    #overlayCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: crosshair;
+    }
+
+    .crop-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: var(--accent);
+      border: 2px solid white;
+      border-radius: 2px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .crop-handle.corner { cursor: nwse-resize; }
+    .crop-handle.corner-ne, .crop-handle.corner-sw { cursor: nesw-resize; }
+    .crop-handle.edge-n, .crop-handle.edge-s { cursor: ns-resize; }
+    .crop-handle.edge-e, .crop-handle.edge-w { cursor: ew-resize; }
+
+    .tool-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .tool-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    input[type="number"] {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--fg);
+      font-size: 0.875rem;
+      width: 80px;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .tab-group {
+      display: flex;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--fg-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .polygon-point {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      border: 2px solid white;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: move;
+      z-index: 20;
+    }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+    }
+
+    @media (max-width: 768px) {
+      .tool-btn { width: 40px; height: 40px; }
+      .upload-zone { padding: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../../index.html" class="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="font-medium">返回工具集</span>
+      </a>
+      <h1 class="text-lg font-semibold">图片修剪器</h1>
+      <div class="w-24"></div>
+    </div>
+  </nav>
+
+  <main class="pt-20 pb-12 px-4">
+    <div class="max-w-6xl mx-auto">
+
+      <!-- Upload Zone (shown when no image) -->
+      <div id="uploadZone" class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p class="text-lg font-medium mb-2">拖拽图片到这里</p>
+        <p class="text-sm text-gray-500 mb-4">或者点击选择文件</p>
+        <p class="text-xs text-gray-600">支持 JPG, PNG, WebP, GIF</p>
+      </div>
+
+      <!-- Editor (shown when image loaded) -->
+      <div id="editor" class="hidden">
+        <div class="grid lg:grid-cols-[1fr,320px] gap-6">
+
+          <!-- Canvas Area -->
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex gap-2">
+                <span class="info-badge" id="imageDimensions">0 × 0</span>
+                <span class="info-badge" id="imageFormat">-</span>
+              </div>
+              <button class="btn btn-secondary text-sm" onclick="resetImage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                  <path d="M21 3v5h-5"/>
+                </svg>
+                重置
+              </button>
+            </div>
+
+            <div class="flex justify-center overflow-auto bg-zinc-900/50 rounded-xl p-4 min-h-[400px]" id="canvasWrapper">
+              <div class="canvas-container" id="canvasContainer">
+                <canvas id="mainCanvas"></canvas>
+                <canvas id="overlayCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tools Panel -->
+          <div class="space-y-4">
+
+            <!-- Crop Mode -->
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
+                  <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+                </svg>
+                剪裁模式
+              </h3>
+              <div class="tab-group mb-4">
+                <button class="tab-btn active" id="tabRect" onclick="setCropMode('rect')">矩形</button>
+                <button class="tab-btn" id="tabPolygon" onclick="setCropMode('polygon')">多边形</button>
+              </div>
+              <p class="text-xs text-gray-500 mb-3" id="cropHint">拖拽画布上的方框来选择剪裁区域</p>
+              <div id="polygonControls" class="hidden space-y-2">
+                <p class="text-xs text-gray-500">点击画布添加顶点，至少需要 3 个点</p>
+                <div class="flex gap-2">
+                  <button class="btn btn-secondary text-sm flex-1" onclick="undoPolygonPoint()" id="undoPointBtn" disabled>
+                    撤销上一点
+                  </button>
+                  <button class="btn btn-secondary text-sm flex-1" onclick="clearPolygonPoints()">
+                    清除所有
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-primary w-full mt-3" onclick="applyCrop()" id="cropBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                应用剪裁
+              </button>
+            </div>
+
+            <!-- Rotation -->
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  <polyline points="22 2 22 8 16 8"/>
+                </svg>
+                旋转
+              </h3>
+              <div class="slider-container mb-3">
+                <input type="range" id="rotationSlider" min="-180" max="180" value="0" oninput="updateRotation(this.value)">
+                <input type="number" id="rotationInput" value="0" min="-180" max="180" onchange="updateRotation(this.value)">
+                <span class="text-sm text-gray-500">°</span>
+              </div>
+              <div class="tool-group">
+                <button class="tool-btn" onclick="rotateBy(-90)" title="逆时针 90°">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button class="tool-btn" onclick="rotateBy(90)" title="顺时针 90°">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Flip -->
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+                  <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+                  <line x1="12" y1="3" x2="12" y2="21"/>
+                </svg>
+                翻转
+              </h3>
+              <div class="tool-group">
+                <button class="tool-btn" onclick="flipImage('horizontal')" title="水平翻转">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+                    <line x1="12" y1="3" x2="12" y2="21"/>
+                  </svg>
+                </button>
+                <button class="tool-btn" onclick="flipImage('vertical')" title="垂直翻转">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(90deg);">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+                    <line x1="12" y1="3" x2="12" y2="21"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Resolution -->
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18"/>
+                  <path d="M9 21V9"/>
+                </svg>
+                调整分辨率
+              </h3>
+              <div class="flex gap-3 mb-3">
+                <div class="flex-1">
+                  <label class="text-xs text-gray-500 block mb-1">宽度</label>
+                  <input type="number" id="resizeWidth" min="1" max="10000" onchange="onResizeInput('width')">
+                </div>
+                <div class="flex-1">
+                  <label class="text-xs text-gray-500 block mb-1">高度</label>
+                  <input type="number" id="resizeHeight" min="1" max="10000" onchange="onResizeInput('height')">
+                </div>
+              </div>
+              <label class="flex items-center gap-2 text-sm text-gray-400 mb-3">
+                <input type="checkbox" id="lockAspect" checked class="w-4 h-4 accent-blue-500">
+                锁定比例
+              </label>
+              <button class="btn btn-primary w-full" onclick="applyResize()">
+                应用调整
+              </button>
+            </div>
+
+            <!-- Export -->
+            <div class="card p-4">
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                导出
+              </h3>
+              <select id="exportFormat" class="w-full mb-3 bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm">
+                <option value="png">PNG (无损)</option>
+                <option value="jpeg">JPEG (压缩)</option>
+                <option value="webp">WebP (推荐)</option>
+              </select>
+              <div id="qualityControl" class="hidden mb-3">
+                <label class="text-xs text-gray-500 block mb-1">质量: <span id="qualityValue">90</span>%</label>
+                <input type="range" id="qualitySlider" min="1" max="100" value="90" oninput="document.getElementById('qualityValue').textContent = this.value">
+              </div>
+              <button class="btn btn-primary w-full" onclick="exportImage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                下载图片
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // State
+    let originalImage = null;
+    let currentImage = null;
+    let cropMode = 'rect';
+    let rotation = 0;
+    let flipH = false;
+    let flipV = false;
+    let aspectRatio = 1;
+
+    // Rect crop state
+    let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+    let isDraggingCrop = false;
+    let dragType = null;
+    let dragStart = { x: 0, y: 0 };
+
+    // Polygon crop state
+    let polygonPoints = [];
+
+    // Canvas elements
+    const mainCanvas = document.getElementById('mainCanvas');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const mainCtx = mainCanvas.getContext('2d');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const canvasContainer = document.getElementById('canvasContainer');
+
+    // Initialize
+    document.getElementById('exportFormat').addEventListener('change', (e) => {
+      document.getElementById('qualityControl').classList.toggle('hidden', e.target.value === 'png');
+    });
+
+    // File handling
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        loadImage(e.target.files[0]);
+      }
+    });
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+          currentImage = img;
+          rotation = 0;
+          flipH = false;
+          flipV = false;
+          polygonPoints = [];
+
+          document.getElementById('uploadZone').classList.add('hidden');
+          document.getElementById('editor').classList.remove('hidden');
+          document.getElementById('imageFormat').textContent = file.type.split('/')[1].toUpperCase();
+
+          initCanvas();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function getRotatedDimensions(width, height, angleDeg) {
+      const angleRad = Math.abs(angleDeg) * Math.PI / 180;
+      const cos = Math.cos(angleRad);
+      const sin = Math.sin(angleRad);
+      const newWidth = Math.abs(width * cos) + Math.abs(height * sin);
+      const newHeight = Math.abs(width * sin) + Math.abs(height * cos);
+      return { width: newWidth, height: newHeight };
+    }
+
+    function initCanvas() {
+      updateCanvasSize();
+      setupOverlayEvents();
+    }
+
+    function updateCanvasSize() {
+      const maxWidth = canvasContainer.parentElement.clientWidth - 32;
+      const maxHeight = window.innerHeight - 200;
+
+      const rotatedDims = getRotatedDimensions(currentImage.width, currentImage.height, rotation);
+      const rotatedWidth = rotatedDims.width;
+      const rotatedHeight = rotatedDims.height;
+
+      const scale = Math.min(1, maxWidth / rotatedWidth, maxHeight / rotatedHeight);
+
+      mainCanvas.width = rotatedWidth * scale;
+      mainCanvas.height = rotatedHeight * scale;
+      overlayCanvas.width = mainCanvas.width;
+      overlayCanvas.height = mainCanvas.height;
+
+      aspectRatio = currentImage.width / currentImage.height;
+
+      cropRect = { x: 0, y: 0, w: mainCanvas.width, h: mainCanvas.height };
+
+      document.getElementById('resizeWidth').value = currentImage.width;
+      document.getElementById('resizeHeight').value = currentImage.height;
+
+      const finalDims = getRotatedDimensions(currentImage.width, currentImage.height, rotation);
+      document.getElementById('imageDimensions').textContent = `${Math.round(finalDims.width)} × ${Math.round(finalDims.height)}`;
+
+      drawMainCanvas();
+      drawOverlay();
+    }
+
+    function drawMainCanvas() {
+      mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+      mainCtx.save();
+
+      const angleRad = rotation * Math.PI / 180;
+      const cos = Math.cos(angleRad);
+      const sin = Math.sin(angleRad);
+
+      const origWidth = currentImage.width;
+      const origHeight = currentImage.height;
+      const rotatedDims = getRotatedDimensions(origWidth, origHeight, rotation);
+
+      const scaleX = mainCanvas.width / rotatedDims.width;
+      const scaleY = mainCanvas.height / rotatedDims.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      const drawWidth = origWidth * scale;
+      const drawHeight = origHeight * scale;
+
+      const centerX = mainCanvas.width / 2;
+      const centerY = mainCanvas.height / 2;
+
+      mainCtx.translate(centerX, centerY);
+      mainCtx.rotate(angleRad);
+      mainCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+
+      mainCtx.drawImage(currentImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      mainCtx.restore();
+    }
+
+    function drawOverlay() {
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      if (cropMode === 'rect') {
+        overlayCtx.fillStyle = 'rgba(0,0,0,0.5)';
+        overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        overlayCtx.clearRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+
+        overlayCtx.strokeStyle = '#2997ff';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.setLineDash([5, 5]);
+        overlayCtx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+        overlayCtx.setLineDash([]);
+
+        overlayCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+        overlayCtx.lineWidth = 1;
+        for (let i = 1; i <= 2; i++) {
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(cropRect.x + cropRect.w * i / 3, cropRect.y);
+          overlayCtx.lineTo(cropRect.x + cropRect.w * i / 3, cropRect.y + cropRect.h);
+          overlayCtx.stroke();
+
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(cropRect.x, cropRect.y + cropRect.h * i / 3);
+          overlayCtx.lineTo(cropRect.x + cropRect.w, cropRect.y + cropRect.h * i / 3);
+          overlayCtx.stroke();
+        }
+      } else if (cropMode === 'polygon' && polygonPoints.length > 0) {
+        overlayCtx.fillStyle = 'rgba(0,0,0,0.5)';
+        overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        if (polygonPoints.length >= 3) {
+          overlayCtx.save();
+          overlayCtx.globalCompositeOperation = 'destination-out';
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(polygonPoints[0].x, polygonPoints[0].y);
+          for (let i = 1; i < polygonPoints.length; i++) {
+            overlayCtx.lineTo(polygonPoints[i].x, polygonPoints[i].y);
+          }
+          overlayCtx.closePath();
+          overlayCtx.fill();
+          overlayCtx.restore();
+        }
+
+        overlayCtx.strokeStyle = '#2997ff';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(polygonPoints[0].x, polygonPoints[0].y);
+        for (let i = 1; i < polygonPoints.length; i++) {
+          overlayCtx.lineTo(polygonPoints[i].x, polygonPoints[i].y);
+        }
+        if (polygonPoints.length >= 3) {
+          overlayCtx.closePath();
+        }
+        overlayCtx.stroke();
+
+        polygonPoints.forEach((point, index) => {
+          overlayCtx.beginPath();
+          overlayCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+          overlayCtx.fillStyle = '#2997ff';
+          overlayCtx.fill();
+          overlayCtx.strokeStyle = 'white';
+          overlayCtx.lineWidth = 2;
+          overlayCtx.stroke();
+        });
+      }
+    }
+
+    function setupOverlayEvents() {
+      overlayCanvas.onmousedown = (e) => {
+        const rect = overlayCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (cropMode === 'rect') {
+          dragType = getHandleAtPoint(x, y);
+          if (dragType) {
+            isDraggingCrop = true;
+            dragStart = { x, y, rect: { ...cropRect } };
+          }
+        } else if (cropMode === 'polygon') {
+          polygonPoints.push({ x, y });
+          document.getElementById('undoPointBtn').disabled = false;
+          drawOverlay();
+        }
+      };
+
+      overlayCanvas.onmousemove = (e) => {
+        if (cropMode !== 'rect') return;
+
+        const rect = overlayCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (isDraggingCrop && dragType) {
+          const dx = x - dragStart.x;
+          const dy = y - dragStart.y;
+
+          if (dragType === 'move') {
+            cropRect.x = Math.max(0, Math.min(overlayCanvas.width - cropRect.w, dragStart.rect.x + dx));
+            cropRect.y = Math.max(0, Math.min(overlayCanvas.height - cropRect.h, dragStart.rect.y + dy));
+          } else {
+            if (dragType.includes('n')) {
+              const newY = Math.max(0, dragStart.rect.y + dy);
+              const newH = dragStart.rect.h - (newY - dragStart.rect.y);
+              if (newH > 20) { cropRect.y = newY; cropRect.h = newH; }
+            }
+            if (dragType.includes('s')) {
+              cropRect.h = Math.max(20, Math.min(overlayCanvas.height - cropRect.y, dragStart.rect.h + dy));
+            }
+            if (dragType.includes('w')) {
+              const newX = Math.max(0, dragStart.rect.x + dx);
+              const newW = dragStart.rect.w - (newX - dragStart.rect.x);
+              if (newW > 20) { cropRect.x = newX; cropRect.w = newW; }
+            }
+            if (dragType.includes('e')) {
+              cropRect.w = Math.max(20, Math.min(overlayCanvas.width - cropRect.x, dragStart.rect.w + dx));
+            }
+          }
+          drawOverlay();
+        } else {
+          const handle = getHandleAtPoint(x, y);
+          if (handle === 'move') overlayCanvas.style.cursor = 'move';
+          else if (handle === 'nw' || handle === 'se') overlayCanvas.style.cursor = 'nwse-resize';
+          else if (handle === 'ne' || handle === 'sw') overlayCanvas.style.cursor = 'nesw-resize';
+          else if (handle === 'n' || handle === 's') overlayCanvas.style.cursor = 'ns-resize';
+          else if (handle === 'e' || handle === 'w') overlayCanvas.style.cursor = 'ew-resize';
+          else overlayCanvas.style.cursor = 'crosshair';
+        }
+      };
+
+      overlayCanvas.onmouseup = () => {
+        isDraggingCrop = false;
+        dragType = null;
+      };
+
+      overlayCanvas.onmouseleave = () => {
+        isDraggingCrop = false;
+        dragType = null;
+      };
+    }
+
+    function getHandleAtPoint(x, y) {
+      const margin = 10;
+      const cr = cropRect;
+
+      if (x >= cr.x - margin && x <= cr.x + margin && y >= cr.y - margin && y <= cr.y + margin) return 'nw';
+      if (x >= cr.x + cr.w - margin && x <= cr.x + cr.w + margin && y >= cr.y - margin && y <= cr.y + margin) return 'ne';
+      if (x >= cr.x - margin && x <= cr.x + margin && y >= cr.y + cr.h - margin && y <= cr.y + cr.h + margin) return 'sw';
+      if (x >= cr.x + cr.w - margin && x <= cr.x + cr.w + margin && y >= cr.y + cr.h - margin && y <= cr.y + cr.h + margin) return 'se';
+
+      if (y >= cr.y - margin && y <= cr.y + margin && x > cr.x + margin && x < cr.x + cr.w - margin) return 'n';
+      if (y >= cr.y + cr.h - margin && y <= cr.y + cr.h + margin && x > cr.x + margin && x < cr.x + cr.w - margin) return 's';
+      if (x >= cr.x - margin && x <= cr.x + margin && y > cr.y + margin && y < cr.y + cr.h - margin) return 'w';
+      if (x >= cr.x + cr.w - margin && x <= cr.x + cr.w + margin && y > cr.y + margin && y < cr.y + cr.h - margin) return 'e';
+
+      if (x > cr.x && x < cr.x + cr.w && y > cr.y && y < cr.y + cr.h) return 'move';
+
+      return null;
+    }
+
+    function setCropMode(mode) {
+      cropMode = mode;
+      document.getElementById('tabRect').classList.toggle('active', mode === 'rect');
+      document.getElementById('tabPolygon').classList.toggle('active', mode === 'polygon');
+      document.getElementById('cropHint').textContent = mode === 'rect'
+        ? '拖拽画布上的方框来选择剪裁区域'
+        : '点击画布添加顶点，至少需要 3 个点';
+      document.getElementById('polygonControls').classList.toggle('hidden', mode === 'rect');
+
+      if (mode === 'rect') {
+        polygonPoints = [];
+        cropRect = { x: 0, y: 0, w: mainCanvas.width, h: mainCanvas.height };
+      }
+      drawOverlay();
+    }
+
+    function undoPolygonPoint() {
+      if (polygonPoints.length > 0) {
+        polygonPoints.pop();
+        document.getElementById('undoPointBtn').disabled = polygonPoints.length === 0;
+        drawOverlay();
+      }
+    }
+
+    function clearPolygonPoints() {
+      polygonPoints = [];
+      document.getElementById('undoPointBtn').disabled = true;
+      drawOverlay();
+    }
+
+    function updateRotation(value) {
+      rotation = parseInt(value) || 0;
+      document.getElementById('rotationSlider').value = rotation;
+      document.getElementById('rotationInput').value = rotation;
+      updateCanvasSize();
+    }
+
+    function rotateBy(degrees) {
+      rotation = (rotation + degrees) % 360;
+      if (rotation < -180) rotation += 360;
+      if (rotation > 180) rotation -= 360;
+      document.getElementById('rotationSlider').value = rotation;
+      document.getElementById('rotationInput').value = rotation;
+      updateCanvasSize();
+    }
+
+    function flipImage(direction) {
+      if (direction === 'horizontal') flipH = !flipH;
+      else flipV = !flipV;
+      drawMainCanvas();
+    }
+
+    function onResizeInput(changed) {
+      if (!document.getElementById('lockAspect').checked) return;
+
+      const width = parseInt(document.getElementById('resizeWidth').value) || 1;
+      const height = parseInt(document.getElementById('resizeHeight').value) || 1;
+
+      if (changed === 'width') {
+        document.getElementById('resizeHeight').value = Math.round(width / aspectRatio);
+      } else {
+        document.getElementById('resizeWidth').value = Math.round(height * aspectRatio);
+      }
+    }
+
+    function applyResize() {
+      const newWidth = parseInt(document.getElementById('resizeWidth').value);
+      const newHeight = parseInt(document.getElementById('resizeHeight').value);
+
+      if (!newWidth || !newHeight || newWidth < 1 || newHeight < 1) return;
+
+      const rotatedDims = getRotatedDimensions(newWidth, newHeight, rotation);
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = Math.round(rotatedDims.width);
+      tempCanvas.height = Math.round(rotatedDims.height);
+      const tempCtx = tempCanvas.getContext('2d');
+
+      const centerX = tempCanvas.width / 2;
+      const centerY = tempCanvas.height / 2;
+
+      tempCtx.translate(centerX, centerY);
+      tempCtx.rotate(rotation * Math.PI / 180);
+      tempCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      tempCtx.drawImage(currentImage, -newWidth / 2, -newHeight / 2, newWidth, newHeight);
+
+      const newImg = new Image();
+      newImg.onload = () => {
+        currentImage = newImg;
+        rotation = 0;
+        flipH = false;
+        flipV = false;
+        aspectRatio = tempCanvas.width / tempCanvas.height;
+        initCanvas();
+      };
+      newImg.src = tempCanvas.toDataURL();
+    }
+
+    function applyCrop() {
+      const rotatedDims = getRotatedDimensions(currentImage.width, currentImage.height, rotation);
+      const scaleX = rotatedDims.width / mainCanvas.width;
+      const scaleY = rotatedDims.height / mainCanvas.height;
+
+      const sourceCanvas = document.createElement('canvas');
+      sourceCanvas.width = Math.round(rotatedDims.width);
+      sourceCanvas.height = Math.round(rotatedDims.height);
+      const sourceCtx = sourceCanvas.getContext('2d');
+
+      const cx = sourceCanvas.width / 2;
+      const cy = sourceCanvas.height / 2;
+      sourceCtx.translate(cx, cy);
+      sourceCtx.rotate(rotation * Math.PI / 180);
+      sourceCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      sourceCtx.drawImage(currentImage, -currentImage.width / 2, -currentImage.height / 2);
+
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+
+      if (cropMode === 'rect') {
+        const sx = Math.round(cropRect.x * scaleX);
+        const sy = Math.round(cropRect.y * scaleY);
+        const sw = Math.round(cropRect.w * scaleX);
+        const sh = Math.round(cropRect.h * scaleY);
+
+        tempCanvas.width = sw;
+        tempCanvas.height = sh;
+
+        tempCtx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+      } else if (cropMode === 'polygon' && polygonPoints.length >= 3) {
+        const scaledPoints = polygonPoints.map(p => ({
+          x: p.x * scaleX,
+          y: p.y * scaleY
+        }));
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        scaledPoints.forEach(p => {
+          minX = Math.min(minX, p.x);
+          minY = Math.min(minY, p.y);
+          maxX = Math.max(maxX, p.x);
+          maxY = Math.max(maxY, p.y);
+        });
+
+        const width = Math.round(maxX - minX);
+        const height = Math.round(maxY - minY);
+        minX = Math.round(minX);
+        minY = Math.round(minY);
+
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+
+        tempCtx.beginPath();
+        tempCtx.moveTo(scaledPoints[0].x - minX, scaledPoints[0].y - minY);
+        for (let i = 1; i < scaledPoints.length; i++) {
+          tempCtx.lineTo(scaledPoints[i].x - minX, scaledPoints[i].y - minY);
+        }
+        tempCtx.closePath();
+        tempCtx.clip();
+
+        tempCtx.drawImage(sourceCanvas, minX, minY, width, height, 0, 0, width, height);
+      } else {
+        return;
+      }
+
+      const newImg = new Image();
+      newImg.onload = () => {
+        currentImage = newImg;
+        rotation = 0;
+        flipH = false;
+        flipV = false;
+        polygonPoints = [];
+        aspectRatio = tempCanvas.width / tempCanvas.height;
+        initCanvas();
+      };
+      newImg.src = tempCanvas.toDataURL();
+    }
+
+    function resetImage() {
+      if (!originalImage) return;
+      currentImage = originalImage;
+      rotation = 0;
+      flipH = false;
+      flipV = false;
+      polygonPoints = [];
+      document.getElementById('rotationSlider').value = 0;
+      document.getElementById('rotationInput').value = 0;
+      initCanvas();
+    }
+
+    function exportImage() {
+      const format = document.getElementById('exportFormat').value;
+      const quality = parseInt(document.getElementById('qualitySlider').value) / 100;
+
+      const rotatedDims = getRotatedDimensions(currentImage.width, currentImage.height, rotation);
+
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = Math.round(rotatedDims.width);
+      exportCanvas.height = Math.round(rotatedDims.height);
+      const exportCtx = exportCanvas.getContext('2d');
+
+      const cx = exportCanvas.width / 2;
+      const cy = exportCanvas.height / 2;
+
+      exportCtx.translate(cx, cy);
+      exportCtx.rotate(rotation * Math.PI / 180);
+      exportCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      exportCtx.drawImage(currentImage, -currentImage.width / 2, -currentImage.height / 2);
+
+      let mimeType = 'image/png';
+      if (format === 'jpeg') mimeType = 'image/jpeg';
+      else if (format === 'webp') mimeType = 'image/webp';
+
+      const dataUrl = exportCanvas.toDataURL(mimeType, quality);
+
+      const link = document.createElement('a');
+      link.download = `edited-image.${format}`;
+      link.href = dataUrl;
+      link.click();
+    }
+  </script>
+</body>
+</html>
