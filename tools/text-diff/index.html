@@ -18,10 +18,12 @@
       --accent: #bf5af2;
       --accent-hover: #9945ff;
       --border: rgba(255,255,255,0.08);
-      --del-bg: rgba(248,81,73,0.15);
+      --del-bg: rgba(248,81,73,0.35);
       --del-border: #f85149;
-      --add-bg: rgba(63,185,80,0.15);
+      --del-num-bg: rgba(248,81,73,0.5);
+      --add-bg: rgba(63,185,80,0.35);
       --add-border: #3fb950;
+      --add-num-bg: rgba(63,185,80,0.5);
       --selected-bg: rgba(191,90,242,0.2);
     }
 
@@ -134,7 +136,6 @@
     }
 
     .diff-container {
-      display: flex;
       overflow: auto;
       max-height: calc(100vh - 300px);
       border: 1px solid var(--border);
@@ -142,113 +143,169 @@
       background: var(--bg-code);
     }
 
-    .diff-side {
-      flex: 1;
-      min-width: 0;
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      table-layout: fixed;
     }
 
-    .diff-side:first-child {
-      border-right: 1px solid var(--border);
-    }
-
-    .diff-header {
+    .diff-table thead {
       position: sticky;
       top: 0;
       z-index: 10;
+    }
+
+    .diff-table th {
       padding: 0.5rem 1rem;
-      background: rgba(20,20,20,0.95);
-      backdrop-filter: blur(10px);
+      background: rgba(20,20,20,0.98);
       border-bottom: 1px solid var(--border);
       font-size: 0.75rem;
       color: var(--fg-muted);
       font-weight: 600;
+      text-align: left;
     }
 
-    .diff-content {
-      font-family: 'SF Mono', Monaco, Consolas, monospace;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .diff-line {
-      display: flex;
-      min-height: 20px;
-      transition: background 0.15s ease;
-    }
-
-    .diff-line:hover {
-      background: rgba(255,255,255,0.03);
-    }
-
-    .line-num {
+    .diff-table th:nth-child(1),
+    .diff-table th:nth-child(3) {
       width: 50px;
-      min-width: 50px;
-      padding: 0 8px;
+    }
+
+    .diff-table th:nth-child(2) {
+      border-right: 2px solid var(--border);
+    }
+
+    .diff-table td {
+      padding: 0;
+      vertical-align: top;
+    }
+
+    .diff-table td:nth-child(2) {
+      border-right: 2px solid var(--border);
+    }
+
+    .cell-num {
+      width: 50px;
+      padding: 2px 8px;
       text-align: right;
       color: var(--fg-muted);
       user-select: none;
-      border-right: 1px solid var(--border);
       background: rgba(255,255,255,0.02);
+      border-right: 1px solid var(--border);
+      font-size: 12px;
     }
 
-    .line-code {
-      flex: 1;
-      padding: 0 12px;
+    .cell-code {
+      padding: 2px 12px;
       white-space: pre-wrap;
       word-break: break-all;
     }
 
-    .diff-line.del {
+    .cell-num.del, .cell-code.del {
       background: var(--del-bg);
     }
 
-    .diff-line.del .line-num {
-      background: rgba(248,81,73,0.2);
+    .cell-num.del {
+      background: var(--del-num-bg);
       color: var(--del-border);
     }
 
-    .diff-line.add {
+    .cell-num.add, .cell-code.add {
       background: var(--add-bg);
     }
 
-    .diff-line.add .line-num {
-      background: rgba(63,185,80,0.2);
+    .cell-num.add {
+      background: var(--add-num-bg);
       color: var(--add-border);
     }
 
-    .diff-line.empty {
+    .cell-num.empty, .cell-code.empty {
       background: rgba(255,255,255,0.02);
     }
 
-    .diff-line.empty .line-code {
-      color: var(--fg-muted);
+    .diff-table tr:hover td {
+      background: rgba(255,255,255,0.03);
     }
 
-    .block-marker {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 8px;
-      background: rgba(191,90,242,0.1);
+    .diff-table tr:hover .cell-num.del,
+    .diff-table tr:hover .cell-code.del {
+      background: rgba(248,81,73,0.45);
+    }
+
+    .diff-table tr:hover .cell-num.add,
+    .diff-table tr:hover .cell-code.add {
+      background: rgba(63,185,80,0.45);
+    }
+
+    .block-header td {
+      padding: 6px 12px;
+      background: rgba(191,90,242,0.15);
       border-top: 1px solid var(--accent);
       border-bottom: 1px solid var(--accent);
       font-size: 11px;
       color: var(--accent);
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s ease;
+      text-align: center;
     }
 
-    .block-marker:hover {
-      background: rgba(191,90,242,0.2);
+    .block-header td:hover {
+      background: rgba(191,90,242,0.25);
     }
 
-    .block-marker.selected {
-      background: var(--selected-bg);
+    /* Selected left side - highlight left header, dim right header */
+    .block-header.selected-left td:first-child {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
     }
 
-    .diff-line.in-selected-block {
-      border-left: 3px solid var(--accent);
+    .block-header.selected-left td:last-child {
+      opacity: 0.4;
+    }
+
+    /* Selected right side - highlight right header, dim left header */
+    .block-header.selected-right td:last-child {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .block-header.selected-right td:first-child {
+      opacity: 0.4;
+    }
+
+    /* Dim non-selected side in diff rows */
+    .diff-row.selected-left .cell-num.add,
+    .diff-row.selected-left .cell-code.add {
+      opacity: 0.25;
+    }
+
+    .diff-row.selected-left .cell-num.del {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .diff-row.selected-left .cell-code.del {
+      box-shadow: inset 4px 0 0 var(--accent);
+      background: rgba(191,90,242,0.25);
+    }
+
+    .diff-row.selected-right .cell-num.del,
+    .diff-row.selected-right .cell-code.del {
+      opacity: 0.25;
+    }
+
+    .diff-row.selected-right .cell-num.add {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .diff-row.selected-right .cell-code.add {
+      box-shadow: inset 4px 0 0 var(--accent);
+      background: rgba(191,90,242,0.25);
     }
 
     .info-badge {
@@ -298,12 +355,15 @@
     }
 
     @media (max-width: 768px) {
-      .diff-container {
-        flex-direction: column;
+      .diff-table {
+        font-size: 11px;
       }
-      .diff-side:first-child {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
+      .cell-num {
+        width: 40px;
+        padding: 2px 4px;
+      }
+      .cell-code {
+        padding: 2px 6px;
       }
     }
   </style>
@@ -414,14 +474,17 @@
 
         <!-- Diff View -->
         <div class="diff-container" id="diffContainer">
-          <div class="diff-side">
-            <div class="diff-header" id="leftHeader">原始文本</div>
-            <div class="diff-content" id="leftContent"></div>
-          </div>
-          <div class="diff-side">
-            <div class="diff-header" id="rightHeader">修改后文本</div>
-            <div class="diff-content" id="rightContent"></div>
-          </div>
+          <table class="diff-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th id="leftHeader">原始文本</th>
+                <th></th>
+                <th id="rightHeader">修改后文本</th>
+              </tr>
+            </thead>
+            <tbody id="diffBody"></tbody>
+          </table>
         </div>
 
         <!-- Legend -->
@@ -532,7 +595,6 @@
     }
 
     function computeDiff(a, b) {
-      // Simple diff algorithm based on LCS
       const m = a.length;
       const n = b.length;
 
@@ -549,46 +611,76 @@
         }
       }
 
-      // Backtrack to get opcodes
-      const result = [];
+      // Backtrack to get raw operations
       let i = m, j = n;
       const ops = [];
 
       while (i > 0 || j > 0) {
         if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
-          ops.push(['equal', i - 1, i, j - 1, j]);
+          ops.push({ type: 'equal', i: i - 1, j: j - 1 });
           i--; j--;
         } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-          ops.push(['insert', i, i, j - 1, j]);
+          ops.push({ type: 'insert', j: j - 1 });
           j--;
         } else {
-          ops.push(['delete', i - 1, i, j, j]);
+          ops.push({ type: 'delete', i: i - 1 });
           i--;
         }
       }
 
       ops.reverse();
 
-      // Merge consecutive operations of same type
-      const merged = [];
-      for (const op of ops) {
-        const last = merged[merged.length - 1];
-        if (last && last[0] === op[0] && last[2] === op[1] && last[4] === op[3]) {
-          last[2] = op[2];
-          last[4] = op[4];
+      // Convert to opcodes format [tag, i1, i2, j1, j2]
+      const opcodes = [];
+      let ai = 0, bj = 0;
+
+      let opIdx = 0;
+      while (opIdx < ops.length) {
+        const op = ops[opIdx];
+
+        if (op.type === 'equal') {
+          // Collect consecutive equals
+          let i1 = ai, j1 = bj;
+          while (opIdx < ops.length && ops[opIdx].type === 'equal') {
+            ai++; bj++; opIdx++;
+          }
+          opcodes.push(['equal', i1, ai, j1, bj]);
         } else {
-          merged.push([...op]);
+          // Collect consecutive deletes and inserts into one block
+          let i1 = ai, j1 = bj;
+          let hasDelete = false, hasInsert = false;
+
+          while (opIdx < ops.length && ops[opIdx].type !== 'equal') {
+            if (ops[opIdx].type === 'delete') {
+              hasDelete = true;
+              ai++;
+            } else {
+              hasInsert = true;
+              bj++;
+            }
+            opIdx++;
+          }
+
+          // Determine tag based on what we found
+          let tag;
+          if (hasDelete && hasInsert) {
+            tag = 'replace';
+          } else if (hasDelete) {
+            tag = 'delete';
+          } else {
+            tag = 'insert';
+          }
+
+          opcodes.push([tag, i1, ai, j1, bj]);
         }
       }
 
-      return merged;
+      return opcodes;
     }
 
     function renderDiff() {
-      const leftContent = document.getElementById('leftContent');
-      const rightContent = document.getElementById('rightContent');
-      leftContent.innerHTML = '';
-      rightContent.innerHTML = '';
+      const diffBody = document.getElementById('diffBody');
+      diffBody.innerHTML = '';
 
       diffBlocks = [];
       selections = {};
@@ -602,71 +694,72 @@
         if (tag === 'equal') {
           for (let i = i1; i < i2; i++) {
             const k = j1 + (i - i1);
-            leftContent.appendChild(createLine(i + 1, lines1[i], ''));
-            rightContent.appendChild(createLine(k + 1, lines2[k], ''));
+            diffBody.appendChild(createRow(i + 1, lines1[i], '', k + 1, lines2[k], ''));
           }
         } else {
-          // Create block marker
-          const leftMarker = createBlockMarker(blockId, 'left');
-          const rightMarker = createBlockMarker(blockId, 'right');
-          leftContent.appendChild(leftMarker);
-          rightContent.appendChild(rightMarker);
+          // Block header row
+          const headerRow = document.createElement('tr');
+          headerRow.className = 'block-header';
+          headerRow.dataset.block = blockId;
 
-          const leftLines = [];
-          const rightLines = [];
+          const leftHeaderTd = document.createElement('td');
+          leftHeaderTd.colSpan = 2;
+          leftHeaderTd.textContent = `差异 #${blockId + 1} - 点击选择左侧`;
+          const currentBlockIdLeft = blockId;
+          leftHeaderTd.addEventListener('click', function(e) {
+            e.stopPropagation();
+            selectBlock(currentBlockIdLeft, 'left');
+          });
 
-          if (tag === 'delete') {
-            for (let i = i1; i < i2; i++) {
-              const line = createLine(i + 1, lines1[i], 'del', blockId);
-              leftContent.appendChild(line);
-              leftLines.push(line);
+          const rightHeaderTd = document.createElement('td');
+          rightHeaderTd.colSpan = 2;
+          rightHeaderTd.textContent = `差异 #${blockId + 1} - 点击选择右侧`;
+          const currentBlockIdRight = blockId;
+          rightHeaderTd.addEventListener('click', function(e) {
+            e.stopPropagation();
+            selectBlock(currentBlockIdRight, 'right');
+          });
+
+          headerRow.appendChild(leftHeaderTd);
+          headerRow.appendChild(rightHeaderTd);
+          diffBody.appendChild(headerRow);
+
+          const diffRows = [];
+          const leftCount = i2 - i1;
+          const rightCount = j2 - j1;
+          const maxLen = Math.max(leftCount, rightCount);
+
+          for (let k = 0; k < maxLen; k++) {
+            let leftNum = '', leftCode = '', leftType = 'empty';
+            let rightNum = '', rightCode = '', rightType = 'empty';
+
+            if (k < leftCount) {
+              leftNum = i1 + k + 1;
+              leftCode = lines1[i1 + k];
+              leftType = 'del';
               delCount++;
             }
-            // Empty placeholder on right
-            const emptyLine = createLine('', '', 'empty');
-            rightContent.appendChild(emptyLine);
-          } else if (tag === 'insert') {
-            // Empty placeholder on left
-            const emptyLine = createLine('', '', 'empty');
-            leftContent.appendChild(emptyLine);
 
-            for (let j = j1; j < j2; j++) {
-              const line = createLine(j + 1, lines2[j], 'add', blockId);
-              rightContent.appendChild(line);
-              rightLines.push(line);
+            if (k < rightCount) {
+              rightNum = j1 + k + 1;
+              rightCode = lines2[j1 + k];
+              rightType = 'add';
               addCount++;
             }
-          } else if (tag === 'replace') {
-            const maxLen = Math.max(i2 - i1, j2 - j1);
-            for (let k = 0; k < maxLen; k++) {
-              if (k < i2 - i1) {
-                const line = createLine(i1 + k + 1, lines1[i1 + k], 'del', blockId);
-                leftContent.appendChild(line);
-                leftLines.push(line);
-                delCount++;
-              } else {
-                leftContent.appendChild(createLine('', '', 'empty'));
-              }
 
-              if (k < j2 - j1) {
-                const line = createLine(j1 + k + 1, lines2[j1 + k], 'add', blockId);
-                rightContent.appendChild(line);
-                rightLines.push(line);
-                addCount++;
-              } else {
-                rightContent.appendChild(createLine('', '', 'empty'));
-              }
-            }
+            const row = createRow(leftNum, leftCode, leftType, rightNum, rightCode, rightType, blockId);
+            diffBody.appendChild(row);
+            diffRows.push(row);
           }
 
           diffBlocks.push({
             id: blockId,
             tag: tag,
             i1, i2, j1, j2,
-            leftMarker,
-            rightMarker,
-            leftLines,
-            rightLines
+            headerRow: headerRow,
+            leftHeaderTd: leftHeaderTd,
+            rightHeaderTd: rightHeaderTd,
+            rows: diffRows
           });
 
           blockId++;
@@ -678,32 +771,45 @@
       document.getElementById('statBlocks').textContent = `${diffBlocks.length} 处差异`;
     }
 
-    function createLine(num, code, type, blockId) {
-      const div = document.createElement('div');
-      div.className = `diff-line ${type}`;
-      if (blockId !== undefined) div.dataset.block = blockId;
+    function createRow(leftNum, leftCode, leftType, rightNum, rightCode, rightType, blockId) {
+      const tr = document.createElement('tr');
+      tr.className = 'diff-row';
+      if (blockId !== undefined) tr.dataset.block = blockId;
 
-      const numSpan = document.createElement('span');
-      numSpan.className = 'line-num';
-      numSpan.textContent = num;
+      // Left number
+      const tdLeftNum = document.createElement('td');
+      tdLeftNum.className = `cell-num ${leftType}`;
+      if (leftType === 'del') {
+        tdLeftNum.textContent = `- ${leftNum}`;
+      } else if (leftNum) {
+        tdLeftNum.textContent = leftNum;
+      }
 
-      const codeSpan = document.createElement('span');
-      codeSpan.className = 'line-code';
-      codeSpan.textContent = code;
+      // Left code
+      const tdLeftCode = document.createElement('td');
+      tdLeftCode.className = `cell-code ${leftType}`;
+      tdLeftCode.textContent = leftCode;
 
-      div.appendChild(numSpan);
-      div.appendChild(codeSpan);
-      return div;
-    }
+      // Right number
+      const tdRightNum = document.createElement('td');
+      tdRightNum.className = `cell-num ${rightType}`;
+      if (rightType === 'add') {
+        tdRightNum.textContent = `+ ${rightNum}`;
+      } else if (rightNum) {
+        tdRightNum.textContent = rightNum;
+      }
 
-    function createBlockMarker(blockId, side) {
-      const div = document.createElement('div');
-      div.className = 'block-marker';
-      div.dataset.block = blockId;
-      div.dataset.side = side;
-      div.textContent = `差异 #${blockId + 1} - 点击选择此侧`;
-      div.onclick = () => selectBlock(blockId, side);
-      return div;
+      // Right code
+      const tdRightCode = document.createElement('td');
+      tdRightCode.className = `cell-code ${rightType}`;
+      tdRightCode.textContent = rightCode;
+
+      tr.appendChild(tdLeftNum);
+      tr.appendChild(tdLeftCode);
+      tr.appendChild(tdRightNum);
+      tr.appendChild(tdRightCode);
+
+      return tr;
     }
 
     function selectBlock(blockId, side) {
@@ -724,14 +830,28 @@
       for (const block of diffBlocks) {
         const selected = selections[block.id] || defaultSide;
 
-        block.leftMarker.classList.toggle('selected', selected === 'left');
-        block.rightMarker.classList.toggle('selected', selected === 'right');
+        block.headerRow.classList.remove('selected-left', 'selected-right');
 
-        block.leftLines.forEach(line => {
-          line.classList.toggle('in-selected-block', selected === 'left');
-        });
-        block.rightLines.forEach(line => {
-          line.classList.toggle('in-selected-block', selected === 'right');
+        if (selected === 'left') {
+          block.headerRow.classList.add('selected-left');
+          block.leftHeaderTd.textContent = `✓ 已选择左侧`;
+          block.rightHeaderTd.textContent = `点击选择右侧`;
+        } else if (selected === 'right') {
+          block.headerRow.classList.add('selected-right');
+          block.leftHeaderTd.textContent = `点击选择左侧`;
+          block.rightHeaderTd.textContent = `✓ 已选择右侧`;
+        } else {
+          block.leftHeaderTd.textContent = `差异 #${block.id + 1} - 点击选择左侧`;
+          block.rightHeaderTd.textContent = `差异 #${block.id + 1} - 点击选择右侧`;
+        }
+
+        block.rows.forEach(row => {
+          row.classList.remove('selected-left', 'selected-right');
+          if (selected === 'left') {
+            row.classList.add('selected-left');
+          } else if (selected === 'right') {
+            row.classList.add('selected-right');
+          }
         });
       }
     }
