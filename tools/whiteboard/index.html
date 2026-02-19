@@ -156,7 +156,7 @@
 
     .canvas-wrapper {
       position: fixed;
-      top: 60px;
+      top: 110px;
       left: 0;
       right: 0;
       bottom: 0;
@@ -190,6 +190,114 @@
 
     .save-indicator.saving {
       background: rgba(255, 159, 10, 0.1);
+    }
+
+    /* Page navigation */
+    .page-nav {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(0,0,0,0.05);
+      color: var(--fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .page-nav-btn:hover { background: rgba(0,0,0,0.1); }
+    .page-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-nav-btn.add { background: var(--accent); color: #fff; }
+    .page-nav-btn.add:hover { background: var(--accent-hover); }
+
+    .page-thumbnails {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      flex: 1;
+      padding: 4px 0;
+      scrollbar-width: thin;
+    }
+
+    .page-thumbnails::-webkit-scrollbar { height: 4px; }
+    .page-thumbnails::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
+
+    .page-thumb {
+      width: 80px;
+      height: 50px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      background: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-thumb:hover { border-color: rgba(0,0,0,0.2); }
+    .page-thumb.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(48, 209, 88, 0.2); }
+
+    .page-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .page-thumb-label {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      color: #666;
+      background: rgba(255,255,255,0.8);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .page-thumb-delete {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,59,48,0.9);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .page-thumb:hover .page-thumb-delete { display: flex; }
+
+    .page-info {
+      font-size: 12px;
+      color: var(--fg-muted);
+      white-space: nowrap;
     }
 
     /* Text edit overlay */
@@ -345,12 +453,37 @@
     </div>
   </nav>
 
+  <!-- Page Navigation -->
+  <div class="page-nav" id="pageNav">
+    <button class="page-nav-btn" id="prevPageBtn" title="上一页">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="page-thumbnails" id="pageThumbnails"></div>
+
+    <button class="page-nav-btn" id="nextPageBtn" title="下一页">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+    <button class="page-nav-btn add" id="addPageBtn" title="新建页面">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+
+    <span class="page-info" id="pageInfo">1 / 1</span>
+  </div>
+
   <div class="canvas-wrapper" id="canvasWrapper">
     <canvas id="canvas"></canvas>
   </div>
 
   <div class="hint">
-    拖拽图片到画布 | 双击便利贴/文本编辑 | Ctrl+Z 撤销 | Ctrl+Y 重做 | Delete 删除选中
+    拖拽图片到画布 | 双击编辑文字 | Ctrl+Z 撤销 | Delete 删除 | 最多 5 页
   </div>
 
   <script>
@@ -371,9 +504,9 @@
     // High DPI support
     const dpr = window.devicePixelRatio || 1;
 
-    // Canvas size - full screen with high DPI support
+    // Canvas size - full screen with high DPI support (accounting for nav + page bar)
     let canvasLogicalWidth = window.innerWidth;
-    let canvasLogicalHeight = window.innerHeight - 60;
+    let canvasLogicalHeight = window.innerHeight - 110;
 
     function setupCanvas() {
       // Set display size (CSS)
@@ -402,14 +535,219 @@
     let isDrawing = false;
     let startX, startY;
 
-    // Objects array (shapes, images, brush strokes, sticky notes, text boxes)
-    let objects = [];
-    let history = [];
-    let historyIndex = -1;
+    // Multi-page support
+    const MAX_PAGES = 5;
+    let pages = [{ objects: [], history: [], historyIndex: -1 }];
+    let currentPageIndex = 0;
+
+    // Current page data (references to current page)
+    let objects = pages[0].objects;
+    let history = pages[0].history;
+    let historyIndex = pages[0].historyIndex;
+
     let selectedObject = null;
     let dragHandle = null;
     let dragStartX, dragStartY;
     let editingObject = null;
+
+    // Page navigation elements
+    const pageNav = document.getElementById('pageNav');
+    const pageThumbnails = document.getElementById('pageThumbnails');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const addPageBtn = document.getElementById('addPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    // Page management functions
+    function saveCurrentPageState() {
+      pages[currentPageIndex].objects = objects;
+      pages[currentPageIndex].history = history;
+      pages[currentPageIndex].historyIndex = historyIndex;
+    }
+
+    function loadPageState(pageIndex) {
+      objects = pages[pageIndex].objects;
+      history = pages[pageIndex].history;
+      historyIndex = pages[pageIndex].historyIndex;
+    }
+
+    function switchToPage(pageIndex) {
+      if (pageIndex < 0 || pageIndex >= pages.length) return;
+
+      // Save current page
+      saveCurrentPageState();
+
+      // Switch to new page
+      currentPageIndex = pageIndex;
+      loadPageState(pageIndex);
+
+      selectedObject = null;
+      updateSelectedControls();
+      redraw();
+      updatePageUI();
+      saveToLocalStorage();
+    }
+
+    function addNewPage() {
+      if (pages.length >= MAX_PAGES) return;
+
+      // Save current page first
+      saveCurrentPageState();
+
+      // Create new page
+      const newPage = { objects: [], history: [], historyIndex: -1 };
+      pages.push(newPage);
+
+      // Switch to new page
+      currentPageIndex = pages.length - 1;
+      loadPageState(currentPageIndex);
+
+      selectedObject = null;
+      updateSelectedControls();
+      redraw();
+      updatePageUI();
+      saveToLocalStorage();
+    }
+
+    function deletePage(pageIndex) {
+      if (pages.length <= 1) return;
+
+      pages.splice(pageIndex, 1);
+
+      // Adjust current page index if needed
+      if (currentPageIndex >= pages.length) {
+        currentPageIndex = pages.length - 1;
+      }
+
+      loadPageState(currentPageIndex);
+      selectedObject = null;
+      updateSelectedControls();
+      redraw();
+      updatePageUI();
+      saveToLocalStorage();
+    }
+
+    function generateThumbnail(pageIndex) {
+      // Create a temporary canvas for thumbnail
+      const thumbCanvas = document.createElement('canvas');
+      const thumbCtx = thumbCanvas.getContext('2d');
+      const thumbWidth = 160;
+      const thumbHeight = 100;
+
+      thumbCanvas.width = thumbWidth;
+      thumbCanvas.height = thumbHeight;
+
+      // Scale to fit
+      const scale = Math.min(thumbWidth / canvasLogicalWidth, thumbHeight / canvasLogicalHeight);
+
+      thumbCtx.fillStyle = '#ffffff';
+      thumbCtx.fillRect(0, 0, thumbWidth, thumbHeight);
+      thumbCtx.save();
+      thumbCtx.scale(scale, scale);
+
+      // Draw page objects
+      const pageObjects = pageIndex === currentPageIndex ? objects : pages[pageIndex].objects;
+
+      for (const obj of pageObjects) {
+        if (obj.type === 'brush' || obj.type === 'eraser') {
+          thumbCtx.strokeStyle = obj.color;
+          thumbCtx.lineWidth = obj.size;
+          thumbCtx.lineCap = 'round';
+          thumbCtx.lineJoin = 'round';
+          thumbCtx.globalAlpha = obj.opacity;
+          thumbCtx.beginPath();
+          if (obj.points && obj.points.length > 0) {
+            thumbCtx.moveTo(obj.points[0].x, obj.points[0].y);
+            for (let i = 1; i < obj.points.length; i++) {
+              thumbCtx.lineTo(obj.points[i].x, obj.points[i].y);
+            }
+          }
+          thumbCtx.stroke();
+          thumbCtx.globalAlpha = 1;
+        } else if (obj.type === 'sticky') {
+          thumbCtx.fillStyle = obj.color;
+          thumbCtx.fillRect(obj.x, obj.y, obj.width, obj.height);
+        } else if (obj.type === 'textbox' && obj.text) {
+          thumbCtx.fillStyle = obj.color;
+          thumbCtx.font = `${obj.bold ? 'bold ' : ''}${obj.fontSize || 18}px sans-serif`;
+          thumbCtx.fillText(obj.text.substring(0, 20), obj.x, obj.y + (obj.fontSize || 18));
+        } else if (obj.type === 'rect') {
+          thumbCtx.strokeStyle = obj.color;
+          thumbCtx.lineWidth = obj.size;
+          thumbCtx.strokeRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+        } else if (obj.type === 'circle') {
+          const rx = Math.abs(obj.x2 - obj.x1) / 2;
+          const ry = Math.abs(obj.y2 - obj.y1) / 2;
+          const cx = (obj.x1 + obj.x2) / 2;
+          const cy = (obj.y1 + obj.y2) / 2;
+          thumbCtx.strokeStyle = obj.color;
+          thumbCtx.lineWidth = obj.size;
+          thumbCtx.beginPath();
+          thumbCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          thumbCtx.stroke();
+        } else if (obj.type === 'arrow') {
+          thumbCtx.strokeStyle = obj.color;
+          thumbCtx.lineWidth = obj.size;
+          thumbCtx.beginPath();
+          thumbCtx.moveTo(obj.x1, obj.y1);
+          thumbCtx.lineTo(obj.x2, obj.y2);
+          thumbCtx.stroke();
+        } else if (obj.type === 'image' && obj.img) {
+          thumbCtx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height);
+        }
+      }
+
+      thumbCtx.restore();
+      return thumbCanvas.toDataURL('image/png');
+    }
+
+    function updatePageUI() {
+      // Update page info
+      pageInfo.textContent = `${currentPageIndex + 1} / ${pages.length}`;
+
+      // Update navigation buttons
+      prevPageBtn.disabled = currentPageIndex === 0;
+      nextPageBtn.disabled = currentPageIndex === pages.length - 1;
+      addPageBtn.disabled = pages.length >= MAX_PAGES;
+      addPageBtn.style.opacity = pages.length >= MAX_PAGES ? '0.5' : '1';
+
+      // Update thumbnails
+      pageThumbnails.innerHTML = '';
+      pages.forEach((page, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'page-thumb' + (index === currentPageIndex ? ' active' : '');
+        thumb.innerHTML = `
+          <img src="${generateThumbnail(index)}" alt="Page ${index + 1}">
+          <span class="page-thumb-label">${index + 1}</span>
+          ${pages.length > 1 ? `<button class="page-thumb-delete" data-page="${index}">&times;</button>` : ''}
+        `;
+        thumb.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('page-thumb-delete')) {
+            switchToPage(index);
+          }
+        });
+        pageThumbnails.appendChild(thumb);
+      });
+
+      // Add delete button listeners
+      document.querySelectorAll('.page-thumb-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const pageIndex = parseInt(btn.dataset.page);
+          if (confirm(`确定要删除第 ${pageIndex + 1} 页吗？`)) {
+            deletePage(pageIndex);
+          }
+        });
+      });
+    }
+
+    // Page navigation event listeners
+    prevPageBtn.addEventListener('click', () => switchToPage(currentPageIndex - 1));
+    nextPageBtn.addEventListener('click', () => switchToPage(currentPageIndex + 1));
+    addPageBtn.addEventListener('click', addNewPage);
+
+    // Initialize page UI
+    updatePageUI();
 
     // Tool selection
     document.querySelectorAll('[data-tool]').forEach(btn => {
@@ -1187,6 +1525,9 @@
         historyIndex--;
       }
 
+      // Update page state
+      saveCurrentPageState();
+      updatePageUI();
       saveToLocalStorage();
     }
 
@@ -1217,7 +1558,9 @@
           objects = state;
           selectedObject = null;
           updateSelectedControls();
+          saveCurrentPageState();
           redraw();
+          updatePageUI();
           saveToLocalStorage();
         });
       } else if (historyIndex === 0) {
@@ -1225,7 +1568,9 @@
         selectedObject = null;
         historyIndex = -1;
         updateSelectedControls();
+        saveCurrentPageState();
         redraw();
+        updatePageUI();
         saveToLocalStorage();
       }
     }
@@ -1237,7 +1582,9 @@
           objects = state;
           selectedObject = null;
           updateSelectedControls();
+          saveCurrentPageState();
           redraw();
+          updatePageUI();
           saveToLocalStorage();
         });
       }
@@ -1271,13 +1618,15 @@
 
     // Clear
     document.getElementById('clearBtn').addEventListener('click', () => {
-      if (confirm('确定要清空画布吗？')) {
+      if (confirm('确定要清空当前页面吗？')) {
         objects = [];
         history = [];
         historyIndex = -1;
         selectedObject = null;
         updateSelectedControls();
+        saveCurrentPageState();
         redraw();
+        updatePageUI();
         saveToLocalStorage();
       }
     });
@@ -1349,18 +1698,27 @@
       saveIndicator.textContent = '保存中...';
       saveIndicator.classList.add('saving');
 
-      const state = objects.map(obj => {
-        if (obj.type === 'image') {
-          return { ...obj, imgSrc: obj.imgSrc, img: undefined };
-        }
-        return { ...obj };
-      });
+      // Save current page state first
+      saveCurrentPageState();
+
+      // Serialize all pages
+      const pagesData = pages.map(page => ({
+        objects: page.objects.map(obj => {
+          if (obj.type === 'image') {
+            return { ...obj, imgSrc: obj.imgSrc, img: undefined };
+          }
+          return { ...obj };
+        }),
+        history: page.history,
+        historyIndex: page.historyIndex
+      }));
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          objects: state,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height
+          pages: pagesData,
+          currentPageIndex: currentPageIndex,
+          canvasWidth: canvasLogicalWidth,
+          canvasHeight: canvasLogicalHeight
         }));
         setTimeout(() => {
           saveIndicator.textContent = '已保存';
@@ -1372,18 +1730,40 @@
       }
     }
 
-    function loadFromLocalStorage() {
+    async function loadFromLocalStorage() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const data = JSON.parse(saved);
 
-          loadState(JSON.stringify(data.objects)).then(state => {
-            objects = state;
-            history = [JSON.stringify(data.objects)];
-            historyIndex = 0;
-            redraw();
-          });
+          // Check if it's multi-page format or old single-page format
+          if (data.pages) {
+            // Multi-page format
+            pages = [];
+            for (const pageData of data.pages) {
+              const loadedObjects = await loadState(JSON.stringify(pageData.objects));
+              pages.push({
+                objects: loadedObjects,
+                history: pageData.history || [],
+                historyIndex: pageData.historyIndex !== undefined ? pageData.historyIndex : -1
+              });
+            }
+            currentPageIndex = data.currentPageIndex || 0;
+            if (currentPageIndex >= pages.length) currentPageIndex = 0;
+          } else if (data.objects) {
+            // Old single-page format - migrate
+            const loadedObjects = await loadState(JSON.stringify(data.objects));
+            pages = [{
+              objects: loadedObjects,
+              history: [JSON.stringify(data.objects)],
+              historyIndex: 0
+            }];
+            currentPageIndex = 0;
+          }
+
+          loadPageState(currentPageIndex);
+          redraw();
+          updatePageUI();
         }
       } catch (e) {
         console.error('localStorage load failed:', e);
@@ -1396,7 +1776,7 @@
     // Handle window resize
     window.addEventListener('resize', () => {
       const w = window.innerWidth;
-      const h = window.innerHeight - 60;
+      const h = window.innerHeight - 110;
 
       // Only expand, never shrink to avoid losing content
       if (w > canvasLogicalWidth || h > canvasLogicalHeight) {
