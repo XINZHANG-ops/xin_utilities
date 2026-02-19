@@ -383,19 +383,25 @@
       top: 0;
       height: 100%;
       background: rgba(48,209,88,0.3);
-      border-left: 3px solid var(--accent);
-      border-right: 3px solid var(--accent);
+      border-left: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
     }
 
     .timeline-handle {
       position: absolute;
-      top: 0;
-      width: 16px;
-      height: 100%;
+      top: -4px;
+      width: 8px;
+      height: calc(100% + 8px);
       background: var(--accent);
       cursor: ew-resize;
       z-index: 10;
       border-radius: 4px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .timeline-handle:hover, .timeline-handle.active {
+      transform: scaleX(1.5);
+      box-shadow: 0 0 8px rgba(48, 209, 88, 0.5);
     }
 
     .timeline-handle::after {
@@ -404,14 +410,15 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 4px;
-      height: 20px;
+      width: 2px;
+      height: 16px;
       background: rgba(0,0,0,0.3);
-      border-radius: 2px;
+      border-radius: 1px;
     }
 
-    .timeline-handle.start { left: 0; }
-    .timeline-handle.end { right: 0; }
+    .timeline-handle.start { left: -4px; z-index: 11; }
+    .timeline-handle.end { right: -4px; z-index: 10; }
+    .timeline-handle.top { z-index: 12; }
 
     .timeline-playhead {
       position: absolute;
@@ -805,8 +812,43 @@
       updateSelectionUI();
     }
 
-    handleStart.addEventListener('mousedown', (e) => { isDragging = 'start'; e.preventDefault(); });
-    handleEnd.addEventListener('mousedown', (e) => { isDragging = 'end'; e.preventDefault(); });
+    // Minimum gap between handles (in pixels)
+    const MIN_HANDLE_GAP = 24;
+
+    handleStart.addEventListener('mousedown', (e) => {
+      isDragging = 'start';
+      handleStart.classList.add('active', 'top');
+      handleEnd.classList.remove('top');
+      e.preventDefault();
+    });
+    handleEnd.addEventListener('mousedown', (e) => {
+      isDragging = 'end';
+      handleEnd.classList.add('active', 'top');
+      handleStart.classList.remove('top');
+      e.preventDefault();
+    });
+
+    // Hover: bring the closer handle to top
+    timelineTrack.addEventListener('mousemove', (e) => {
+      if (isDragging) return;
+
+      const rect = timelineTrack.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const startX = (startTime / duration) * rect.width;
+      const endX = (endTime / duration) * rect.width;
+
+      const distToStart = Math.abs(mouseX - startX);
+      const distToEnd = Math.abs(mouseX - endX);
+
+      if (distToStart < distToEnd) {
+        handleStart.classList.add('top');
+        handleEnd.classList.remove('top');
+      } else {
+        handleEnd.classList.add('top');
+        handleStart.classList.remove('top');
+      }
+    });
+
     timelineTrack.addEventListener('click', (e) => {
       if (isDragging) return;
       const rect = timelineTrack.getBoundingClientRect();
@@ -822,18 +864,27 @@
       percent = Math.max(0, Math.min(1, percent));
       const time = percent * duration;
 
+      // Calculate minimum time gap based on pixel gap
+      const minTimeGap = (MIN_HANDLE_GAP / rect.width) * duration;
+
       if (isDragging === 'start') {
-        startTime = Math.min(time, endTime - 0.1);
+        startTime = Math.min(time, endTime - minTimeGap);
         startTime = Math.max(0, startTime);
       } else if (isDragging === 'end') {
-        endTime = Math.max(time, startTime + 0.1);
+        endTime = Math.max(time, startTime + minTimeGap);
         endTime = Math.min(duration, endTime);
       }
 
       updateSelectionUI();
     });
 
-    document.addEventListener('mouseup', () => { isDragging = null; });
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        handleStart.classList.remove('active');
+        handleEnd.classList.remove('active');
+      }
+      isDragging = null;
+    });
 
     function formatTime(seconds) {
       const mins = Math.floor(seconds / 60);
