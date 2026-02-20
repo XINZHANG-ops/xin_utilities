@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>二维码生成器 - Xin Utilities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-card: #141414;
+      --fg: #ffffff;
+      --fg-muted: #86868b;
+      --accent: #ff9f0a;
+      --accent-hover: #ff8c00;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #6e6e73; border-radius: 4px; }
+
+    .nav-blur {
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: rgba(0,0,0,0.72);
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 980px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      color: var(--fg);
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .input-field::placeholder {
+      color: var(--fg-muted);
+    }
+
+    .qr-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      padding: 2rem;
+      background: repeating-conic-gradient(#1a1a1a 0% 25%, #0a0a0a 0% 50%) 50% / 20px 20px;
+      border-radius: 12px;
+    }
+
+    .qr-placeholder {
+      text-align: center;
+      color: var(--fg-muted);
+    }
+
+    #qrcode {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    #qrcode canvas {
+      display: block;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slider {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+
+    .label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--fg);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .hint-text {
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../../index.html" class="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span class="font-medium">返回工具集</span>
+      </a>
+      <h1 class="text-lg font-semibold">二维码生成器</h1>
+      <div class="w-24"></div>
+    </div>
+  </nav>
+
+  <main class="pt-20 pb-12 px-4">
+    <div class="max-w-3xl mx-auto space-y-6">
+
+      <!-- Input Section -->
+      <div class="card p-6 space-y-4">
+        <div>
+          <label class="label">输入链接或文本</label>
+          <input
+            type="text"
+            id="inputText"
+            class="input-field"
+            placeholder="https://example.com 或任意文本"
+            autocomplete="off"
+          >
+          <p class="hint-text">支持网址、WiFi信息、联系方式、任意文本等</p>
+        </div>
+
+        <div>
+          <label class="label">二维码大小: <span id="sizeValue">256</span>px</label>
+          <div class="slider-container">
+            <span class="text-xs text-gray-500">128</span>
+            <input
+              type="range"
+              id="sizeSlider"
+              class="slider"
+              min="128"
+              max="512"
+              step="64"
+              value="256"
+            >
+            <span class="text-xs text-gray-500">512</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary w-full" onclick="generateQR()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          生成二维码
+        </button>
+      </div>
+
+      <!-- QR Code Display -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">预览</h3>
+        <div class="qr-container" id="qrContainer">
+          <div class="qr-placeholder" id="placeholder">
+            <svg class="w-16 h-16 mx-auto mb-2 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <p>输入内容后点击生成</p>
+          </div>
+          <div id="qrcode" class="hidden"></div>
+        </div>
+
+        <div class="flex gap-2 justify-center mt-4" id="downloadSection" style="display: none;">
+          <button class="btn btn-primary" onclick="downloadQR()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            下载 PNG
+          </button>
+        </div>
+      </div>
+
+      <!-- Usage Tips -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-3">使用提示</h3>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li class="flex items-start gap-2">
+            <span class="text-orange-400 mt-0.5">•</span>
+            <span>手机微信/浏览器扫描二维码即可快速访问链接</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-orange-400 mt-0.5">•</span>
+            <span>可以输入长网址避免手动输入</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-orange-400 mt-0.5">•</span>
+            <span>支持文本内容，扫描后可复制到手机</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-orange-400 mt-0.5">•</span>
+            <span>下载后可打印或分享给他人</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const inputText = document.getElementById('inputText');
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sizeValue = document.getElementById('sizeValue');
+    const qrContainer = document.getElementById('qrContainer');
+    const placeholder = document.getElementById('placeholder');
+    const qrcodeDiv = document.getElementById('qrcode');
+    const downloadSection = document.getElementById('downloadSection');
+
+    let qrCode = null;
+
+    // Update size display
+    sizeSlider.addEventListener('input', (e) => {
+      sizeValue.textContent = e.target.value;
+      if (qrCode && inputText.value.trim()) {
+        generateQR();
+      }
+    });
+
+    // Generate on Enter key
+    inputText.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        generateQR();
+      }
+    });
+
+    function generateQR() {
+      const text = inputText.value.trim();
+      if (!text) {
+        alert('请输入链接或文本');
+        return;
+      }
+
+      const size = parseInt(sizeSlider.value);
+
+      // Clear previous QR code
+      qrcodeDiv.innerHTML = '';
+      qrcodeDiv.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+      downloadSection.style.display = 'flex';
+
+      // Generate new QR code
+      qrCode = new QRCode(qrcodeDiv, {
+        text: text,
+        width: size,
+        height: size,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function downloadQR() {
+      const canvas = qrcodeDiv.querySelector('canvas');
+      if (!canvas) {
+        alert('请先生成二维码');
+        return;
+      }
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = 'qrcode.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>

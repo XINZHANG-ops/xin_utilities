@@ -389,6 +389,7 @@
     .sidebar-item[data-category="image"] { --item-color: #2997ff; --item-rgb: 41, 151, 255; }
     .sidebar-item[data-category="text"] { --item-color: #bf5af2; --item-rgb: 191, 90, 242; }
     .sidebar-item[data-category="canvas"] { --item-color: #30d158; --item-rgb: 48, 209, 88; }
+    .sidebar-item[data-category="share"] { --item-color: #ff9f0a; --item-rgb: 255, 159, 10; }
 
     @media (max-width: 1200px) {
       .sidebar-nav {
@@ -449,6 +450,18 @@
         </svg>
       </div>
       <span class="sidebar-label">画板工具</span>
+    </a>
+    <a href="#share-tools" class="sidebar-item" data-category="share">
+      <div class="sidebar-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </div>
+      <span class="sidebar-label">分享工具</span>
     </a>
   </nav>
 
@@ -738,6 +751,60 @@
               <div class="card-body">
                 <h3 class="card-title">在线白板</h3>
                 <p class="card-desc">随时涂鸦的画板。画笔、橡皮擦、形状，支持拖入图片。自动保存到浏览器。</p>
+              </div>
+              <div class="card-footer">
+                <span class="card-action">
+                  开始使用
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </span>
+                <div class="card-arrow">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Share Tools -->
+      <div id="share-tools" class="category-section reveal">
+        <div class="category-header">
+          <div class="category-icon" style="background: linear-gradient(135deg, #ff9f0a 0%, #ff6b00 100%);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </div>
+          <h2 class="category-title">分享工具</h2>
+          <span class="category-count">1 个工具</span>
+        </div>
+
+        <div class="card-grid">
+          <!-- QR Code Generator -->
+          <a href="tools/qr-generator/index.html" class="tool-card card-orange reveal reveal-delay-1">
+            <div class="card-shine"></div>
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="card-icon">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                </div>
+                <span class="card-badge">生成</span>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">二维码生成器</h3>
+                <p class="card-desc">快速生成二维码，支持链接、文本、WiFi 信息等。可调整大小，下载 PNG 图片。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">

@@ -13,19 +13,25 @@ xin_utilities/
 ├── index.html                    # Main hub page with tool categories
 ├── reference.html                # Design reference (Apple-style dark theme)
 ├── file_diff.py                  # Streamlit reference implementation
+├── shared/
+│   └── api-config.js             # Shared API configuration for backend calls
 └── tools/
     ├── image-cropper/
     │   └── index.html            # Crop, rotate, flip, resize images
     ├── image-pixelate/
     │   └── index.html            # Pixelate images with 7 color algorithms
+    ├── image-bg-remove/
+    │   └── index.html            # AI background removal (requires backend)
     ├── video-to-gif/
     │   └── index.html            # Convert video clips to GIF
     ├── image-annotate/
     │   └── index.html            # Draw and annotate on images
     ├── text-diff/
     │   └── index.html            # Compare text differences (git-style)
-    └── whiteboard/
-        └── index.html            # Online whiteboard for doodling
+    ├── whiteboard/
+    │   └── index.html            # Online whiteboard for doodling
+    └── qr-generator/
+        └── index.html            # Generate QR codes from text/URLs
 ```
 
 ## Current Tools
@@ -33,6 +39,7 @@ xin_utilities/
 ### Image Tools (gradient-blue)
 - **Image Cropper**: Rectangle/circle/polygon crop, rotate (preserves edges), flip H/V, resize
 - **Image Pixelate**: 7 algorithms (Average, Median, Center, Mode, Dominant, Luminance, Min/Max)
+- **Image Background Remove**: AI-powered background removal, requires backend API
 - **Video to GIF**: Frame selection via timeline, custom width/quality/frame count
 - **Image Annotate**: Draw/brush, shapes (rect, circle, arrow), adjustable color/size per shape
 
@@ -41,6 +48,9 @@ xin_utilities/
 
 ### Canvas Tools (gradient-green)
 - **Whiteboard**: Full-screen canvas, brush/eraser, shapes, drag-and-drop images, auto-save to localStorage
+
+### Share Tools (gradient-orange)
+- **QR Code Generator**: Generate QR codes from URLs/text, adjustable size, download PNG
 
 ## Key Design Patterns
 
@@ -51,8 +61,8 @@ xin_utilities/
 - Color gradients per category:
   - `gradient-blue`: Image tools (#2997ff)
   - `gradient-purple`: Text tools (#bf5af2)
-  - `gradient-green`: Media tools (#30d158)
-  - `gradient-orange`: Developer tools (#ff9f0a)
+  - `gradient-green`: Canvas tools (#30d158)
+  - `gradient-orange`: Share tools (#ff9f0a)
 
 ## Development
 
@@ -88,3 +98,5 @@ npx serve
 - **Text Diff**: LCS-based diff algorithm with opcode merging
 - **Image Annotate**: Shape selection with hit testing, drag handles for resize
 - **Whiteboard**: Layer-based object system, localStorage persistence, image drag-and-drop with base64 storage
+- **Image Background Remove**: Binary file upload via FormData, requires backend with CORS headers
+- **QR Code Generator**: Uses qrcode.js library, client-side generation, canvas-based PNG export
