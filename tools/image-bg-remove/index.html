@@ -457,17 +457,46 @@
     }
 
     let isDragging = false;
-    sliderHandle.addEventListener('mousedown', () => isDragging = true);
+    let imgBounds = { left: 0, right: 100 }; // percentage
+
+    function updateImageBounds() {
+      const img = document.getElementById('compareResult');
+      const container = compareView;
+      if (!img.naturalWidth || !container.clientWidth) return;
+
+      const containerW = container.clientWidth;
+      const containerH = container.clientHeight;
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      const containerRatio = containerW / containerH;
+
+      let displayW, displayH;
+      if (imgRatio > containerRatio) {
+        displayW = containerW;
+        displayH = containerW / imgRatio;
+      } else {
+        displayH = containerH;
+        displayW = containerH * imgRatio;
+      }
+
+      const offsetX = (containerW - displayW) / 2;
+      imgBounds.left = (offsetX / containerW) * 100;
+      imgBounds.right = ((offsetX + displayW) / containerW) * 100;
+    }
+
+    sliderHandle.addEventListener('mousedown', () => {
+      isDragging = true;
+      updateImageBounds();
+    });
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
 
       const rect = compareView.getBoundingClientRect();
-      let percent = (e.clientX - rect.left) / rect.width;
-      percent = Math.max(0.05, Math.min(0.95, percent));
+      let percent = ((e.clientX - rect.left) / rect.width) * 100;
+      percent = Math.max(imgBounds.left, Math.min(imgBounds.right, percent));
 
-      sliderHandle.style.left = `${percent * 100}%`;
-      document.getElementById('compareOriginal').style.clipPath = `inset(0 0 0 ${percent * 100}%)`;
+      sliderHandle.style.left = `${percent}%`;
+      document.getElementById('compareOriginal').style.clipPath = `inset(0 0 0 ${percent}%)`;
     });
 
     function downloadResult() {
