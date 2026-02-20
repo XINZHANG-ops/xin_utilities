@@ -489,11 +489,18 @@
                 </div>
               </div>
               <div class="setting-item">
+                <label class="label" data-i18n="qrGenerator.safeZoneShape">安全区域形状</label>
+                <div class="shape-options" id="safeZoneShapeOptions">
+                  <button class="shape-option active" data-value="rect" data-i18n="qrGenerator.rectZone">矩形</button>
+                  <button class="shape-option" data-value="circle" data-i18n="qrGenerator.circleZone">圆形</button>
+                </div>
+              </div>
+              <div class="setting-item">
                 <label class="label"><span data-i18n="qrGenerator.logoMargin">边距</span>: <span id="logoMarginValue">0</span>px</label>
                 <div class="slider-with-value">
                   <input type="range" id="logoMarginSlider" class="slider" min="-30" max="50" step="1" value="0">
                 </div>
-                <p class="hint-text" data-i18n="qrGenerator.logoMarginHint">正值扩展留白，负值让码点露出</p>
+                <p class="hint-text" id="marginHintText" data-i18n="qrGenerator.logoMarginHint">正值扩展留白，负值让码点露出</p>
               </div>
               <div class="setting-item">
                 <label class="label"><span data-i18n="qrGenerator.logoRotation">旋转</span>: <span id="logoRotationValue">0</span>°</label>
@@ -570,6 +577,7 @@
     let logoRotation = 0;   // degrees
     let logoOffsetX = 0;    // pixels from center
     let logoOffsetY = 0;    // pixels from center
+    let safeZoneShape = 'rect';  // 'rect' or 'circle'
 
     // Drag state
     let isDragging = false;
@@ -642,14 +650,35 @@
       }
     });
 
-    // Update margin slider range based on logo size
+    // Update margin slider range based on logo size and shape
     function updateMarginRange() {
       if (!qrCodeBase) return;
       // Get display size (unscaled)
       const displaySize = (qrCodeBase.naturalWidth || qrCodeBase.width) / qrCodeBaseScale;
       const logoDrawSize = displaySize * (logoSize / 100);
-      // Min margin: when safe zone = 0, margin = -logoDrawSize/2
-      const minMargin = Math.floor(-logoDrawSize / 2);
+
+      let minMargin;
+      if (safeZoneShape === 'circle') {
+        // For circle: radius = max(drawW, drawH)/2 + margin
+        // Min margin when radius = 0: margin = -max(drawW, drawH)/2
+        const imgW = logoImage ? (logoImage.naturalWidth || logoImage.width) : 1;
+        const imgH = logoImage ? (logoImage.naturalHeight || logoImage.height) : 1;
+        const logoAspect = imgW / imgH;
+        let drawW, drawH;
+        if (logoAspect > 1) {
+          drawW = logoDrawSize;
+          drawH = logoDrawSize / logoAspect;
+        } else {
+          drawH = logoDrawSize;
+          drawW = logoDrawSize * logoAspect;
+        }
+        const maxDim = Math.max(drawW, drawH);
+        minMargin = Math.floor(-maxDim / 2);
+      } else {
+        // For rect: when safe zone = 0, margin = -logoDrawSize/2
+        minMargin = Math.floor(-logoDrawSize / 2);
+      }
+
       logoMarginSlider.min = minMargin;
       // Clamp current value if needed
       if (logoMargin < minMargin) {
@@ -671,6 +700,17 @@
       logoMargin = parseInt(e.target.value);
       logoMarginValue.textContent = logoMargin;
       if (qrCodeBase) renderQRWithLogo();
+    });
+
+    // Safe zone shape handler
+    document.getElementById('safeZoneShapeOptions').addEventListener('click', (e) => {
+      if (e.target.classList.contains('shape-option')) {
+        document.querySelectorAll('#safeZoneShapeOptions .shape-option').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        safeZoneShape = e.target.dataset.value;
+        updateMarginRange();
+        if (qrCodeBase) renderQRWithLogo();
+      }
     });
 
     logoRotationSlider.addEventListener('input', (e) => {
@@ -774,6 +814,7 @@
       logoRotation = 0;
       logoOffsetX = 0;
       logoOffsetY = 0;
+      safeZoneShape = 'rect';
       logoSizeSlider.value = 40;
       logoSizeValue.textContent = '40';
       logoMarginSlider.value = 0;
@@ -782,6 +823,10 @@
       logoRotationValue.textContent = '0';
       logoOffsetXValue.textContent = '0';
       logoOffsetYValue.textContent = '0';
+      // Reset shape buttons
+      document.querySelectorAll('#safeZoneShapeOptions .shape-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === 'rect');
+      });
       // Re-render QR without logo
       if (qrCodeBase) renderQRWithLogo();
     }
@@ -1006,15 +1051,27 @@
         ctx.translate(centerX, centerY);
         ctx.rotate(logoRotation * Math.PI / 180);
 
-        // Draw margin background (safe zone) with rounded corners
-        const safeW = drawW + scaledMargin * 2;
-        const safeH = drawH + scaledMargin * 2;
-        if (safeW > 0 && safeH > 0) {
-          ctx.fillStyle = bgColor.value;
-          // Corner radius: smaller of 12px scaled or 1/4 of smallest dimension
-          const cornerRadius = Math.min(12 * scale, safeW / 4, safeH / 4);
-          roundRect(ctx, -safeW / 2, -safeH / 2, safeW, safeH, cornerRadius);
-          ctx.fill();
+        // Draw margin background (safe zone)
+        ctx.fillStyle = bgColor.value;
+
+        if (safeZoneShape === 'circle') {
+          // Circle safe zone: radius based on max dimension + margin
+          const maxDim = Math.max(drawW, drawH);
+          const radius = maxDim / 2 + scaledMargin;
+          if (radius > 0) {
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          // Rectangle safe zone with rounded corners
+          const safeW = drawW + scaledMargin * 2;
+          const safeH = drawH + scaledMargin * 2;
+          if (safeW > 0 && safeH > 0) {
+            const cornerRadius = Math.min(12 * scale, safeW / 4, safeH / 4);
+            roundRect(ctx, -safeW / 2, -safeH / 2, safeW, safeH, cornerRadius);
+            ctx.fill();
+          }
         }
 
         // Draw logo
