@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>在线白板 - Xin Utilities</title>
+  <title data-i18n-page-title="whiteboard.title">在线白板 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../../shared/i18n/i18n.js"></script>
+  <script src="../../shared/i18n/zh.js"></script>
+  <script src="../../shared/i18n/en.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -323,6 +326,26 @@
       border-radius: 2px;
       box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
     }
+
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -332,51 +355,51 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium text-sm">返回</span>
+        <span class="font-medium text-sm" data-i18n="common.back">返回</span>
       </a>
 
       <div class="toolbar">
-        <button class="btn-icon active" data-tool="select" title="选择">
+        <button class="btn-icon active" data-tool="select" data-i18n-title="whiteboard.tools.select" title="选择">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
             <path d="M13 13l6 6"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="brush" title="画笔">
+        <button class="btn-icon" data-tool="brush" data-i18n-title="whiteboard.tools.brush" title="画笔">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19l7-7 3 3-7 7-3-3z"/>
             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="eraser" title="橡皮擦">
+        <button class="btn-icon" data-tool="eraser" data-i18n-title="whiteboard.tools.eraser" title="橡皮擦">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8l10-10c.8-.8 2-.8 2.8 0l6.2 6.2c.8.8.8 2 0 2.8L12 22"/>
             <path d="M7 13l5 5"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="rect" title="矩形">
+        <button class="btn-icon" data-tool="rect" data-i18n-title="whiteboard.tools.rect" title="矩形">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="circle" title="圆形">
+        <button class="btn-icon" data-tool="circle" data-i18n-title="whiteboard.tools.circle" title="圆形">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="9"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="arrow" title="箭头">
+        <button class="btn-icon" data-tool="arrow" data-i18n-title="whiteboard.tools.arrow" title="箭头">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"/>
             <polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="sticky" title="便利贴">
+        <button class="btn-icon" data-tool="sticky" data-i18n-title="whiteboard.tools.sticky" title="便利贴">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/>
             <path d="M15 3v6h6"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="text" title="文本框">
+        <button class="btn-icon" data-tool="text" data-i18n-title="whiteboard.tools.text" title="文本框">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 7V4h16v3"/>
             <path d="M9 20h6"/>
@@ -394,43 +417,43 @@
           <input type="color" class="color-picker-input" id="colorPicker" value="#1d1d1f">
         </div>
 
-        <button class="btn-icon" style="background: #1d1d1f;" data-color="#1d1d1f" title="黑色"></button>
-        <button class="btn-icon" style="background: #ff3b30;" data-color="#ff3b30" title="红色"></button>
-        <button class="btn-icon" style="background: #007aff;" data-color="#007aff" title="蓝色"></button>
-        <button class="btn-icon" style="background: #34c759;" data-color="#34c759" title="绿色"></button>
-        <button class="btn-icon" style="background: #ff9500;" data-color="#ff9500" title="橙色"></button>
+        <button class="btn-icon" style="background: #1d1d1f;" data-color="#1d1d1f" data-i18n-title="whiteboard.colors.black" title="黑色"></button>
+        <button class="btn-icon" style="background: #ff3b30;" data-color="#ff3b30" data-i18n-title="whiteboard.colors.red" title="红色"></button>
+        <button class="btn-icon" style="background: #007aff;" data-color="#007aff" data-i18n-title="whiteboard.colors.blue" title="蓝色"></button>
+        <button class="btn-icon" style="background: #34c759;" data-color="#34c759" data-i18n-title="whiteboard.colors.green" title="绿色"></button>
+        <button class="btn-icon" style="background: #ff9500;" data-color="#ff9500" data-i18n-title="whiteboard.colors.orange" title="橙色"></button>
 
 
         <div class="toolbar-divider"></div>
 
-        <span class="text-xs text-gray-500">粗细</span>
+        <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.strokeSize">粗细</span>
         <input type="range" class="slider" id="strokeSize" min="1" max="30" value="3">
 
         <!-- Text size (shown when text selected) -->
         <div id="textSizeControl" style="display: none; align-items: center; gap: 0.5rem;">
-          <span class="text-xs text-gray-500">字号</span>
+          <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.fontSize">字号</span>
           <input type="range" class="slider" id="textSizeSlider" min="12" max="48" value="18" style="width: 60px;">
-          <button class="btn-icon" id="textBoldBtn" title="粗体" style="width: 28px; height: 28px; font-weight: bold; font-size: 14px;">B</button>
+          <button class="btn-icon" id="textBoldBtn" data-i18n-title="whiteboard.controls.bold" title="粗体" style="width: 28px; height: 28px; font-weight: bold; font-size: 14px;">B</button>
         </div>
 
-        <span class="text-xs text-gray-500">透明度</span>
+        <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.opacity">透明度</span>
         <input type="range" class="slider" id="opacity" min="10" max="100" value="100">
 
         <div class="toolbar-divider"></div>
 
-        <button class="btn-icon" id="undoBtn" title="撤销 (Ctrl+Z)">
+        <button class="btn-icon" id="undoBtn" data-i18n-title="whiteboard.actions.undo" title="撤销 (Ctrl+Z)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 7v6h6"/>
             <path d="M3 13a9 9 0 1 0 3-7.5"/>
           </svg>
         </button>
-        <button class="btn-icon" id="redoBtn" title="重做 (Ctrl+Y)">
+        <button class="btn-icon" id="redoBtn" data-i18n-title="whiteboard.actions.redo" title="重做 (Ctrl+Y)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 7v6h-6"/>
             <path d="M21 13a9 9 0 1 1-3-7.5"/>
           </svg>
         </button>
-        <button class="btn-icon" id="clearBtn" title="清空画布">
+        <button class="btn-icon" id="clearBtn" data-i18n-title="whiteboard.actions.clear" title="清空画布">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -445,17 +468,20 @@
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          下载
+          <span data-i18n="whiteboard.actions.download">下载</span>
         </button>
 
-        <span class="save-indicator" id="saveIndicator">已保存</span>
+        <span class="save-indicator" id="saveIndicator" data-i18n="whiteboard.status.saved">已保存</span>
+      </div>
+
+      <button class="lang-toggle" id="langToggle">中文</button>
       </div>
     </div>
   </nav>
 
   <!-- Page Navigation -->
   <div class="page-nav" id="pageNav">
-    <button class="page-nav-btn" id="prevPageBtn" title="上一页">
+    <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M15 18l-6-6 6-6"/>
       </svg>
@@ -463,13 +489,13 @@
 
     <div class="page-thumbnails" id="pageThumbnails"></div>
 
-    <button class="page-nav-btn" id="nextPageBtn" title="下一页">
+    <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M9 18l6-6-6-6"/>
       </svg>
     </button>
 
-    <button class="page-nav-btn add" id="addPageBtn" title="新建页面">
+    <button class="page-nav-btn add" id="addPageBtn" data-i18n-title="whiteboard.page.add" title="新建页面">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 5v14M5 12h14"/>
       </svg>
@@ -482,7 +508,7 @@
     <canvas id="canvas"></canvas>
   </div>
 
-  <div class="hint">
+  <div class="hint" data-i18n="whiteboard.hint">
     拖拽框选 | Shift+点击多选 | Ctrl+C/V 复制粘贴 | Ctrl+Z 撤销 | Delete 删除 | 双击编辑文字
   </div>
 
@@ -944,7 +970,7 @@
       }
 
       textarea.value = obj.text || '';
-      textarea.placeholder = obj.type === 'sticky' ? '输入便利贴内容...' : '输入文字...';
+      textarea.placeholder = obj.type === 'sticky' ? I18n.t('whiteboard.placeholder.sticky') : I18n.t('whiteboard.placeholder.text');
 
       document.body.appendChild(textarea);
       textarea.focus();
@@ -1916,7 +1942,7 @@
 
     // Clear
     document.getElementById('clearBtn').addEventListener('click', () => {
-      if (confirm('确定要清空当前页面吗？')) {
+      if (confirm(I18n.t('whiteboard.confirm.clear'))) {
         objects = [];
         history = [];
         historyIndex = -1;
@@ -1993,7 +2019,7 @@
     const STORAGE_KEY = 'xin-whiteboard-state';
 
     function saveToLocalStorage() {
-      saveIndicator.textContent = '保存中...';
+      saveIndicator.textContent = I18n.t('whiteboard.status.saving');
       saveIndicator.classList.add('saving');
 
       // Save current page state first
@@ -2019,11 +2045,11 @@
           canvasHeight: canvasLogicalHeight
         }));
         setTimeout(() => {
-          saveIndicator.textContent = '已保存';
+          saveIndicator.textContent = I18n.t('whiteboard.status.saved');
           saveIndicator.classList.remove('saving');
         }, 300);
       } catch (e) {
-        saveIndicator.textContent = '存储已满';
+        saveIndicator.textContent = I18n.t('whiteboard.status.storageFull');
         console.error('localStorage save failed:', e);
       }
     }
@@ -2066,6 +2092,14 @@
       } catch (e) {
         console.error('localStorage load failed:', e);
       }
+    }
+
+    // Language toggle - use our I18n system
+    const langToggle = document.getElementById('langToggle');
+    if (langToggle) {
+      langToggle.addEventListener('click', () => {
+        I18n.toggle();
+      });
     }
 
     // Initialize

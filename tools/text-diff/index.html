@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>文本对比 - Xin Utilities</title>
+  <title data-i18n-page-title="textDiff.title">文本对比 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../../shared/i18n/i18n.js"></script>
+  <script src="../../shared/i18n/zh.js"></script>
+  <script src="../../shared/i18n/en.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -366,6 +369,26 @@
         padding: 2px 6px;
       }
     }
+
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -375,10 +398,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium">返回工具集</span>
+        <span class="font-medium" data-i18n="common.back">返回工具集</span>
       </a>
-      <h1 class="text-lg font-semibold">文本对比</h1>
-      <div class="w-24"></div>
+      <h1 class="text-lg font-semibold" data-i18n="textDiff.title">文本对比</h1>
+      <button id="langToggle" class="lang-toggle" onclick="I18n.toggle()" title="Switch Language">EN</button>
     </div>
   </nav>
 
@@ -389,19 +412,19 @@
       <div id="inputSection" class="space-y-6">
         <!-- Tabs -->
         <div class="flex gap-4 border-b border-white/10">
-          <button class="tab-btn active" data-tab="paste" onclick="switchTab('paste')">粘贴文本</button>
-          <button class="tab-btn" data-tab="file" onclick="switchTab('file')">上传文件</button>
+          <button class="tab-btn active" data-tab="paste" data-i18n="textDiff.pasteText" onclick="switchTab('paste')">粘贴文本</button>
+          <button class="tab-btn" data-tab="file" data-i18n="textDiff.uploadFile" onclick="switchTab('file')">上传文件</button>
         </div>
 
         <!-- Paste Tab -->
         <div id="pasteTab" class="grid md:grid-cols-2 gap-6">
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-400">原始文本</label>
-            <textarea id="text1" placeholder="粘贴或输入原始文本..."></textarea>
+            <label class="text-sm font-medium text-gray-400" data-i18n="textDiff.originalText">原始文本</label>
+            <textarea id="text1" data-i18n-placeholder="textDiff.originalPlaceholder" placeholder="粘贴或输入原始文本..."></textarea>
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-400">修改后文本</label>
-            <textarea id="text2" placeholder="粘贴或输入修改后的文本..."></textarea>
+            <label class="text-sm font-medium text-gray-400" data-i18n="textDiff.modifiedText">修改后文本</label>
+            <textarea id="text2" data-i18n-placeholder="textDiff.modifiedPlaceholder" placeholder="粘贴或输入修改后的文本..."></textarea>
           </div>
         </div>
 
@@ -413,8 +436,8 @@
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
-            <p class="text-sm font-medium" id="file1Name">原始文件</p>
-            <p class="text-xs text-gray-500 mt-1">拖拽或点击选择</p>
+            <p class="text-sm font-medium" id="file1Name" data-i18n="textDiff.originalFile">原始文件</p>
+            <p class="text-xs text-gray-500 mt-1" data-i18n="textDiff.dragOrClick">拖拽或点击选择</p>
           </div>
           <div class="upload-zone" id="dropZone2">
             <input type="file" id="fileInput2" class="hidden" accept=".txt,.js,.py,.html,.css,.json,.md,.xml,.yml,.yaml,.java,.cpp,.c,.h,.go,.rs,.ts,.tsx,.jsx,.vue,.svelte">
@@ -422,14 +445,14 @@
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
-            <p class="text-sm font-medium" id="file2Name">修改后文件</p>
-            <p class="text-xs text-gray-500 mt-1">拖拽或点击选择</p>
+            <p class="text-sm font-medium" id="file2Name" data-i18n="textDiff.modifiedFile">修改后文件</p>
+            <p class="text-xs text-gray-500 mt-1" data-i18n="textDiff.dragOrClick">拖拽或点击选择</p>
           </div>
         </div>
 
         <!-- Compare Button -->
         <div class="flex justify-center">
-          <button class="btn btn-primary" onclick="compareDiff()">
+          <button class="btn btn-primary" data-i18n="textDiff.compareDiff" onclick="compareDiff()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 3h5v5M8 3H3v5M3 16v5h5M21 16v5h-5M12 3v18"/>
             </svg>
@@ -444,7 +467,7 @@
         <div class="card p-4">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <button class="btn btn-secondary btn-sm" onclick="backToInput()">
+              <button class="btn btn-secondary btn-sm" data-i18n="common.back" onclick="backToInput()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
@@ -457,10 +480,10 @@
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-gray-500">默认选择:</span>
-              <button class="btn btn-secondary btn-sm" id="btnDefaultLeft" onclick="setDefault('left')">左侧</button>
-              <button class="btn btn-secondary btn-sm" id="btnDefaultRight" onclick="setDefault('right')">右侧</button>
-              <button class="btn btn-primary btn-sm" onclick="downloadMerged()">
+              <span class="text-xs text-gray-500" data-i18n="textDiff.defaultSelect">默认选择:</span>
+              <button class="btn btn-secondary btn-sm" id="btnDefaultLeft" data-i18n="textDiff.leftSide" onclick="setDefault('left')">左侧</button>
+              <button class="btn btn-secondary btn-sm" id="btnDefaultRight" data-i18n="textDiff.rightSide" onclick="setDefault('right')">右侧</button>
+              <button class="btn btn-primary btn-sm" data-i18n="textDiff.downloadMerged" onclick="downloadMerged()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
@@ -478,9 +501,9 @@
             <thead>
               <tr>
                 <th></th>
-                <th id="leftHeader">原始文本</th>
+                <th id="leftHeader" data-i18n="textDiff.originalText">原始文本</th>
                 <th></th>
-                <th id="rightHeader">修改后文本</th>
+                <th id="rightHeader" data-i18n="textDiff.modifiedText">修改后文本</th>
               </tr>
             </thead>
             <tbody id="diffBody"></tbody>
@@ -491,15 +514,15 @@
         <div class="flex justify-center gap-6 text-xs text-gray-500">
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded" style="background: var(--del-bg); border: 1px solid var(--del-border);"></div>
-            <span>删除</span>
+            <span data-i18n="textDiff.deleted">删除</span>
           </div>
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded" style="background: var(--add-bg); border: 1px solid var(--add-border);"></div>
-            <span>新增</span>
+            <span data-i18n="textDiff.added">新增</span>
           </div>
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded" style="background: var(--selected-bg); border: 1px solid var(--accent);"></div>
-            <span>已选择</span>
+            <span data-i18n="textDiff.selected">已选择</span>
           </div>
         </div>
       </div>
@@ -518,6 +541,31 @@
     let opcodes = [];
     let lines1 = [];
     let lines2 = [];
+    let lastAddCount = 0;
+    let lastDelCount = 0;
+
+    // Update dynamic text when language changes
+    I18n.onChange(() => {
+      if (diffBlocks.length > 0) {
+        document.getElementById('statAdd').textContent = I18n.t('textDiff.addedLines', {count: lastAddCount});
+        document.getElementById('statDel').textContent = I18n.t('textDiff.deletedLines', {count: lastDelCount});
+        document.getElementById('statBlocks').textContent = I18n.t('textDiff.diffCount', {count: diffBlocks.length});
+        // Re-render block headers
+        for (const block of diffBlocks) {
+          const selected = selections[block.id];
+          if (selected === 'left') {
+            block.leftHeaderTd.textContent = I18n.t('textDiff.selectedLeft');
+            block.rightHeaderTd.textContent = I18n.t('textDiff.clickSelectRight');
+          } else if (selected === 'right') {
+            block.leftHeaderTd.textContent = I18n.t('textDiff.clickSelectLeft');
+            block.rightHeaderTd.textContent = I18n.t('textDiff.selectedRight');
+          } else {
+            block.leftHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: block.id + 1})} - ${I18n.t('textDiff.clickSelectLeft')}`;
+            block.rightHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: block.id + 1})} - ${I18n.t('textDiff.clickSelectRight')}`;
+          }
+        }
+      }
+    });
 
     // Tab switching
     function switchTab(tab) {
@@ -704,7 +752,7 @@
 
           const leftHeaderTd = document.createElement('td');
           leftHeaderTd.colSpan = 2;
-          leftHeaderTd.textContent = `差异 #${blockId + 1} - 点击选择左侧`;
+          leftHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: blockId + 1})} - ${I18n.t('textDiff.clickSelectLeft')}`;
           const currentBlockIdLeft = blockId;
           leftHeaderTd.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -713,7 +761,7 @@
 
           const rightHeaderTd = document.createElement('td');
           rightHeaderTd.colSpan = 2;
-          rightHeaderTd.textContent = `差异 #${blockId + 1} - 点击选择右侧`;
+          rightHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: blockId + 1})} - ${I18n.t('textDiff.clickSelectRight')}`;
           const currentBlockIdRight = blockId;
           rightHeaderTd.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -766,9 +814,11 @@
         }
       }
 
-      document.getElementById('statAdd').textContent = `+${addCount} 行`;
-      document.getElementById('statDel').textContent = `-${delCount} 行`;
-      document.getElementById('statBlocks').textContent = `${diffBlocks.length} 处差异`;
+      lastAddCount = addCount;
+      lastDelCount = delCount;
+      document.getElementById('statAdd').textContent = I18n.t('textDiff.addedLines', {count: addCount});
+      document.getElementById('statDel').textContent = I18n.t('textDiff.deletedLines', {count: delCount});
+      document.getElementById('statBlocks').textContent = I18n.t('textDiff.diffCount', {count: diffBlocks.length});
     }
 
     function createRow(leftNum, leftCode, leftType, rightNum, rightCode, rightType, blockId) {
@@ -834,15 +884,15 @@
 
         if (selected === 'left') {
           block.headerRow.classList.add('selected-left');
-          block.leftHeaderTd.textContent = `✓ 已选择左侧`;
-          block.rightHeaderTd.textContent = `点击选择右侧`;
+          block.leftHeaderTd.textContent = I18n.t('textDiff.selectedLeft');
+          block.rightHeaderTd.textContent = I18n.t('textDiff.clickSelectRight');
         } else if (selected === 'right') {
           block.headerRow.classList.add('selected-right');
-          block.leftHeaderTd.textContent = `点击选择左侧`;
-          block.rightHeaderTd.textContent = `✓ 已选择右侧`;
+          block.leftHeaderTd.textContent = I18n.t('textDiff.clickSelectLeft');
+          block.rightHeaderTd.textContent = I18n.t('textDiff.selectedRight');
         } else {
-          block.leftHeaderTd.textContent = `差异 #${block.id + 1} - 点击选择左侧`;
-          block.rightHeaderTd.textContent = `差异 #${block.id + 1} - 点击选择右侧`;
+          block.leftHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: block.id + 1})} - ${I18n.t('textDiff.clickSelectLeft')}`;
+          block.rightHeaderTd.textContent = `${I18n.t('textDiff.diffBlock', {num: block.id + 1})} - ${I18n.t('textDiff.clickSelectRight')}`;
         }
 
         block.rows.forEach(row => {

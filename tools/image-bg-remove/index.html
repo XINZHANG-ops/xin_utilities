@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>背景移除 - Xin Utilities</title>
+  <title data-i18n-page-title="bgRemove.title">背景移除 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../../shared/i18n/i18n.js"></script>
+  <script src="../../shared/i18n/zh.js"></script>
+  <script src="../../shared/i18n/en.js"></script>
   <script src="../../shared/api-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -222,6 +225,26 @@
     @media (max-width: 768px) {
       .upload-zone { padding: 2rem; }
     }
+
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -231,10 +254,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium">返回工具集</span>
+        <span class="font-medium" data-i18n="common.back">返回工具集</span>
       </a>
-      <h1 class="text-lg font-semibold">背景移除</h1>
-      <div class="w-24"></div>
+      <h1 class="text-lg font-semibold" data-i18n="bgRemove.title">背景移除</h1>
+      <button id="langToggle" class="lang-toggle" onclick="I18n.toggle()" title="Switch Language">EN</button>
     </div>
   </nav>
 
@@ -249,9 +272,9 @@
           <circle cx="8.5" cy="8.5" r="1.5"/>
           <path d="M21 15l-5-5L5 21"/>
         </svg>
-        <p class="text-lg font-medium mb-2">拖拽图片到这里</p>
-        <p class="text-sm text-gray-500 mb-4">或者点击选择文件</p>
-        <p class="text-xs text-gray-600">支持 JPG, PNG, WebP 格式</p>
+        <p class="text-lg font-medium mb-2" data-i18n="bgRemove.dragImage">拖拽图片到这里</p>
+        <p class="text-sm text-gray-500 mb-4" data-i18n="common.orClick">或者点击选择文件</p>
+        <p class="text-xs text-gray-600" data-i18n="bgRemove.supportedFormats">支持 JPG, PNG, WebP 格式</p>
       </div>
 
       <!-- Editor -->
@@ -260,13 +283,13 @@
         <!-- Original Image -->
         <div class="card p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold">原图</h3>
+            <h3 class="font-semibold" data-i18n="common.original">原图</h3>
             <button class="btn btn-secondary text-sm" onclick="clearImage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
-              清除
+              <span data-i18n="common.clear">清除</span>
             </button>
           </div>
           <div class="image-container">
@@ -284,11 +307,11 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
             </svg>
-            移除背景
+            <span data-i18n="bgRemove.removeBackground">移除背景</span>
           </button>
           <div id="loadingIndicator" class="hidden mt-4 text-center text-gray-400">
             <div class="spinner mx-auto mb-2"></div>
-            <p>正在处理，请稍候...</p>
+            <p data-i18n="common.processing">正在处理，请稍候...</p>
           </div>
           <div id="errorMessage" class="hidden mt-4 error-message"></div>
         </div>
@@ -296,14 +319,14 @@
         <!-- Result -->
         <div id="resultContainer" class="card p-4 hidden">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold">处理结果</h3>
+            <h3 class="font-semibold" data-i18n="common.result">处理结果</h3>
             <div class="flex gap-2">
               <button class="btn btn-secondary text-sm" onclick="toggleCompare()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <line x1="12" y1="3" x2="12" y2="21"/>
                 </svg>
-                <span id="compareText">对比</span>
+                <span id="compareText" data-i18n="common.compare">对比</span>
               </button>
             </div>
           </div>
@@ -327,14 +350,14 @@
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              下载原尺寸
+              <span data-i18n="bgRemove.downloadOriginal">下载原尺寸</span>
             </button>
             <button class="btn btn-secondary" onclick="downloadCropped()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
                 <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
               </svg>
-              下载修剪版
+              <span data-i18n="bgRemove.downloadCropped">下载修剪版</span>
             </button>
           </div>
         </div>

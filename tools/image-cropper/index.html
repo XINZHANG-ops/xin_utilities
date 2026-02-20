@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>图片修剪器 - Xin Utilities</title>
+  <title data-i18n-page-title="cropper.title">图片修剪器 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../../shared/i18n/i18n.js"></script>
+  <script src="../../shared/i18n/zh.js"></script>
+  <script src="../../shared/i18n/en.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -277,6 +280,26 @@
       .tool-btn { width: 40px; height: 40px; }
       .upload-zone { padding: 2rem; }
     }
+
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -287,10 +310,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium">返回工具集</span>
+        <span class="font-medium" data-i18n="common.back">返回工具集</span>
       </a>
-      <h1 class="text-lg font-semibold">图片修剪器</h1>
-      <div class="w-24"></div>
+      <h1 class="text-lg font-semibold" data-i18n="cropper.title">图片修剪器</h1>
+      <button id="langToggle" class="lang-toggle" onclick="I18n.toggle()" title="Switch Language">EN</button>
     </div>
   </nav>
 
@@ -305,9 +328,9 @@
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <p class="text-lg font-medium mb-2">拖拽图片到这里</p>
-        <p class="text-sm text-gray-500 mb-4">或者点击选择文件</p>
-        <p class="text-xs text-gray-600">支持 JPG, PNG, WebP, GIF</p>
+        <p class="text-lg font-medium mb-2" data-i18n="cropper.upload.dragHere">拖拽图片到这里</p>
+        <p class="text-sm text-gray-500 mb-4" data-i18n="cropper.upload.orClick">或者点击选择文件</p>
+        <p class="text-xs text-gray-600" data-i18n="cropper.upload.supportedFormats">支持 JPG, PNG, WebP, GIF</p>
       </div>
 
       <!-- Editor (shown when image loaded) -->
@@ -327,9 +350,9 @@
                     <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
                     <path d="M21 3v5h-5"/>
                   </svg>
-                  重置
+                  <span data-i18n="cropper.actions.reset">重置</span>
                 </button>
-                <button class="btn btn-secondary text-sm" onclick="clearImage()" title="删除图片">
+                <button class="btn btn-secondary text-sm" onclick="clearImage()" data-i18n-title="cropper.actions.clear">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
@@ -356,36 +379,36 @@
                   <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
                   <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
                 </svg>
-                剪裁模式
+                <span data-i18n="cropper.cropMode.title">剪裁模式</span>
               </h3>
               <div class="tab-group mb-4">
-                <button class="tab-btn active" id="tabRect" onclick="setCropMode('rect')">矩形</button>
-                <button class="tab-btn" id="tabCircle" onclick="setCropMode('circle')">圆形</button>
-                <button class="tab-btn" id="tabPolygon" onclick="setCropMode('polygon')">多边形</button>
+                <button class="tab-btn active" id="tabRect" onclick="setCropMode('rect')" data-i18n="cropper.cropMode.rectangle">矩形</button>
+                <button class="tab-btn" id="tabCircle" onclick="setCropMode('circle')" data-i18n="cropper.cropMode.circle">圆形</button>
+                <button class="tab-btn" id="tabPolygon" onclick="setCropMode('polygon')" data-i18n="cropper.cropMode.polygon">多边形</button>
               </div>
-              <p class="text-xs text-gray-500 mb-3" id="cropHint">拖拽画布上的方框来选择剪裁区域</p>
+              <p class="text-xs text-gray-500 mb-3" id="cropHint" data-i18n="cropper.cropMode.hintRect">拖拽画布上的方框来选择剪裁区域</p>
               <div id="rectControls" class="space-y-2 mb-3">
                 <div class="flex flex-wrap gap-2">
-                  <button class="ratio-btn tool-btn text-xs active" onclick="setAspectRatio(null)" data-ratio="free">自由</button>
+                  <button class="ratio-btn tool-btn text-xs active" onclick="setAspectRatio(null)" data-ratio="free" data-i18n="cropper.aspectRatio.free">自由</button>
                   <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(1, 1)" data-ratio="1:1">1:1</button>
                   <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(4, 3)" data-ratio="4:3">4:3</button>
                   <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(16, 9)" data-ratio="16:9">16:9</button>
                   <button class="ratio-btn tool-btn text-xs" onclick="setAspectRatio(3, 2)" data-ratio="3:2">3:2</button>
                 </div>
                 <div class="flex items-center gap-2">
-                  <input type="number" id="customRatioW" placeholder="宽" min="1" max="100" class="w-16 text-center text-xs">
+                  <input type="number" id="customRatioW" data-i18n-placeholder="cropper.aspectRatio.width" placeholder="宽" min="1" max="100" class="w-16 text-center text-xs">
                   <span class="text-gray-500">:</span>
-                  <input type="number" id="customRatioH" placeholder="高" min="1" max="100" class="w-16 text-center text-xs">
-                  <button class="btn btn-secondary text-xs py-1 px-3" onclick="applyCustomRatio()">应用</button>
+                  <input type="number" id="customRatioH" data-i18n-placeholder="cropper.aspectRatio.height" placeholder="高" min="1" max="100" class="w-16 text-center text-xs">
+                  <button class="btn btn-secondary text-xs py-1 px-3" onclick="applyCustomRatio()" data-i18n="cropper.aspectRatio.apply">应用</button>
                 </div>
               </div>
               <div id="polygonControls" class="hidden space-y-2">
-                <p class="text-xs text-gray-500">点击画布添加顶点，至少需要 3 个点</p>
+                <p class="text-xs text-gray-500" data-i18n="cropper.polygon.hint">点击画布添加顶点,至少需要 3 个点</p>
                 <div class="flex gap-2">
-                  <button class="btn btn-secondary text-sm flex-1" onclick="undoPolygonPoint()" id="undoPointBtn" disabled>
+                  <button class="btn btn-secondary text-sm flex-1" onclick="undoPolygonPoint()" id="undoPointBtn" disabled data-i18n="cropper.polygon.undo">
                     撤销上一点
                   </button>
-                  <button class="btn btn-secondary text-sm flex-1" onclick="clearPolygonPoints()">
+                  <button class="btn btn-secondary text-sm flex-1" onclick="clearPolygonPoints()" data-i18n="cropper.polygon.clear">
                     清除所有
                   </button>
                 </div>
@@ -394,7 +417,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                应用剪裁
+                <span data-i18n="cropper.actions.applyCrop">应用剪裁</span>
               </button>
             </div>
 
@@ -405,7 +428,7 @@
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                   <polyline points="22 2 22 8 16 8"/>
                 </svg>
-                旋转
+                <span data-i18n="cropper.rotate.title">旋转</span>
               </h3>
               <div class="slider-container mb-3">
                 <input type="range" id="rotationSlider" min="-180" max="180" value="0" oninput="updateRotation(this.value)">
@@ -413,13 +436,13 @@
                 <span class="text-sm text-gray-500">°</span>
               </div>
               <div class="tool-group">
-                <button class="tool-btn" onclick="rotateBy(-90)" title="逆时针 90°">
+                <button class="tool-btn" onclick="rotateBy(-90)" data-i18n-title="cropper.rotate.ccw90">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                     <path d="M3 3v5h5"/>
                   </svg>
                 </button>
-                <button class="tool-btn" onclick="rotateBy(90)" title="顺时针 90°">
+                <button class="tool-btn" onclick="rotateBy(90)" data-i18n-title="cropper.rotate.cw90">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
                     <path d="M21 3v5h-5"/>
@@ -436,17 +459,17 @@
                   <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
                   <line x1="12" y1="3" x2="12" y2="21"/>
                 </svg>
-                翻转
+                <span data-i18n="cropper.flip.title">翻转</span>
               </h3>
               <div class="tool-group">
-                <button class="tool-btn" onclick="flipImage('horizontal')" title="水平翻转">
+                <button class="tool-btn" onclick="flipImage('horizontal')" data-i18n-title="cropper.flip.horizontal">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
                     <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
                     <line x1="12" y1="3" x2="12" y2="21"/>
                   </svg>
                 </button>
-                <button class="tool-btn" onclick="flipImage('vertical')" title="垂直翻转">
+                <button class="tool-btn" onclick="flipImage('vertical')" data-i18n-title="cropper.flip.vertical">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(90deg);">
                     <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
                     <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
@@ -464,23 +487,23 @@
                   <path d="M3 9h18"/>
                   <path d="M9 21V9"/>
                 </svg>
-                调整分辨率
+                <span data-i18n="cropper.resize.title">调整分辨率</span>
               </h3>
               <div class="flex gap-3 mb-3">
                 <div class="flex-1">
-                  <label class="text-xs text-gray-500 block mb-1">宽度</label>
+                  <label class="text-xs text-gray-500 block mb-1" data-i18n="cropper.resize.width">宽度</label>
                   <input type="number" id="resizeWidth" min="1" max="10000" onchange="onResizeInput('width')">
                 </div>
                 <div class="flex-1">
-                  <label class="text-xs text-gray-500 block mb-1">高度</label>
+                  <label class="text-xs text-gray-500 block mb-1" data-i18n="cropper.resize.height">高度</label>
                   <input type="number" id="resizeHeight" min="1" max="10000" onchange="onResizeInput('height')">
                 </div>
               </div>
               <label class="flex items-center gap-2 text-sm text-gray-400 mb-3">
                 <input type="checkbox" id="lockAspect" checked class="w-4 h-4 accent-blue-500">
-                锁定比例
+                <span data-i18n="cropper.resize.lockAspect">锁定比例</span>
               </label>
-              <button class="btn btn-primary w-full" onclick="applyResize()">
+              <button class="btn btn-primary w-full" onclick="applyResize()" data-i18n="cropper.resize.apply">
                 应用调整
               </button>
             </div>
@@ -493,15 +516,15 @@
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
-                导出
+                <span data-i18n="cropper.export.title">导出</span>
               </h3>
               <select id="exportFormat" class="w-full mb-3 bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm">
-                <option value="png">PNG (无损)</option>
-                <option value="jpeg">JPEG (压缩)</option>
-                <option value="webp">WebP (推荐)</option>
+                <option value="png" data-i18n="cropper.export.png">PNG (无损)</option>
+                <option value="jpeg" data-i18n="cropper.export.jpeg">JPEG (压缩)</option>
+                <option value="webp" data-i18n="cropper.export.webp">WebP (推荐)</option>
               </select>
               <div id="qualityControl" class="hidden mb-3">
-                <label class="text-xs text-gray-500 block mb-1">质量: <span id="qualityValue">90</span>%</label>
+                <label class="text-xs text-gray-500 block mb-1"><span data-i18n="cropper.export.quality">质量</span>: <span id="qualityValue">90</span>%</label>
                 <input type="range" id="qualitySlider" min="1" max="100" value="90" oninput="document.getElementById('qualityValue').textContent = this.value">
               </div>
               <button class="btn btn-primary w-full" onclick="exportImage()">
@@ -510,7 +533,7 @@
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
-                下载图片
+                <span data-i18n="cropper.export.download">下载图片</span>
               </button>
             </div>
 
@@ -945,12 +968,16 @@
       document.getElementById('tabCircle').classList.toggle('active', mode === 'circle');
       document.getElementById('tabPolygon').classList.toggle('active', mode === 'polygon');
 
-      const hints = {
-        rect: '拖拽画布上的方框来选择剪裁区域',
-        circle: '拖拽圆形边缘调整大小，拖拽中心移动位置',
-        polygon: '点击画布添加顶点，至少需要 3 个点'
+      const hintElement = document.getElementById('cropHint');
+      const hintKeys = {
+        rect: 'cropper.cropMode.hintRect',
+        circle: 'cropper.cropMode.hintCircle',
+        polygon: 'cropper.cropMode.hintPolygon'
       };
-      document.getElementById('cropHint').textContent = hints[mode];
+      hintElement.setAttribute('data-i18n', hintKeys[mode]);
+      if (window.I18n) {
+        hintElement.textContent = I18n.t(hintKeys[mode]);
+      }
       document.getElementById('polygonControls').classList.toggle('hidden', mode !== 'polygon');
       document.getElementById('rectControls').classList.toggle('hidden', mode !== 'rect');
 

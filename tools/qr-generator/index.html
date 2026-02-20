@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>二维码生成器 - Xin Utilities</title>
+  <title data-i18n-page-title="qrGenerator.title">二维码生成器 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../../shared/i18n/i18n.js"></script>
+  <script src="../../shared/i18n/zh.js"></script>
+  <script src="../../shared/i18n/en.js"></script>
   <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -273,6 +276,26 @@
       cursor: pointer;
       border: none;
     }
+
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -282,10 +305,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium">返回工具集</span>
+        <span class="font-medium" data-i18n="common.back">返回工具集</span>
       </a>
-      <h1 class="text-lg font-semibold">二维码生成器</h1>
-      <div class="w-24"></div>
+      <h1 class="text-lg font-semibold" data-i18n="qrGenerator.title">二维码生成器</h1>
+      <button id="langToggle" class="lang-toggle" onclick="I18n.toggle()" title="Switch Language">EN</button>
     </div>
   </nav>
 
@@ -295,12 +318,13 @@
       <!-- Input Section -->
       <div class="card p-6 space-y-6">
         <div>
-          <label class="label">输入链接或文本</label>
+          <label class="label" data-i18n="qrGenerator.inputLabel">输入链接或文本</label>
           <input
             type="text"
             id="inputText"
             class="input-field"
             placeholder="https://example.com 或任意文本"
+            data-i18n-placeholder="qrGenerator.inputPlaceholder"
             autocomplete="off"
           >
         </div>
@@ -308,20 +332,20 @@
         <!-- Size and Color Settings -->
         <div class="settings-grid">
           <div class="setting-item">
-            <label class="label">大小: <span id="sizeValue">256</span>px</label>
+            <label class="label"><span data-i18n="qrGenerator.size">大小</span>: <span id="sizeValue">256</span>px</label>
             <div class="slider-container">
               <input type="range" id="sizeSlider" class="slider" min="128" max="512" step="32" value="256">
             </div>
           </div>
           <div class="setting-item">
-            <label class="label">前景色（码点）</label>
+            <label class="label" data-i18n="qrGenerator.foregroundColor">前景色（码点）</label>
             <div class="color-input-wrapper">
               <input type="color" id="fgColor" class="color-input" value="#000000">
               <span class="color-hex" id="fgColorHex">#000000</span>
             </div>
           </div>
           <div class="setting-item">
-            <label class="label">背景色</label>
+            <label class="label" data-i18n="qrGenerator.backgroundColor">背景色</label>
             <div class="color-input-wrapper">
               <input type="color" id="bgColor" class="color-input" value="#ffffff">
               <span class="color-hex" id="bgColorHex">#ffffff</span>
@@ -331,30 +355,30 @@
 
         <!-- Dot Shape -->
         <div class="setting-item">
-          <label class="label">码点形状</label>
+          <label class="label" data-i18n="qrGenerator.dotShape">码点形状</label>
           <div class="shape-options" id="dotShapeOptions">
-            <button class="shape-option active" data-value="square">方形</button>
-            <button class="shape-option" data-value="rounded">圆角</button>
-            <button class="shape-option" data-value="dots">圆点</button>
-            <button class="shape-option" data-value="extra-rounded">大圆角</button>
-            <button class="shape-option" data-value="classy">经典</button>
-            <button class="shape-option" data-value="classy-rounded">经典圆角</button>
+            <button class="shape-option active" data-value="square" data-i18n="qrGenerator.square">方形</button>
+            <button class="shape-option" data-value="rounded" data-i18n="qrGenerator.rounded">圆角</button>
+            <button class="shape-option" data-value="dots" data-i18n="qrGenerator.dots">圆点</button>
+            <button class="shape-option" data-value="extra-rounded" data-i18n="qrGenerator.extraRounded">大圆角</button>
+            <button class="shape-option" data-value="classy" data-i18n="qrGenerator.classy">经典</button>
+            <button class="shape-option" data-value="classy-rounded" data-i18n="qrGenerator.classyRounded">经典圆角</button>
           </div>
         </div>
 
         <!-- Corner Shape -->
         <div class="setting-item">
-          <label class="label">定位角形状</label>
+          <label class="label" data-i18n="qrGenerator.cornerShape">定位角形状</label>
           <div class="shape-options" id="cornerShapeOptions">
-            <button class="shape-option active" data-value="square">方形</button>
-            <button class="shape-option" data-value="extra-rounded">圆角</button>
-            <button class="shape-option" data-value="dot">圆形</button>
+            <button class="shape-option active" data-value="square" data-i18n="qrGenerator.square">方形</button>
+            <button class="shape-option" data-value="extra-rounded" data-i18n="qrGenerator.rounded">圆角</button>
+            <button class="shape-option" data-value="dot" data-i18n="qrGenerator.circular">圆形</button>
           </div>
         </div>
 
         <!-- Logo Upload -->
         <div class="setting-item">
-          <label class="label">中心 Logo（可选）</label>
+          <label class="label" data-i18n="qrGenerator.centerLogo">中心 Logo（可选）</label>
           <div id="logoUploadZone" class="logo-upload">
             <input type="file" id="logoInput" accept="image/*" class="hidden">
             <svg class="w-8 h-8 mx-auto mb-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -362,16 +386,16 @@
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <path d="M21 15l-5-5L5 21"/>
             </svg>
-            <p class="text-sm text-gray-400">点击上传 Logo 图片</p>
-            <p class="text-xs text-gray-600 mt-1">建议使用方形图片</p>
+            <p class="text-sm text-gray-400" data-i18n="qrGenerator.uploadLogo">点击上传 Logo 图片</p>
+            <p class="text-xs text-gray-600 mt-1" data-i18n="qrGenerator.logoHint">建议使用方形图片</p>
           </div>
           <div id="logoPreview" class="logo-preview hidden">
             <img id="logoPreviewImg" src="" alt="Logo">
             <div class="flex-1">
               <p class="text-sm" id="logoFileName">logo.png</p>
-              <p class="text-xs text-gray-500">Logo 将显示在二维码中心</p>
+              <p class="text-xs text-gray-500" data-i18n="qrGenerator.logoWillShow">Logo 将显示在二维码中心</p>
             </div>
-            <button class="btn btn-secondary text-sm" onclick="removeLogo()">移除</button>
+            <button class="btn btn-secondary text-sm" onclick="removeLogo()" data-i18n="qrGenerator.removeLogo">移除</button>
           </div>
         </div>
 
@@ -382,13 +406,13 @@
             <rect x="14" y="14" width="7" height="7"/>
             <rect x="3" y="14" width="7" height="7"/>
           </svg>
-          生成二维码
+          <span data-i18n="qrGenerator.generate">生成二维码</span>
         </button>
       </div>
 
       <!-- QR Code Display -->
       <div class="card p-6">
-        <h3 class="font-semibold mb-4">预览</h3>
+        <h3 class="font-semibold mb-4" data-i18n="common.preview">预览</h3>
         <div class="qr-container">
           <div class="qr-placeholder" id="placeholder">
             <svg class="w-16 h-16 mx-auto mb-2 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -397,7 +421,7 @@
               <rect x="14" y="14" width="7" height="7"/>
               <rect x="3" y="14" width="7" height="7"/>
             </svg>
-            <p>输入内容后点击生成</p>
+            <p data-i18n="qrGenerator.placeholderHint">输入内容后点击生成</p>
           </div>
           <div id="qrcode" class="hidden"></div>
         </div>
@@ -409,7 +433,7 @@
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            下载 PNG
+            <span data-i18n="common.downloadPng">下载 PNG</span>
           </button>
         </div>
       </div>
@@ -554,7 +578,7 @@
     function generateQR() {
       const text = inputText.value.trim();
       if (!text) {
-        alert('请输入链接或文本');
+        alert(I18n.t('qrGenerator.enterContent'));
         return;
       }
 
@@ -610,7 +634,7 @@
 
     async function downloadQR() {
       if (!qrCode) {
-        alert('请先生成二维码');
+        alert(I18n.t('qrGenerator.generateFirst'));
         return;
       }
       // Use getRawData for SVG -> PNG export

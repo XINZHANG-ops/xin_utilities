@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xin Utilities - 实用工具集</title>
+  <title data-i18n-page-title="index.title">Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared/i18n/i18n.js"></script>
+  <script src="shared/i18n/zh.js"></script>
+  <script src="shared/i18n/en.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -405,6 +408,27 @@
         display: none;
       }
     }
+
+    /* Language Toggle Button */
+    .lang-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -417,6 +441,7 @@
         </svg>
         <span>Xin Utilities</span>
       </a>
+      <button id="langToggle" class="lang-toggle" onclick="I18n.toggle()" title="Switch Language">EN</button>
     </div>
   </nav>
 
@@ -430,7 +455,7 @@
           <path d="M21 15l-5-5L5 21"/>
         </svg>
       </div>
-      <span class="sidebar-label">图片工具</span>
+      <span class="sidebar-label" data-i18n="index.imageTools">图片工具</span>
     </a>
     <a href="#text-tools" class="sidebar-item" data-category="text">
       <div class="sidebar-icon">
@@ -439,7 +464,7 @@
           <polyline points="14 2 14 8 20 8"/>
         </svg>
       </div>
-      <span class="sidebar-label">文字工具</span>
+      <span class="sidebar-label" data-i18n="index.textTools">文字工具</span>
     </a>
     <a href="#canvas-tools" class="sidebar-item" data-category="canvas">
       <div class="sidebar-icon">
@@ -449,7 +474,7 @@
           <path d="M9 21V9"/>
         </svg>
       </div>
-      <span class="sidebar-label">画板工具</span>
+      <span class="sidebar-label" data-i18n="index.canvasTools">画板工具</span>
     </a>
     <a href="#share-tools" class="sidebar-item" data-category="share">
       <div class="sidebar-icon">
@@ -461,7 +486,7 @@
           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
       </div>
-      <span class="sidebar-label">分享工具</span>
+      <span class="sidebar-label" data-i18n="index.shareTools">分享工具</span>
     </a>
   </nav>
 
@@ -469,9 +494,9 @@
   <section class="pt-32 pb-16 px-6">
     <div class="max-w-6xl mx-auto">
       <div class="reveal">
-        <h1 class="section-title mb-4">实用工具集</h1>
-        <p class="section-subtitle">
-          精心打造的在线小工具，让日常任务变得简单高效。纯浏览器运行，无需安装。
+        <h1 class="section-title mb-4" data-i18n="index.title">Xin Utilities</h1>
+        <p class="section-subtitle" data-i18n="index.subtitle">
+          浏览器原生工具，拒绝上传，隐私优先
         </p>
       </div>
     </div>
@@ -491,8 +516,8 @@
               <path d="M21 15l-5-5L5 21"/>
             </svg>
           </div>
-          <h2 class="category-title">图片工具</h2>
-          <span class="category-count">5 个工具</span>
+          <h2 class="category-title" data-i18n="index.imageTools">图片工具</h2>
+          <span class="category-count" data-i18n="index.imageToolsCount">5 个工具</span>
         </div>
 
         <div class="card-grid">
@@ -507,15 +532,15 @@
                     <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
                   </svg>
                 </div>
-                <span class="card-badge">编辑</span>
+                <span class="card-badge" data-i18n="index.badgeEdit">编辑</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">图片修剪器</h3>
-                <p class="card-desc">矩形、圆形、多边形剪裁。旋转自动扩展画布。支持翻转和调整分辨率。</p>
+                <h3 class="card-title" data-i18n="index.cropperTitle">图片修剪器</h3>
+                <p class="card-desc" data-i18n="index.cropperDesc">矩形、圆形、多边形剪裁。旋转自动扩展画布。支持翻转和调整分辨率。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -542,15 +567,15 @@
                     <rect x="14" y="14" width="7" height="7"/>
                   </svg>
                 </div>
-                <span class="card-badge">特效</span>
+                <span class="card-badge" data-i18n="index.badgeEffect">特效</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">图片像素化</h3>
-                <p class="card-desc">7 种颜色算法，包括平均值、中位数、众数、主导色等。实时预览效果。</p>
+                <h3 class="card-title" data-i18n="index.pixelateTitle">图片像素化</h3>
+                <p class="card-desc" data-i18n="index.pixelateDesc">7 种颜色算法，包括平均值、中位数、众数、主导色等。实时预览效果。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -575,15 +600,15 @@
                     <path d="M10 8l6 4-6 4V8z"/>
                   </svg>
                 </div>
-                <span class="card-badge">转换</span>
+                <span class="card-badge" data-i18n="index.badgeConvert">转换</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">视频转 GIF</h3>
-                <p class="card-desc">可视化时间轴选择片段。自定义帧数、宽度、质量。纯浏览器编码。</p>
+                <h3 class="card-title" data-i18n="index.videoGifTitle">视频转 GIF</h3>
+                <p class="card-desc" data-i18n="index.videoGifDesc">可视化时间轴选择片段。自定义帧数、宽度、质量。纯浏览器编码。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -608,15 +633,15 @@
                     <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
                   </svg>
                 </div>
-                <span class="card-badge">标注</span>
+                <span class="card-badge" data-i18n="index.badgeAnnotate">标注</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">图片标注</h3>
-                <p class="card-desc">画笔涂鸦，添加矩形、圆形、箭头。可调整形状大小和位置。Ctrl+Z 撤销。</p>
+                <h3 class="card-title" data-i18n="index.annotateTitle">图片标注</h3>
+                <p class="card-desc" data-i18n="index.annotateDesc">画笔涂鸦，添加矩形、圆形、箭头。可调整形状大小和位置。Ctrl+Z 撤销。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -643,15 +668,15 @@
                     <path d="M14 14l4 4M14 18l4-4" stroke-opacity="0.5"/>
                   </svg>
                 </div>
-                <span class="card-badge">AI</span>
+                <span class="card-badge" data-i18n="index.badgeAI">AI</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">背景移除</h3>
-                <p class="card-desc">使用 AI 智能移除图片背景，支持人物、物品等各种场景。</p>
+                <h3 class="card-title" data-i18n="index.bgRemoveTitle">背景移除</h3>
+                <p class="card-desc" data-i18n="index.bgRemoveDesc">使用 AI 智能移除图片背景，支持人物、物品等各种场景。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -678,8 +703,8 @@
               <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
           </div>
-          <h2 class="category-title">文字工具</h2>
-          <span class="category-count">1 个工具</span>
+          <h2 class="category-title" data-i18n="index.textTools">文字工具</h2>
+          <span class="category-count" data-i18n="index.textToolsCount">1 个工具</span>
         </div>
 
         <div class="card-grid">
@@ -694,15 +719,15 @@
                     <line x1="12" y1="3" x2="12" y2="21"/>
                   </svg>
                 </div>
-                <span class="card-badge">对比</span>
+                <span class="card-badge" data-i18n="index.badgeCompare">对比</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">文本对比</h3>
-                <p class="card-desc">并排显示差异，类似 Git Diff。可选择使用哪一侧内容，下载合并结果。</p>
+                <h3 class="card-title" data-i18n="index.textDiffTitle">文本对比</h3>
+                <p class="card-desc" data-i18n="index.textDiffDesc">并排显示差异，类似 Git Diff。可选择使用哪一侧内容，下载合并结果。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -728,8 +753,8 @@
               <path d="M9 21V9"/>
             </svg>
           </div>
-          <h2 class="category-title">画板工具</h2>
-          <span class="category-count">1 个工具</span>
+          <h2 class="category-title" data-i18n="index.canvasTools">画板工具</h2>
+          <span class="category-count" data-i18n="index.canvasToolsCount">1 个工具</span>
         </div>
 
         <div class="card-grid">
@@ -746,15 +771,15 @@
                     <circle cx="17.5" cy="15" r="2.5" fill="white"/>
                   </svg>
                 </div>
-                <span class="card-badge">涂鸦</span>
+                <span class="card-badge" data-i18n="index.badgeDoodle">涂鸦</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">在线白板</h3>
-                <p class="card-desc">随时涂鸦的画板。画笔、橡皮擦、形状，支持拖入图片。自动保存到浏览器。</p>
+                <h3 class="card-title" data-i18n="index.whiteboardTitle">在线白板</h3>
+                <p class="card-desc" data-i18n="index.whiteboardDesc">随时涂鸦的画板。画笔、橡皮擦、形状，支持拖入图片。自动保存到浏览器。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -782,8 +807,8 @@
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
           </div>
-          <h2 class="category-title">分享工具</h2>
-          <span class="category-count">1 个工具</span>
+          <h2 class="category-title" data-i18n="index.shareTools">分享工具</h2>
+          <span class="category-count" data-i18n="index.shareToolsCount">1 个工具</span>
         </div>
 
         <div class="card-grid">
@@ -800,15 +825,15 @@
                     <rect x="3" y="14" width="7" height="7"/>
                   </svg>
                 </div>
-                <span class="card-badge">生成</span>
+                <span class="card-badge" data-i18n="index.badgeGenerate">生成</span>
               </div>
               <div class="card-body">
-                <h3 class="card-title">二维码生成器</h3>
-                <p class="card-desc">快速生成二维码，支持链接、文本、WiFi 信息等。可调整大小，下载 PNG 图片。</p>
+                <h3 class="card-title" data-i18n="index.qrGeneratorTitle">二维码生成器</h3>
+                <p class="card-desc" data-i18n="index.qrGeneratorDesc">快速生成二维码，支持链接、文本、WiFi 信息等。可调整大小，下载 PNG 图片。</p>
               </div>
               <div class="card-footer">
                 <span class="card-action">
-                  开始使用
+                  <span data-i18n="index.startUsing">开始使用</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
