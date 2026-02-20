@@ -148,26 +148,21 @@
       height: 50vh;
       min-height: 300px;
       background: repeating-conic-gradient(#1a1a1a 0% 25%, #0a0a0a 0% 50%) 50% / 20px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      user-select: none;
     }
 
-    .compare-slider img {
+    .compare-slider .compare-img {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       object-fit: contain;
+      pointer-events: none;
     }
 
-    .compare-slider .result-img {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      clip-path: inset(0 50% 0 0);
+    .compare-slider .original-img {
+      clip-path: inset(0 0 0 50%);
     }
 
     .compare-slider .slider-handle {
@@ -320,8 +315,8 @@
 
           <!-- Compare View -->
           <div id="compareView" class="compare-slider hidden">
-            <img id="compareOriginal" src="" alt="Original">
-            <img id="compareResult" class="result-img" src="" alt="Result">
+            <img id="compareResult" class="compare-img" src="" alt="Result">
+            <img id="compareOriginal" class="compare-img original-img" src="" alt="Original">
             <div class="slider-handle" id="sliderHandle"></div>
           </div>
 
@@ -472,7 +467,7 @@
       percent = Math.max(0.05, Math.min(0.95, percent));
 
       sliderHandle.style.left = `${percent * 100}%`;
-      document.getElementById('compareResult').style.clipPath = `inset(0 ${(1 - percent) * 100}% 0 0)`;
+      document.getElementById('compareOriginal').style.clipPath = `inset(0 0 0 ${percent * 100}%)`;
     });
 
     function downloadResult() {
