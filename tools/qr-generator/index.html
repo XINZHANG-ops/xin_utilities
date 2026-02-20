@@ -130,6 +130,11 @@
       justify-content: center;
     }
 
+    #qrCanvas {
+      max-width: 100%;
+      height: auto;
+    }
+
     .label {
       font-size: 0.875rem;
       font-weight: 500;
@@ -231,6 +236,82 @@
       object-fit: contain;
       border-radius: 8px;
       background: white;
+    }
+
+    .logo-settings {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .logo-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .slider-with-value {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .slider-value {
+      min-width: 48px;
+      text-align: right;
+      font-size: 0.8125rem;
+      color: var(--fg-muted);
+      font-family: monospace;
+    }
+
+    .qr-interactive {
+      position: relative;
+      cursor: default;
+    }
+
+    .qr-interactive.dragging {
+      cursor: grabbing;
+    }
+
+    .logo-drag-hint {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: var(--fg-muted);
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .logo-drag-hint.visible {
+      display: block;
+    }
+
+    .qr-interactive:hover .logo-drag-hint.visible {
+      opacity: 1;
+    }
+
+    .reset-btn {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reset-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: var(--fg);
     }
 
     .settings-grid {
@@ -397,6 +478,40 @@
             </div>
             <button class="btn btn-secondary text-sm" onclick="removeLogo()" data-i18n="qrGenerator.removeLogo">移除</button>
           </div>
+
+          <!-- Logo Settings (visible when logo uploaded) -->
+          <div id="logoSettings" class="logo-settings hidden">
+            <div class="logo-settings-grid">
+              <div class="setting-item">
+                <label class="label"><span data-i18n="qrGenerator.logoSize">Logo 大小</span>: <span id="logoSizeValue">40</span>%</label>
+                <div class="slider-with-value">
+                  <input type="range" id="logoSizeSlider" class="slider" min="10" max="70" step="1" value="40">
+                </div>
+              </div>
+              <div class="setting-item">
+                <label class="label"><span data-i18n="qrGenerator.logoMargin">边距</span>: <span id="logoMarginValue">0</span>px</label>
+                <div class="slider-with-value">
+                  <input type="range" id="logoMarginSlider" class="slider" min="-30" max="50" step="1" value="0">
+                </div>
+                <p class="hint-text" data-i18n="qrGenerator.logoMarginHint">正值扩展留白，负值让码点露出</p>
+              </div>
+              <div class="setting-item">
+                <label class="label"><span data-i18n="qrGenerator.logoRotation">旋转</span>: <span id="logoRotationValue">0</span>°</label>
+                <div class="slider-with-value">
+                  <input type="range" id="logoRotationSlider" class="slider" min="0" max="360" step="1" value="0">
+                </div>
+              </div>
+              <div class="setting-item">
+                <label class="label"><span data-i18n="qrGenerator.logoPosition">位置偏移</span></label>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">X: <span id="logoOffsetXValue">0</span></span>
+                  <span class="text-xs text-gray-500">Y: <span id="logoOffsetYValue">0</span></span>
+                  <button class="reset-btn" onclick="resetLogoPosition()" data-i18n="qrGenerator.resetPosition">重置位置</button>
+                </div>
+                <p class="hint-text" data-i18n="qrGenerator.dragToMove">在预览区拖动 Logo 调整位置</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button class="btn btn-primary w-full" onclick="generateQR()" id="generateBtn">
@@ -413,7 +528,7 @@
       <!-- QR Code Display -->
       <div class="card p-6">
         <h3 class="font-semibold mb-4" data-i18n="common.preview">预览</h3>
-        <div class="qr-container">
+        <div class="qr-container qr-interactive" id="qrContainer">
           <div class="qr-placeholder" id="placeholder">
             <svg class="w-16 h-16 mx-auto mb-2 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="3" y="3" width="7" height="7"/>
@@ -423,7 +538,8 @@
             </svg>
             <p data-i18n="qrGenerator.placeholderHint">输入内容后点击生成</p>
           </div>
-          <div id="qrcode" class="hidden"></div>
+          <canvas id="qrCanvas" class="hidden"></canvas>
+          <span class="logo-drag-hint" id="dragHint" data-i18n="qrGenerator.dragToMove">拖动 Logo 调整位置</span>
         </div>
 
         <div class="flex gap-2 justify-center mt-4" id="downloadSection" style="display: none;">
@@ -443,8 +559,24 @@
 
   <script>
     // State
-    let qrCode = null;
+    let qrCodeBase = null;  // QR code without logo (for compositing)
+    let qrCodeBaseScale = 1; // Scale factor for high-res rendering
+    let logoImage = null;   // Loaded logo Image object
     let logoDataUrl = null;
+
+    // Logo transform state
+    let logoSize = 40;      // percentage of QR size
+    let logoMargin = 0;     // pixels (positive = safe zone, negative = QR shows under)
+    let logoRotation = 0;   // degrees
+    let logoOffsetX = 0;    // pixels from center
+    let logoOffsetY = 0;    // pixels from center
+
+    // Drag state
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartOffsetX = 0;
+    let dragStartOffsetY = 0;
 
     // Elements
     const inputText = document.getElementById('inputText');
@@ -455,13 +587,26 @@
     const fgColorHex = document.getElementById('fgColorHex');
     const bgColorHex = document.getElementById('bgColorHex');
     const placeholder = document.getElementById('placeholder');
-    const qrcodeDiv = document.getElementById('qrcode');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const qrContainer = document.getElementById('qrContainer');
     const downloadSection = document.getElementById('downloadSection');
     const logoInput = document.getElementById('logoInput');
     const logoUploadZone = document.getElementById('logoUploadZone');
     const logoPreview = document.getElementById('logoPreview');
     const logoPreviewImg = document.getElementById('logoPreviewImg');
     const logoFileName = document.getElementById('logoFileName');
+    const logoSettings = document.getElementById('logoSettings');
+    const dragHint = document.getElementById('dragHint');
+
+    // Logo setting elements
+    const logoSizeSlider = document.getElementById('logoSizeSlider');
+    const logoSizeValue = document.getElementById('logoSizeValue');
+    const logoMarginSlider = document.getElementById('logoMarginSlider');
+    const logoMarginValue = document.getElementById('logoMarginValue');
+    const logoRotationSlider = document.getElementById('logoRotationSlider');
+    const logoRotationValue = document.getElementById('logoRotationValue');
+    const logoOffsetXValue = document.getElementById('logoOffsetXValue');
+    const logoOffsetYValue = document.getElementById('logoOffsetYValue');
 
     // Shape selections
     let dotShape = 'square';
@@ -497,6 +642,51 @@
       }
     });
 
+    // Update margin slider range based on logo size
+    function updateMarginRange() {
+      if (!qrCodeBase) return;
+      // Get display size (unscaled)
+      const displaySize = (qrCodeBase.naturalWidth || qrCodeBase.width) / qrCodeBaseScale;
+      const logoDrawSize = displaySize * (logoSize / 100);
+      // Min margin: when safe zone = 0, margin = -logoDrawSize/2
+      const minMargin = Math.floor(-logoDrawSize / 2);
+      logoMarginSlider.min = minMargin;
+      // Clamp current value if needed
+      if (logoMargin < minMargin) {
+        logoMargin = minMargin;
+        logoMarginSlider.value = minMargin;
+        logoMarginValue.textContent = minMargin;
+      }
+    }
+
+    // Logo settings handlers
+    logoSizeSlider.addEventListener('input', (e) => {
+      logoSize = parseInt(e.target.value);
+      logoSizeValue.textContent = logoSize;
+      updateMarginRange();
+      if (qrCodeBase) renderQRWithLogo();
+    });
+
+    logoMarginSlider.addEventListener('input', (e) => {
+      logoMargin = parseInt(e.target.value);
+      logoMarginValue.textContent = logoMargin;
+      if (qrCodeBase) renderQRWithLogo();
+    });
+
+    logoRotationSlider.addEventListener('input', (e) => {
+      logoRotation = parseInt(e.target.value);
+      logoRotationValue.textContent = logoRotation;
+      if (qrCodeBase) renderQRWithLogo();
+    });
+
+    function resetLogoPosition() {
+      logoOffsetX = 0;
+      logoOffsetY = 0;
+      logoOffsetXValue.textContent = '0';
+      logoOffsetYValue.textContent = '0';
+      if (qrCodeBase) renderQRWithLogo();
+    }
+
     // Crop transparent areas from image
     function cropTransparent(img) {
       const canvas = document.createElement('canvas');
@@ -510,14 +700,13 @@
       const w = canvas.width;
       const h = canvas.height;
 
-      // Find bounding box of non-transparent pixels
       let minX = w, maxX = 0, minY = h, maxY = 0;
       let hasContent = false;
 
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const alpha = data[(y * w + x) * 4 + 3];
-          if (alpha > 10) {  // threshold for "visible"
+          if (alpha > 10) {
             hasContent = true;
             if (x < minX) minX = x;
             if (x > maxX) maxX = x;
@@ -529,7 +718,6 @@
 
       if (!hasContent) return img.src;
 
-      // Crop to bounding box
       const cropW = maxX - minX + 1;
       const cropH = maxY - minY + 1;
       const croppedCanvas = document.createElement('canvas');
@@ -548,14 +736,23 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = (ev) => {
-          // Load image to crop transparent areas
           const img = new Image();
           img.onload = () => {
             logoDataUrl = cropTransparent(img);
-            logoPreviewImg.src = logoDataUrl;
-            logoFileName.textContent = file.name;
-            logoUploadZone.classList.add('hidden');
-            logoPreview.classList.remove('hidden');
+            // Store the cropped logo as Image object
+            const croppedImg = new Image();
+            croppedImg.onload = () => {
+              logoImage = croppedImg;
+              logoPreviewImg.src = logoDataUrl;
+              logoFileName.textContent = file.name;
+              logoUploadZone.classList.add('hidden');
+              logoPreview.classList.remove('hidden');
+              logoSettings.classList.remove('hidden');
+              dragHint.classList.add('visible');
+              // Re-render if QR already generated
+              if (qrCodeBase) renderQRWithLogo();
+            };
+            croppedImg.src = logoDataUrl;
           };
           img.src = ev.target.result;
         };
@@ -565,41 +762,129 @@
 
     function removeLogo() {
       logoDataUrl = null;
+      logoImage = null;
       logoInput.value = '';
       logoUploadZone.classList.remove('hidden');
       logoPreview.classList.add('hidden');
+      logoSettings.classList.add('hidden');
+      dragHint.classList.remove('visible');
+      // Reset logo settings
+      logoSize = 40;
+      logoMargin = 0;
+      logoRotation = 0;
+      logoOffsetX = 0;
+      logoOffsetY = 0;
+      logoSizeSlider.value = 40;
+      logoSizeValue.textContent = '40';
+      logoMarginSlider.value = 0;
+      logoMarginValue.textContent = '0';
+      logoRotationSlider.value = 0;
+      logoRotationValue.textContent = '0';
+      logoOffsetXValue.textContent = '0';
+      logoOffsetYValue.textContent = '0';
+      // Re-render QR without logo
+      if (qrCodeBase) renderQRWithLogo();
     }
+
+    // Drag handlers for logo positioning
+    qrContainer.addEventListener('mousedown', (e) => {
+      if (!logoImage || !qrCodeBase) return;
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartOffsetX = logoOffsetX;
+      dragStartOffsetY = logoOffsetY;
+      qrContainer.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      // Scale movement based on canvas display size vs actual size
+      const canvasRect = qrCanvas.getBoundingClientRect();
+      const scaleX = qrCanvas.width / canvasRect.width;
+      const scaleY = qrCanvas.height / canvasRect.height;
+      logoOffsetX = Math.round(dragStartOffsetX + dx * scaleX);
+      logoOffsetY = Math.round(dragStartOffsetY + dy * scaleY);
+      logoOffsetXValue.textContent = logoOffsetX;
+      logoOffsetYValue.textContent = logoOffsetY;
+      renderQRWithLogo();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        qrContainer.classList.remove('dragging');
+      }
+    });
+
+    // Touch support for mobile
+    qrContainer.addEventListener('touchstart', (e) => {
+      if (!logoImage || !qrCodeBase) return;
+      isDragging = true;
+      const touch = e.touches[0];
+      dragStartX = touch.clientX;
+      dragStartY = touch.clientY;
+      dragStartOffsetX = logoOffsetX;
+      dragStartOffsetY = logoOffsetY;
+      qrContainer.classList.add('dragging');
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartX;
+      const dy = touch.clientY - dragStartY;
+      const canvasRect = qrCanvas.getBoundingClientRect();
+      const scaleX = qrCanvas.width / canvasRect.width;
+      const scaleY = qrCanvas.height / canvasRect.height;
+      logoOffsetX = Math.round(dragStartOffsetX + dx * scaleX);
+      logoOffsetY = Math.round(dragStartOffsetY + dy * scaleY);
+      logoOffsetXValue.textContent = logoOffsetX;
+      logoOffsetYValue.textContent = logoOffsetY;
+      renderQRWithLogo();
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      if (isDragging) {
+        isDragging = false;
+        qrContainer.classList.remove('dragging');
+      }
+    });
 
     // Generate on Enter key
     inputText.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') generateQR();
     });
 
-    function generateQR() {
+    async function generateQR() {
       const text = inputText.value.trim();
       if (!text) {
         alert(I18n.t('qrGenerator.enterContent'));
         return;
       }
 
-      // Clear previous
-      qrcodeDiv.innerHTML = '';
       placeholder.classList.add('hidden');
-      qrcodeDiv.classList.remove('hidden');
+      qrCanvas.classList.remove('hidden');
       downloadSection.style.display = 'flex';
+      if (logoImage) {
+        dragHint.classList.add('visible');
+      }
 
-      // Create QR code
       const size = parseInt(sizeSlider.value);
 
+      // Generate QR code as SVG (avoids canvas dots smearing)
       const options = {
         width: size,
         height: size,
-        type: 'svg',  // Use SVG to avoid canvas dots smear
+        type: 'svg',
         data: text,
         dotsOptions: {
           color: fgColor.value,
           type: dotShape,
-          roundSize: false  // crispEdges for SVG
+          roundSize: false
         },
         cornersSquareOptions: {
           color: fgColor.value,
@@ -617,28 +902,135 @@
         }
       };
 
-      // Add logo if exists
-      if (logoDataUrl) {
-        options.image = logoDataUrl;
-        options.imageOptions = {
-          crossOrigin: 'anonymous',
-          margin: 0,
-          imageSize: 0.4,
-          hideBackgroundDots: false  // Show dots under transparent areas
-        };
-      }
+      // Create temp container and append SVG
+      const tempDiv = document.createElement('div');
+      const qrCodeInstance = new QRCodeStyling(options);
+      qrCodeInstance.append(tempDiv);
 
-      qrCode = new QRCodeStyling(options);
-      qrCode.append(qrcodeDiv);
+      // Wait for SVG to render
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Get SVG element and convert to image manually (better quality control)
+      const svgElement = tempDiv.querySelector('svg');
+      if (!svgElement) return;
+
+      // Serialize SVG to string
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        // Draw SVG to high-res canvas with no smoothing
+        const scale = 2; // 2x resolution for quality
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = size * scale;
+        tempCanvas.height = size * scale;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        tempCtx.drawImage(img, 0, 0, size * scale, size * scale);
+
+        // Store as our base
+        qrCodeBase = tempCanvas;
+        qrCodeBaseScale = scale;
+        updateMarginRange();
+        renderQRWithLogo();
+      };
+      img.src = url;
+    }
+
+    // Helper: draw rounded rectangle
+    function roundRect(ctx, x, y, w, h, r) {
+      if (r > w / 2) r = w / 2;
+      if (r > h / 2) r = h / 2;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function renderQRWithLogo() {
+      if (!qrCodeBase) return;
+
+      // qrCodeBase is high-res canvas, get actual display size
+      const scale = qrCodeBaseScale;
+      const size = qrCodeBase.width;  // This is already scaled
+      const displaySize = size / scale;
+      qrCanvas.width = size;
+      qrCanvas.height = size;
+      qrCanvas.style.width = displaySize + 'px';
+      qrCanvas.style.height = displaySize + 'px';
+      const ctx = qrCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Draw base QR code
+      ctx.drawImage(qrCodeBase, 0, 0);
+
+      // Draw logo if exists
+      if (logoImage) {
+        // Scale all measurements by the scale factor
+        const logoDrawSize = size * (logoSize / 100);
+        const imgW = logoImage.naturalWidth || logoImage.width;
+        const imgH = logoImage.naturalHeight || logoImage.height;
+        const logoAspect = imgW / imgH;
+        let drawW, drawH;
+        if (logoAspect > 1) {
+          drawW = logoDrawSize;
+          drawH = logoDrawSize / logoAspect;
+        } else {
+          drawH = logoDrawSize;
+          drawW = logoDrawSize * logoAspect;
+        }
+
+        // Scale margin and offset
+        const scaledMargin = logoMargin * scale;
+        const scaledOffsetX = logoOffsetX * scale;
+        const scaledOffsetY = logoOffsetY * scale;
+
+        // Center position with offset
+        const centerX = size / 2 + scaledOffsetX;
+        const centerY = size / 2 + scaledOffsetY;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(logoRotation * Math.PI / 180);
+
+        // Draw margin background (safe zone) with rounded corners
+        const safeW = drawW + scaledMargin * 2;
+        const safeH = drawH + scaledMargin * 2;
+        if (safeW > 0 && safeH > 0) {
+          ctx.fillStyle = bgColor.value;
+          // Corner radius: smaller of 12px scaled or 1/4 of smallest dimension
+          const cornerRadius = Math.min(12 * scale, safeW / 4, safeH / 4);
+          roundRect(ctx, -safeW / 2, -safeH / 2, safeW, safeH, cornerRadius);
+          ctx.fill();
+        }
+
+        // Draw logo
+        ctx.drawImage(logoImage, -drawW / 2, -drawH / 2, drawW, drawH);
+
+        ctx.restore();
+      }
     }
 
     async function downloadQR() {
-      if (!qrCode) {
+      if (!qrCodeBase) {
         alert(I18n.t('qrGenerator.generateFirst'));
         return;
       }
-      // Use getRawData for SVG -> PNG export
-      const blob = await qrCode.getRawData('png');
+      // Use the rendered canvas
+      const blob = await new Promise(resolve => qrCanvas.toBlob(resolve, 'image/png'));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

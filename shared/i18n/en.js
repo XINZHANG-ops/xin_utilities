@@ -400,6 +400,13 @@ I18n.register('en', {
     generate: 'Generate QR Code',
     enterContent: 'Please enter URL or text',
     generateFirst: 'Please generate QR code first',
-    placeholderHint: 'Enter content and click generate'
+    placeholderHint: 'Enter content and click generate',
+    logoSize: 'Logo Size',
+    logoMargin: 'Margin',
+    logoMarginHint: 'Positive extends whitespace, negative shows QR dots',
+    logoRotation: 'Rotation',
+    logoPosition: 'Position Offset',
+    resetPosition: 'Reset Position',
+    dragToMove: 'Drag logo to adjust position'
   }
 });

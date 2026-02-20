@@ -400,6 +400,13 @@ I18n.register('zh', {
     generate: '生成二维码',
     enterContent: '请输入链接或文本',
     generateFirst: '请先生成二维码',
-    placeholderHint: '输入内容后点击生成'
+    placeholderHint: '输入内容后点击生成',
+    logoSize: 'Logo 大小',
+    logoMargin: '边距',
+    logoMarginHint: '正值扩展留白，负值让码点露出',
+    logoRotation: '旋转',
+    logoPosition: '位置偏移',
+    resetPosition: '重置位置',
+    dragToMove: '拖动 Logo 调整位置'
   }
 });
