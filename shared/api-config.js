@@ -29,7 +29,7 @@ const API_CONFIG = {
 const ENDPOINTS = {
   CHAT: '/chat',
   IMAGE_BG_REMOVE: '/remove-background',
-  // Add more endpoints as needed
+  KANBAN: '/kanban'
 };
 
 // Export for module usage (if needed)

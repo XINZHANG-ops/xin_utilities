@@ -61,10 +61,11 @@ I18n.register('en', {
     imageToolsCount: '5 tools',
     textToolsCount: '1 tool',
     canvasToolsCount: '1 tool',
-    shareToolsCount: '1 tool',
+    shareToolsCount: '2 tools',
 
     // Badges
     badgeEdit: 'Edit',
+    badgeCollab: 'Collab',
     badgeEffect: 'Effect',
     badgeConvert: 'Convert',
     badgeAnnotate: 'Annotate',
@@ -90,6 +91,8 @@ I18n.register('en', {
     whiteboardDesc: 'Doodle anytime. Brush, eraser, shapes, drag-and-drop images. Auto-saves to browser.',
     qrGeneratorTitle: 'QR Code Generator',
     qrGeneratorDesc: 'Quickly generate QR codes for links, text, WiFi, etc. Adjustable size, download PNG.',
+    kanbanTitle: 'Kanban Board',
+    kanbanDesc: 'Simple task board with drag-and-drop. Share with others via board code.',
 
     startUsing: 'Use Tool'
   },
