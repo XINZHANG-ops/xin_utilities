@@ -736,7 +736,8 @@
     let saveTimeout = null;
     let draggedCard = null;
     let autoRefreshInterval = null;
-    const AUTO_REFRESH_SECONDS = 5;
+    let isSaving = false;
+    const AUTO_REFRESH_SECONDS = 10;
 
     // ============ API ============
     const API_HEADERS = {
@@ -763,6 +764,7 @@
     async function saveBoard() {
       if (!currentBoard) return;
 
+      isSaving = true;
       updateSaveStatus('saving');
       try {
         const res = await fetch(API_CONFIG.getUrl(`/kanban/${currentBoard.id}`), {
@@ -775,12 +777,17 @@
       } catch (e) {
         console.error('Save error:', e);
         updateSaveStatus('error');
+      } finally {
+        isSaving = false;
       }
     }
 
     function autoSave() {
       clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(saveBoard, 500);
+      saveTimeout = setTimeout(async () => {
+        await saveBoard();
+        saveTimeout = null;
+      }, 500);
     }
 
     function updateSaveStatus(status) {
@@ -884,20 +891,18 @@
     async function refreshBoard(showAnimation = true) {
       if (!currentBoard) return;
 
+      // Skip refresh if currently saving or has pending save
+      if (isSaving || saveTimeout) {
+        return;
+      }
+
       const btn = document.getElementById('refreshBtn');
       if (showAnimation) btn.classList.add('refresh-spinning');
 
       try {
         const freshData = await loadBoard(currentBoard.id);
-
-        // If editing a card, preserve the local editing state
-        if (editingCard) {
-          currentBoard = freshData;
-          renderCards();
-        } else {
-          currentBoard = freshData;
-          renderCards();
-        }
+        currentBoard = freshData;
+        renderCards();
       } catch (e) {
         console.error('Refresh error:', e);
       } finally {
