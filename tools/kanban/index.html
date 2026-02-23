@@ -17,6 +17,7 @@
       --text-muted: #888;
       --border: #333;
       --todo-accent: #2997ff;
+      --progress-accent: #ff9f0a;
       --done-accent: #30d158;
     }
     * { box-sizing: border-box; }
@@ -531,7 +532,7 @@
 
     <!-- Board Content -->
     <main class="p-4">
-      <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Todo Column -->
         <div class="column" id="todoColumn">
           <div class="column-header" style="border-left: 3px solid var(--todo-accent);">
@@ -542,6 +543,15 @@
           <div class="p-3 border-t border-gray-800">
             <button id="addCardBtn" class="add-card-btn" data-i18n="addCard">+ Add Card</button>
           </div>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="column" id="progressColumn">
+          <div class="column-header" style="border-left: 3px solid var(--progress-accent);">
+            <span data-i18n="inProgress">In Progress</span>
+            <span id="progressCount" class="text-gray-500 text-sm">(0)</span>
+          </div>
+          <div class="column-content" id="progressList"></div>
         </div>
 
         <!-- Done Column -->
@@ -630,6 +640,7 @@
         create: 'Create',
         join: 'Join',
         todo: 'Todo',
+        inProgress: 'In Progress',
         done: 'Done',
         addCard: '+ Add Card',
         editCard: 'Edit Card',
@@ -667,6 +678,7 @@
         create: '创建',
         join: '加入',
         todo: '待办',
+        inProgress: '进行中',
         done: '已完成',
         addCard: '+ 添加卡片',
         editCard: '编辑卡片',
@@ -918,6 +930,12 @@
         .sort((a, b) => a.order - b.order);
     }
 
+    function getProgressCards() {
+      return currentBoard.cards
+        .filter(c => c.status === 'progress')
+        .sort((a, b) => a.order - b.order);
+    }
+
     function getDoneCards() {
       return currentBoard.cards
         .filter(c => c.status === 'done')
@@ -926,15 +944,19 @@
 
     function renderCards() {
       const todoList = document.getElementById('todoList');
+      const progressList = document.getElementById('progressList');
       const doneList = document.getElementById('doneList');
 
       const todoCards = getTodoCards();
+      const progressCards = getProgressCards();
       const doneCards = getDoneCards();
 
       document.getElementById('todoCount').textContent = `(${todoCards.length})`;
+      document.getElementById('progressCount').textContent = `(${progressCards.length})`;
       document.getElementById('doneCount').textContent = `(${doneCards.length})`;
 
       todoList.innerHTML = todoCards.map(card => renderCard(card)).join('');
+      progressList.innerHTML = progressCards.map(card => renderCard(card)).join('');
       doneList.innerHTML = doneCards.map(card => renderCard(card, true)).join('');
 
       setupDragAndDrop();
@@ -1240,6 +1262,7 @@
     function setupDragAndDrop() {
       const cards = document.querySelectorAll('.task-card');
       const todoList = document.getElementById('todoList');
+      const progressList = document.getElementById('progressList');
       const doneList = document.getElementById('doneList');
 
       cards.forEach(card => {
@@ -1248,7 +1271,7 @@
         card.addEventListener('click', () => openCardModal(card.dataset.cardId));
       });
 
-      [todoList, doneList].forEach(list => {
+      [todoList, progressList, doneList].forEach(list => {
         list.addEventListener('dragover', handleDragOver);
         list.addEventListener('drop', handleDrop);
         list.addEventListener('dragleave', handleDragLeave);
@@ -1311,19 +1334,21 @@
       if (!localCard) return;
 
       const targetList = e.currentTarget;
-      const isTodoList = targetList.id === 'todoList';
-      const newStatus = isTodoList ? 'todo' : 'done';
+      const listId = targetList.id;
+      const newStatus = listId === 'todoList' ? 'todo' :
+                        listId === 'progressList' ? 'progress' : 'done';
+      const needsOrder = newStatus === 'todo' || newStatus === 'progress';
 
       // Calculate new order before async operation
       let newOrder = 0;
-      if (isTodoList) {
+      if (needsOrder) {
         const cards = [...targetList.querySelectorAll('.task-card:not(.dragging)')];
         const dropIndex = cards.findIndex(c => {
           const rect = c.getBoundingClientRect();
           return e.clientY < rect.top + rect.height / 2;
         });
-        const todoCards = getTodoCards().filter(c => c.id !== cardId);
-        newOrder = dropIndex === -1 ? todoCards.length : dropIndex;
+        const existingCards = currentBoard.cards.filter(c => c.status === newStatus && c.id !== cardId);
+        newOrder = dropIndex === -1 ? existingCards.length : dropIndex;
       }
 
       // Fetch latest and merge
@@ -1332,35 +1357,32 @@
         const card = freshData.cards.find(c => c.id === cardId);
 
         if (card) {
-          // Update status
           card.status = newStatus;
           card.doneAt = newStatus === 'done' ? Date.now() : null;
 
-          if (isTodoList) {
+          if (needsOrder) {
             card.order = newOrder;
-            // Normalize orders
-            const allTodo = freshData.cards.filter(c => c.status === 'todo');
-            allTodo.sort((a, b) => {
+            const allInStatus = freshData.cards.filter(c => c.status === newStatus);
+            allInStatus.sort((a, b) => {
               if (a.id === cardId) return card.order - b.order - 0.5;
               if (b.id === cardId) return a.order - card.order + 0.5;
               return a.order - b.order;
             });
-            allTodo.forEach((c, i) => c.order = i);
+            allInStatus.forEach((c, i) => c.order = i);
           }
 
           currentBoard = freshData;
         }
-      } catch (e) {
-        // Fallback to local update
+      } catch (err) {
         const card = currentBoard.cards.find(c => c.id === cardId);
         if (card) {
           card.status = newStatus;
           card.doneAt = newStatus === 'done' ? Date.now() : null;
-          if (isTodoList) {
+          if (needsOrder) {
             card.order = newOrder;
-            const allTodo = currentBoard.cards.filter(c => c.status === 'todo');
-            allTodo.sort((a, b) => a.order - b.order);
-            allTodo.forEach((c, i) => c.order = i);
+            const allInStatus = currentBoard.cards.filter(c => c.status === newStatus);
+            allInStatus.sort((a, b) => a.order - b.order);
+            allInStatus.forEach((c, i) => c.order = i);
           }
         }
       }
