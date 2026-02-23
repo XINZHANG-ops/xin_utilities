@@ -509,6 +509,12 @@
             <span class="status-dot"></span>
             <span data-i18n="saved">Saved</span>
           </div>
+          <button id="refreshBtn" class="btn-secondary" style="padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span data-i18n="refresh">Refresh</span>
+          </button>
           <button id="langSwitchBoard" class="lang-switch">中文 / EN</button>
         </div>
       </div>
@@ -639,7 +645,8 @@
         completedAt: 'Completed',
         confirmDelete: 'Delete this card?',
         preview: 'Preview',
-        download: 'Download'
+        download: 'Download',
+        refresh: 'Refresh'
       },
       zh: {
         back: '返回',
@@ -675,7 +682,8 @@
         completedAt: '完成于',
         confirmDelete: '确定删除此卡片？',
         preview: '预览',
-        download: '下载'
+        download: '下载',
+        refresh: '刷新'
       }
     };
 
@@ -706,6 +714,8 @@
     let editingCard = null;
     let saveTimeout = null;
     let draggedCard = null;
+    let autoRefreshInterval = null;
+    const AUTO_REFRESH_SECONDS = 5;
 
     // ============ API ============
     const API_HEADERS = {
@@ -840,12 +850,38 @@
       document.getElementById('boardView').classList.remove('hidden');
       document.getElementById('currentBoardId').textContent = currentBoard.id;
       renderCards();
+      startAutoRefresh();
     }
 
     function showEntryView() {
       document.getElementById('boardView').classList.add('hidden');
       document.getElementById('entryView').classList.remove('hidden');
+      stopAutoRefresh();
       currentBoard = null;
+    }
+
+    async function refreshBoard() {
+      if (!currentBoard) return;
+
+      try {
+        const freshData = await loadBoard(currentBoard.id);
+        currentBoard = freshData;
+        renderCards();
+      } catch (e) {
+        console.error('Refresh error:', e);
+      }
+    }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      autoRefreshInterval = setInterval(refreshBoard, AUTO_REFRESH_SECONDS * 1000);
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
     }
 
     // ============ Card Operations ============
@@ -938,6 +974,7 @@
 
       modal.classList.remove('hidden');
       titleInput.focus();
+      stopAutoRefresh();
     }
 
     function updateColorPicker(selectedColor) {
@@ -949,6 +986,7 @@
     function closeCardModal() {
       document.getElementById('cardModal').classList.add('hidden');
       editingCard = null;
+      startAutoRefresh();
     }
 
     function saveCard() {
@@ -1276,6 +1314,7 @@
     document.getElementById('deleteCardBtn').onclick = deleteCard;
     document.getElementById('langSwitchEntry').onclick = toggleLang;
     document.getElementById('langSwitchBoard').onclick = toggleLang;
+    document.getElementById('refreshBtn').onclick = refreshBoard;
 
     document.getElementById('copyCodeBtn').onclick = () => {
       navigator.clipboard.writeText(currentBoard.id);
