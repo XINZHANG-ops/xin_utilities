@@ -437,6 +437,15 @@
       cursor: pointer;
       padding: 8px;
     }
+
+    /* Refresh button animation */
+    .refresh-spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -860,21 +869,35 @@
       currentBoard = null;
     }
 
-    async function refreshBoard() {
+    async function refreshBoard(showAnimation = true) {
       if (!currentBoard) return;
+
+      const btn = document.getElementById('refreshBtn');
+      if (showAnimation) btn.classList.add('refresh-spinning');
 
       try {
         const freshData = await loadBoard(currentBoard.id);
-        currentBoard = freshData;
-        renderCards();
+
+        // If editing a card, preserve the local editing state
+        if (editingCard) {
+          currentBoard = freshData;
+          renderCards();
+        } else {
+          currentBoard = freshData;
+          renderCards();
+        }
       } catch (e) {
         console.error('Refresh error:', e);
+      } finally {
+        if (showAnimation) {
+          setTimeout(() => btn.classList.remove('refresh-spinning'), 300);
+        }
       }
     }
 
     function startAutoRefresh() {
       stopAutoRefresh();
-      autoRefreshInterval = setInterval(refreshBoard, AUTO_REFRESH_SECONDS * 1000);
+      autoRefreshInterval = setInterval(() => refreshBoard(false), AUTO_REFRESH_SECONDS * 1000);
     }
 
     function stopAutoRefresh() {
@@ -974,7 +997,7 @@
 
       modal.classList.remove('hidden');
       titleInput.focus();
-      stopAutoRefresh();
+      // Keep auto-refresh running to see others' changes
     }
 
     function updateColorPicker(selectedColor) {
@@ -986,10 +1009,9 @@
     function closeCardModal() {
       document.getElementById('cardModal').classList.add('hidden');
       editingCard = null;
-      startAutoRefresh();
     }
 
-    function saveCard() {
+    async function saveCard() {
       const titleInput = document.getElementById('cardTitle');
       const contentInput = document.getElementById('cardContent');
       const selectedColor = document.querySelector('#colorPicker .color-option.selected');
@@ -998,11 +1020,27 @@
       editingCard.content = contentInput.value.trim();
       editingCard.color = selectedColor ? selectedColor.dataset.color : '';
 
-      const existingIndex = currentBoard.cards.findIndex(c => c.id === editingCard.id);
-      if (existingIndex >= 0) {
-        currentBoard.cards[existingIndex] = editingCard;
-      } else {
-        currentBoard.cards.push(editingCard);
+      // Fetch latest data to merge with others' changes
+      try {
+        const freshData = await loadBoard(currentBoard.id);
+
+        // Merge: use fresh data as base, then add/update our card
+        const existingIndex = freshData.cards.findIndex(c => c.id === editingCard.id);
+        if (existingIndex >= 0) {
+          freshData.cards[existingIndex] = editingCard;
+        } else {
+          freshData.cards.push(editingCard);
+        }
+
+        currentBoard = freshData;
+      } catch (e) {
+        // If fetch fails, fall back to local merge
+        const existingIndex = currentBoard.cards.findIndex(c => c.id === editingCard.id);
+        if (existingIndex >= 0) {
+          currentBoard.cards[existingIndex] = editingCard;
+        } else {
+          currentBoard.cards.push(editingCard);
+        }
       }
 
       closeCardModal();
@@ -1010,10 +1048,20 @@
       autoSave();
     }
 
-    function deleteCard() {
+    async function deleteCard() {
       if (!confirm(t('confirmDelete'))) return;
 
-      currentBoard.cards = currentBoard.cards.filter(c => c.id !== editingCard.id);
+      const cardIdToDelete = editingCard.id;
+
+      // Fetch latest data to merge
+      try {
+        const freshData = await loadBoard(currentBoard.id);
+        freshData.cards = freshData.cards.filter(c => c.id !== cardIdToDelete);
+        currentBoard = freshData;
+      } catch (e) {
+        currentBoard.cards = currentBoard.cards.filter(c => c.id !== cardIdToDelete);
+      }
+
       closeCardModal();
       renderCards();
       autoSave();
@@ -1253,50 +1301,68 @@
       e.currentTarget.classList.remove('drag-over');
     }
 
-    function handleDrop(e) {
+    async function handleDrop(e) {
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
       document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
 
       const cardId = e.dataTransfer.getData('text/plain');
-      const card = currentBoard.cards.find(c => c.id === cardId);
-      if (!card) return;
+      const localCard = currentBoard.cards.find(c => c.id === cardId);
+      if (!localCard) return;
 
       const targetList = e.currentTarget;
       const isTodoList = targetList.id === 'todoList';
       const newStatus = isTodoList ? 'todo' : 'done';
 
-      // Update status
-      if (card.status !== newStatus) {
-        card.status = newStatus;
-        card.doneAt = newStatus === 'done' ? Date.now() : null;
-      }
-
-      // Calculate new order for todo items
+      // Calculate new order before async operation
+      let newOrder = 0;
       if (isTodoList) {
         const cards = [...targetList.querySelectorAll('.task-card:not(.dragging)')];
         const dropIndex = cards.findIndex(c => {
           const rect = c.getBoundingClientRect();
           return e.clientY < rect.top + rect.height / 2;
         });
-
-        // Reorder todo cards
         const todoCards = getTodoCards().filter(c => c.id !== cardId);
-        if (dropIndex === -1) {
-          card.order = todoCards.length;
-        } else {
-          const targetCard = currentBoard.cards.find(c => c.id === cards[dropIndex]?.dataset.cardId);
-          card.order = targetCard ? targetCard.order : 0;
-        }
+        newOrder = dropIndex === -1 ? todoCards.length : dropIndex;
+      }
 
-        // Normalize orders
-        const allTodo = currentBoard.cards.filter(c => c.status === 'todo');
-        allTodo.sort((a, b) => {
-          if (a.id === cardId) return card.order - b.order - 0.5;
-          if (b.id === cardId) return a.order - card.order + 0.5;
-          return a.order - b.order;
-        });
-        allTodo.forEach((c, i) => c.order = i);
+      // Fetch latest and merge
+      try {
+        const freshData = await loadBoard(currentBoard.id);
+        const card = freshData.cards.find(c => c.id === cardId);
+
+        if (card) {
+          // Update status
+          card.status = newStatus;
+          card.doneAt = newStatus === 'done' ? Date.now() : null;
+
+          if (isTodoList) {
+            card.order = newOrder;
+            // Normalize orders
+            const allTodo = freshData.cards.filter(c => c.status === 'todo');
+            allTodo.sort((a, b) => {
+              if (a.id === cardId) return card.order - b.order - 0.5;
+              if (b.id === cardId) return a.order - card.order + 0.5;
+              return a.order - b.order;
+            });
+            allTodo.forEach((c, i) => c.order = i);
+          }
+
+          currentBoard = freshData;
+        }
+      } catch (e) {
+        // Fallback to local update
+        const card = currentBoard.cards.find(c => c.id === cardId);
+        if (card) {
+          card.status = newStatus;
+          card.doneAt = newStatus === 'done' ? Date.now() : null;
+          if (isTodoList) {
+            card.order = newOrder;
+            const allTodo = currentBoard.cards.filter(c => c.status === 'todo');
+            allTodo.sort((a, b) => a.order - b.order);
+            allTodo.forEach((c, i) => c.order = i);
+          }
+        }
       }
 
       renderCards();
