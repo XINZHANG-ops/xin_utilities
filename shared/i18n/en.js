@@ -44,7 +44,7 @@ I18n.register('en', {
   // Main Index Page
   index: {
     title: 'Xin Utilities',
-    subtitle: 'Browser-native tools. No uploads. Privacy first.',
+    subtitle: "Xin's Utilities",
     toolCount: '{count} tools',
 
     // Categories

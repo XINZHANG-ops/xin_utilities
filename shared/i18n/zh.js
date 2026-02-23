@@ -44,7 +44,7 @@ I18n.register('zh', {
   // Main Index Page
   index: {
     title: 'Xin Utilities',
-    subtitle: '浏览器原生工具，拒绝上传，隐私优先',
+    subtitle: 'Xin 的实用工具',
     toolCount: '{count} 个工具',
 
     // Categories
