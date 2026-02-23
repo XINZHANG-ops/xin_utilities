@@ -708,14 +708,23 @@
     let draggedCard = null;
 
     // ============ API ============
+    const API_HEADERS = {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    };
+
     async function checkBoardExists(boardId) {
-      const res = await fetch(API_CONFIG.getUrl(`/kanban/${boardId}/exists`));
+      const res = await fetch(API_CONFIG.getUrl(`/kanban/${boardId}/exists`), {
+        headers: API_HEADERS
+      });
       const data = await res.json();
       return data.exists;
     }
 
     async function loadBoard(boardId) {
-      const res = await fetch(API_CONFIG.getUrl(`/kanban/${boardId}`));
+      const res = await fetch(API_CONFIG.getUrl(`/kanban/${boardId}`), {
+        headers: API_HEADERS
+      });
       if (!res.ok) throw new Error('Board not found');
       return await res.json();
     }
@@ -727,7 +736,7 @@
       try {
         const res = await fetch(API_CONFIG.getUrl(`/kanban/${currentBoard.id}`), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: API_HEADERS,
           body: JSON.stringify(currentBoard)
         });
         if (!res.ok) throw new Error('Save failed');
