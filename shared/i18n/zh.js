@@ -400,7 +400,12 @@ I18n.register('zh', {
       namePlaceholder: '输入你的名称...',
       randomName: '随机名称',
       userJoined: '{name} 加入了白板',
-      userLeft: '{name} 离开了白板'
+      userLeft: '{name} 离开了白板',
+      follow: {
+        clickToFollow: '点击跟随',
+        following: '正在跟随',
+        exit: '退出跟随 (ESC)'
+      }
     }
   },
 

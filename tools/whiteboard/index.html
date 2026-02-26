@@ -580,6 +580,69 @@
       white-space: nowrap;
     }
 
+    /* Avatar following state */
+    .user-avatar.following {
+      box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5);
+      animation: follow-pulse 2s infinite;
+    }
+
+    @keyframes follow-pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(48, 209, 88, 0.2); }
+    }
+
+    .user-avatar.remote {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .user-avatar.remote:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Follow indicator */
+    .follow-indicator {
+      position: fixed;
+      bottom: 4rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      border-radius: 24px;
+      z-index: 60;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .follow-indicator.active {
+      display: flex;
+    }
+
+    .follow-indicator-text {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .follow-exit-btn {
+      padding: 0.375rem 0.75rem;
+      border: none;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.08);
+      color: var(--fg-muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .follow-exit-btn:hover {
+      background: rgba(0,0,0,0.15);
+      color: var(--fg);
+    }
+
     /* Responsive: hide some elements on small screens */
     @media (max-width: 900px) {
       .board-info { display: none !important; }
@@ -807,6 +870,12 @@
     拖拽框选 | Shift+点击多选 | Ctrl+C/V 复制粘贴 | Ctrl+Z 撤销 | Delete 删除 | 双击编辑文字
   </div>
 
+  <!-- Follow indicator -->
+  <div class="follow-indicator" id="followIndicator">
+    <span class="follow-indicator-text" id="followIndicatorText"></span>
+    <button class="follow-exit-btn" id="followExitBtn" data-i18n="whiteboard.collab.follow.exit">退出跟随 (ESC)</button>
+  </div>
+
   <script>
     // ========== Collaboration State ==========
     let socket = null;
@@ -814,6 +883,11 @@
     let currentUser = null;
     let remoteUsers = {};
     let isLocalMode = false;
+
+    // Follow mode state
+    let followingUserId = null;
+    let isFollowingUser = false;
+    let followScrollDebounceTimer = null;
     // Persistent user ID to avoid duplicates on reconnect
     let userId = localStorage.getItem('wb-user-id');
     if (!userId) {
@@ -1058,6 +1132,10 @@
 
       socket.on('wb_user_left', (data) => {
         console.log('[WB] User left:', data.user_id);
+        // Stop following if the user we're following left
+        if (isFollowingUser && followingUserId === data.user_id) {
+          stopFollowingUser();
+        }
         delete remoteUsers[data.user_id];
         removeRemoteCursor(data.user_id);
         updateUsersDisplay();
@@ -1149,13 +1227,16 @@
         usersOnlineEl.appendChild(avatar);
       }
 
-      // Add remote users with page indicator
+      // Add remote users with page indicator and click-to-follow
       users.slice(0, 5).forEach(user => {
         const avatar = document.createElement('div');
-        avatar.className = 'user-avatar';
+        const isFollowing = followingUserId === user.id;
+        avatar.className = 'user-avatar remote' + (isFollowing ? ' following' : '');
         avatar.style.background = user.color;
         const pageInfo = user.page !== undefined && user.page !== currentPageIndex ? ` [P${user.page + 1}]` : '';
-        avatar.innerHTML = `${user.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${user.name}${pageInfo}</span>`;
+        const followHint = isFollowing ? '' : ' - ' + I18n.t('whiteboard.collab.follow.clickToFollow');
+        avatar.innerHTML = `${user.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${user.name}${pageInfo}${followHint}</span>`;
+        avatar.addEventListener('click', () => startFollowingUser(user.id));
         usersOnlineEl.appendChild(avatar);
       });
 
@@ -1177,6 +1258,11 @@
       // Hide cursor if user is on different page or position is invalid
       const onSamePage = page === currentPageIndex;
       const validPosition = x >= 0 && y >= 0;
+
+      // If following this user and they changed page, auto-switch
+      if (isFollowingUser && followingUserId === uid && !onSamePage && page !== undefined) {
+        switchToPage(page, true); // true = auto-follow
+      }
 
       if (!onSamePage || !validPosition) {
         if (cursor) cursor.style.display = 'none';
@@ -1200,6 +1286,16 @@
       const rect = canvas.getBoundingClientRect();
       cursor.style.left = (rect.left + x) + 'px';
       cursor.style.top = (rect.top + y) + 'px';
+
+      // If following this user, debounce scroll to cursor
+      if (isFollowingUser && followingUserId === uid) {
+        if (followScrollDebounceTimer) {
+          clearTimeout(followScrollDebounceTimer);
+        }
+        followScrollDebounceTimer = setTimeout(() => {
+          scrollToCursor(uid);
+        }, 100);
+      }
     }
 
     function removeRemoteCursor(uid) {
@@ -1210,6 +1306,97 @@
     function clearRemoteCursors() {
       remoteCursorsEl.innerHTML = '';
     }
+
+    // ========== Follow Mode ==========
+    function startFollowingUser(uid) {
+      // Toggle off if already following same user
+      if (followingUserId === uid) {
+        stopFollowingUser();
+        return;
+      }
+
+      const user = remoteUsers[uid];
+      if (!user) return;
+
+      followingUserId = uid;
+      isFollowingUser = true;
+
+      // Update avatar display
+      updateUsersDisplay();
+
+      // Show follow indicator
+      showFollowIndicator(user.name);
+
+      // If target is on different page, switch to their page
+      if (user.page !== undefined && user.page !== currentPageIndex) {
+        switchToPage(user.page, true); // true = auto-follow, don't exit follow mode
+      }
+
+      // Immediately scroll to target's cursor if visible
+      scrollToCursor(uid);
+    }
+
+    function stopFollowingUser() {
+      followingUserId = null;
+      isFollowingUser = false;
+
+      // Clear debounce timer
+      if (followScrollDebounceTimer) {
+        clearTimeout(followScrollDebounceTimer);
+        followScrollDebounceTimer = null;
+      }
+
+      // Update avatar display
+      updateUsersDisplay();
+
+      // Hide follow indicator
+      hideFollowIndicator();
+    }
+
+    function scrollToCursor(uid) {
+      const cursor = document.getElementById('cursor-' + uid);
+      if (!cursor || cursor.style.display === 'none') return;
+
+      const wrapper = document.getElementById('canvasWrapper');
+      const rect = canvas.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+
+      // Get cursor position relative to canvas
+      const cursorLeft = parseFloat(cursor.style.left) - rect.left;
+      const cursorTop = parseFloat(cursor.style.top) - rect.top;
+
+      // Calculate target scroll to center cursor in viewport
+      const targetScrollLeft = cursorLeft - (wrapperRect.width / 2);
+      const targetScrollTop = cursorTop - (wrapperRect.height / 2);
+
+      // Clamp to valid range
+      const maxScrollLeft = Math.max(0, canvas.offsetWidth - wrapperRect.width + 40);
+      const maxScrollTop = Math.max(0, canvas.offsetHeight - wrapperRect.height + 40);
+
+      const clampedLeft = Math.max(0, Math.min(targetScrollLeft, maxScrollLeft));
+      const clampedTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+
+      wrapper.scrollTo({
+        left: clampedLeft,
+        top: clampedTop,
+        behavior: 'smooth'
+      });
+    }
+
+    function showFollowIndicator(userName) {
+      const indicator = document.getElementById('followIndicator');
+      const text = document.getElementById('followIndicatorText');
+      text.textContent = I18n.t('whiteboard.collab.follow.following') + ' ' + userName;
+      indicator.classList.add('active');
+    }
+
+    function hideFollowIndicator() {
+      const indicator = document.getElementById('followIndicator');
+      indicator.classList.remove('active');
+    }
+
+    // Follow exit button handler
+    document.getElementById('followExitBtn').addEventListener('click', stopFollowingUser);
 
     // Emit cursor position with page info
     let lastCursorEmit = 0;
@@ -1721,8 +1908,13 @@
       historyIndex = pages[pageIndex].historyIndex;
     }
 
-    function switchToPage(pageIndex) {
+    function switchToPage(pageIndex, isAutoFollow = false) {
       if (pageIndex < 0 || pageIndex >= pages.length) return;
+
+      // Exit follow mode if manual page switch (not auto-follow)
+      if (!isAutoFollow && isFollowingUser) {
+        stopFollowingUser();
+      }
 
       // Save current page
       saveCurrentPageState();
@@ -2140,6 +2332,11 @@
       const hit = hitTestObjects(pos.x, pos.y);
 
       if (hit && currentTool !== 'eraser') {
+        // Exit follow mode when dragging/editing objects
+        if (isFollowingUser && hit.handle !== 'move') {
+          // Resizing - exit follow mode
+          stopFollowingUser();
+        }
         // Check if object is already selected (for multi-select drag)
         if (selectedObjects.includes(hit.obj)) {
           // Dragging already selected objects
@@ -2175,6 +2372,11 @@
         updateSelectedControls();
         redraw();
         return;
+      }
+
+      // Exit follow mode when starting to draw or create objects
+      if (isFollowingUser) {
+        stopFollowingUser();
       }
 
       selectedObjects = [];
@@ -2901,6 +3103,13 @@
     document.getElementById('redoBtn').addEventListener('click', redo);
 
     document.addEventListener('keydown', e => {
+      // ESC to exit follow mode
+      if (e.key === 'Escape' && isFollowingUser) {
+        e.preventDefault();
+        stopFollowingUser();
+        return;
+      }
+
       // Don't handle shortcuts while editing text
       if (editingObject) return;
 

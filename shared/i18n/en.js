@@ -400,7 +400,12 @@ I18n.register('en', {
       namePlaceholder: 'Enter your name...',
       randomName: 'Random Name',
       userJoined: '{name} joined the board',
-      userLeft: '{name} left the board'
+      userLeft: '{name} left the board',
+      follow: {
+        clickToFollow: 'Click to follow',
+        following: 'Following',
+        exit: 'Exit follow (ESC)'
+      }
     }
   },
 
