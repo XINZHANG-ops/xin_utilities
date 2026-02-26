@@ -186,11 +186,9 @@
       left: 0;
       right: 0;
       bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       background: var(--bg);
       overflow: auto;
+      padding: 20px;
     }
 
     .hint {
@@ -2970,10 +2968,12 @@
       if (!clipboard) return;
 
       if (clipboardType === 'objects') {
-        // Paste selected objects with offset
+        // Paste selected objects with offset and NEW IDs
         const pastedObjects = [];
         for (const clipObj of clipboard) {
           const obj = JSON.parse(JSON.stringify(clipObj));
+          // Generate new unique ID for pasted object
+          obj.id = generateObjectId();
           obj.x = (obj.x || 0) + 20;
           obj.y = (obj.y || 0) + 20;
           if (obj.x1 !== undefined) { obj.x1 += 20; obj.x2 += 20; }
@@ -2989,6 +2989,7 @@
           }
           objects.push(obj);
           pastedObjects.push(obj);
+          emitObjectChange('add', obj);
         }
         selectedObjects = pastedObjects;
         updateSelectedControls();
@@ -3010,6 +3011,7 @@
           // If at max pages, paste into current page
           for (const objData of clipboard) {
             const obj = JSON.parse(JSON.stringify(objData));
+            obj.id = generateObjectId(); // New ID
             if (obj.type === 'image' && obj.imgSrc) {
               const img = new Image();
               img.src = obj.imgSrc;
@@ -3022,6 +3024,7 @@
               });
             }
             objects.push(obj);
+            emitObjectChange('add', obj);
           }
           saveState();
           redraw();
@@ -3032,6 +3035,7 @@
           const newObjects = [];
           for (const objData of clipboard) {
             const obj = JSON.parse(JSON.stringify(objData));
+            obj.id = generateObjectId(); // New ID
             if (obj.type === 'image' && obj.imgSrc) {
               const img = new Image();
               img.src = obj.imgSrc;
