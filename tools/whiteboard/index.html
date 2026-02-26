@@ -578,6 +578,37 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      position: relative;
+    }
+    .board-info:hover {
+      background: rgba(0,0,0,0.1);
+    }
+    .board-info:active {
+      background: rgba(48, 209, 88, 0.2);
+    }
+    .board-info-tooltip {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--fg);
+      color: var(--bg);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .board-info:hover .board-info-tooltip {
+      opacity: 1;
+    }
+    .board-info.copied .board-info-tooltip {
+      opacity: 1;
+      background: var(--accent);
     }
 
     /* Avatar following state */
@@ -827,8 +858,9 @@
         <div class="users-online" id="usersOnline"></div>
 
         <!-- Board Info -->
-        <div class="board-info" id="boardInfo" style="display:none;">
+        <div class="board-info" id="boardInfo" style="display:none;" data-i18n-title="whiteboard.collab.clickToCopy" title="点击复制">
           <span id="boardNameDisplay"></span>
+          <span class="board-info-tooltip" id="boardInfoTooltip" data-i18n="whiteboard.collab.clickToCopy">点击复制</span>
         </div>
 
         <button class="lang-toggle" id="langToggle">中文</button>
@@ -1030,6 +1062,24 @@
       updateConnectionStatus('local');
       usersOnlineEl.innerHTML = '';
       loadFromLocalStorage();
+    });
+
+    // Click board name to copy
+    const boardInfo = document.getElementById('boardInfo');
+    const boardInfoTooltip = document.getElementById('boardInfoTooltip');
+    boardInfo.addEventListener('click', async () => {
+      if (!currentBoard) return;
+      try {
+        await navigator.clipboard.writeText(currentBoard.name);
+        boardInfo.classList.add('copied');
+        boardInfoTooltip.textContent = I18n.t('whiteboard.collab.copied');
+        setTimeout(() => {
+          boardInfo.classList.remove('copied');
+          boardInfoTooltip.textContent = I18n.t('whiteboard.collab.clickToCopy');
+        }, 1500);
+      } catch (e) {
+        console.error('Failed to copy:', e);
+      }
     });
 
     // ========== WebSocket ==========
@@ -2132,21 +2182,21 @@
       });
     });
 
-    // Text controls
+    // Text controls (apply to both textbox and sticky)
     textSizeSlider.addEventListener('input', e => {
-      const textboxes = selectedObjects.filter(o => o.type === 'textbox');
-      if (textboxes.length > 0) {
-        textboxes.forEach(obj => updateObjectProps(obj, { fontSize: parseInt(e.target.value) }));
+      const textElements = selectedObjects.filter(o => o.type === 'textbox' || o.type === 'sticky');
+      if (textElements.length > 0) {
+        textElements.forEach(obj => updateObjectProps(obj, { fontSize: parseInt(e.target.value) }));
         saveState();
         redraw();
       }
     });
 
     textBoldBtn.addEventListener('click', () => {
-      const textboxes = selectedObjects.filter(o => o.type === 'textbox');
-      if (textboxes.length > 0) {
-        const newBold = !textboxes[0].bold;
-        textboxes.forEach(obj => updateObjectProps(obj, { bold: newBold }));
+      const textElements = selectedObjects.filter(o => o.type === 'textbox' || o.type === 'sticky');
+      if (textElements.length > 0) {
+        const newBold = !textElements[0].bold;
+        textElements.forEach(obj => updateObjectProps(obj, { bold: newBold }));
         textBoldBtn.classList.toggle('active', newBold);
         saveState();
         redraw();
@@ -2161,15 +2211,17 @@
     }
 
     function updateSelectedControls() {
-      // Show text controls when textbox selected
-      const hasTextbox = selectedObjects.some(o => o.type === 'textbox');
-      textSizeControl.style.display = hasTextbox ? 'flex' : 'none';
+      // Show text controls when textbox or sticky selected
+      const hasTextElement = selectedObjects.some(o => o.type === 'textbox' || o.type === 'sticky');
+      textSizeControl.style.display = hasTextElement ? 'flex' : 'none';
 
       // Update controls to reflect first selected object's properties
       if (selectedObjects.length === 1) {
         const obj = selectedObjects[0];
         if (obj.type === 'sticky') {
-          setColor(obj.color || '#fff59d');
+          setColor(obj.textColor || '#1d1d1f');
+          textSizeSlider.value = obj.fontSize || 16;
+          textBoldBtn.classList.toggle('active', obj.bold || false);
         } else if (obj.type === 'textbox') {
           setColor(obj.color || '#1d1d1f');
           textSizeSlider.value = obj.fontSize || 18;
@@ -2192,7 +2244,14 @@
         const colorableTypes = ['textbox', 'rect', 'circle', 'arrow', 'sticky'];
         const colorable = selectedObjects.filter(o => colorableTypes.includes(o.type));
         if (colorable.length > 0) {
-          colorable.forEach(obj => updateObjectProps(obj, { color }));
+          colorable.forEach(obj => {
+            // For sticky notes, apply color to text (textColor), not background
+            if (obj.type === 'sticky') {
+              updateObjectProps(obj, { textColor: color });
+            } else {
+              updateObjectProps(obj, { color });
+            }
+          });
           saveState();
           redraw();
         }
@@ -2258,8 +2317,9 @@
         textarea.style.width = obj.width + 'px';
         textarea.style.height = obj.height + 'px';
         textarea.style.background = obj.color;
-        textarea.style.color = '#1d1d1f';
+        textarea.style.color = obj.textColor || '#1d1d1f';
         textarea.style.fontSize = (obj.fontSize || 16) + 'px';
+        textarea.style.fontWeight = obj.bold ? 'bold' : 'normal';
       } else {
         textarea.style.left = (rect.left + obj.x - 4) + 'px';
         textarea.style.top = (rect.top + obj.y - 4) + 'px';
@@ -2836,8 +2896,9 @@
 
       // Draw text
       if (obj.text) {
-        ctx.fillStyle = '#1d1d1f';
-        ctx.font = `${obj.fontSize || 16}px 'Plus Jakarta Sans', sans-serif`;
+        ctx.fillStyle = obj.textColor || '#1d1d1f';
+        const fontWeight = obj.bold ? 'bold' : 'normal';
+        ctx.font = `${fontWeight} ${obj.fontSize || 16}px 'Plus Jakarta Sans', sans-serif`;
         ctx.textBaseline = 'top';
 
         const padding = 12;

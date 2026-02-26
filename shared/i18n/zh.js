@@ -405,7 +405,9 @@ I18n.register('zh', {
         clickToFollow: '点击跟随',
         following: '正在跟随',
         exit: '退出跟随 (ESC)'
-      }
+      },
+      clickToCopy: '点击复制',
+      copied: '已复制'
     }
   },
 

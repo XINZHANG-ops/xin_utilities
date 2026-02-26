@@ -405,7 +405,9 @@ I18n.register('en', {
         clickToFollow: 'Click to follow',
         following: 'Following',
         exit: 'Exit follow (ESC)'
-      }
+      },
+      clickToCopy: 'Click to copy',
+      copied: 'Copied'
     }
   },
 
