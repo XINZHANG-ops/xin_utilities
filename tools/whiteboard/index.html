@@ -904,6 +904,9 @@
       document.getElementById('boardNameDisplay').textContent = boardName;
       document.getElementById('boardInfo').style.display = 'flex';
 
+      // Save empty board immediately
+      await saveBoardToServer();
+
       connectWebSocket();
     });
 
