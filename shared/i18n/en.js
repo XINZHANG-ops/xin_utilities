@@ -375,6 +375,31 @@ I18n.register('en', {
       saving: 'Saving...',
       saved: 'Saved',
       storageFull: 'Storage full'
+    },
+    // Collaboration
+    collab: {
+      selectBoard: 'Select Board',
+      createNew: 'Create New Board',
+      joinExisting: 'Join Existing Board',
+      boardName: 'Board Name',
+      boardNamePlaceholder: 'Enter board name...',
+      create: 'Create',
+      join: 'Join',
+      boardNotFound: 'Board not found',
+      connecting: 'Connecting...',
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      reconnecting: 'Reconnecting...',
+      liveSync: 'Live Sync',
+      usersOnline: '{count} online',
+      you: 'You',
+      localMode: 'Local Mode',
+      switchToLocal: 'Switch to Local',
+      yourName: 'Your Name',
+      namePlaceholder: 'Enter your name...',
+      randomName: 'Random Name',
+      userJoined: '{name} joined the board',
+      userLeft: '{name} left the board'
     }
   },
 

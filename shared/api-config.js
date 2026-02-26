@@ -31,6 +31,7 @@ const ENDPOINTS = {
   CHAT: '/chat',
   IMAGE_BG_REMOVE: '/remove-background',
   KANBAN: '/kanban',
+  WHITEBOARD: '/whiteboard',
   QR_CREATE: '/qr/create',
   QR_REDIRECT: '/r',
   QR_STATS: '/qr',

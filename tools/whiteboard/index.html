@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-page-title="whiteboard.title">在线白板 - Xin Utilities</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../../shared/api-config.js"></script>
   <script src="../../shared/i18n/i18n.js"></script>
   <script src="../../shared/i18n/zh.js"></script>
   <script src="../../shared/i18n/en.js"></script>
@@ -346,9 +348,254 @@
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.2);
     }
+
+    /* Board Selection Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .modal-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .modal-tab {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.05);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .modal-tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus {
+      border-color: var(--accent);
+    }
+    .modal-btn {
+      width: 100%;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-btn:hover {
+      background: var(--accent-hover);
+    }
+    .modal-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .modal-error {
+      color: #ff3b30;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+    .modal-local-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--fg-muted);
+    }
+    .modal-local-link a {
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Connection Status */
+    .ws-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: rgba(0,0,0,0.05);
+    }
+    .ws-status.connected {
+      background: rgba(48, 209, 88, 0.15);
+      color: #30d158;
+    }
+    .ws-status.disconnected {
+      background: rgba(255, 59, 48, 0.15);
+      color: #ff3b30;
+    }
+    .ws-status.connecting {
+      background: rgba(255, 159, 10, 0.15);
+      color: #ff9f0a;
+    }
+    .ws-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .ws-status.connecting .ws-dot {
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Users Online */
+    .users-online {
+      display: flex;
+      align-items: center;
+      gap: -8px;
+      margin-left: 0.5rem;
+    }
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 600;
+      color: #fff;
+      margin-left: -8px;
+      cursor: default;
+      position: relative;
+    }
+    .user-avatar:first-child {
+      margin-left: 0;
+    }
+    .user-avatar-tooltip {
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--fg);
+      color: var(--bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .user-avatar:hover .user-avatar-tooltip {
+      opacity: 1;
+    }
+
+    /* Remote Cursors */
+    .remote-cursor {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100;
+      transition: left 0.05s linear, top 0.05s linear;
+    }
+    .remote-cursor-pointer {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 12px solid currentColor;
+      transform: rotate(-45deg);
+    }
+    .remote-cursor-label {
+      position: absolute;
+      left: 12px;
+      top: 8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    /* Board info */
+    .board-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(0,0,0,0.05);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+    }
   </style>
 </head>
 <body>
+  <!-- Board Selection Modal -->
+  <div class="modal-overlay" id="boardModal">
+    <div class="modal-content">
+      <h2 class="modal-title" data-i18n="whiteboard.collab.selectBoard">选择白板</h2>
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="create" data-i18n="whiteboard.collab.createNew">创建新白板</button>
+        <button class="modal-tab" data-tab="join" data-i18n="whiteboard.collab.joinExisting">加入已有白板</button>
+      </div>
+      <div id="createTab">
+        <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.yourName">你的名称</label>
+        <input type="text" class="modal-input" id="userName" data-i18n-placeholder="whiteboard.collab.namePlaceholder" placeholder="输入你的名称...">
+        <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.boardName">白板名称</label>
+        <input type="text" class="modal-input" id="newBoardName" data-i18n-placeholder="whiteboard.collab.boardNamePlaceholder" placeholder="输入白板名称...">
+        <button class="modal-btn" id="createBoardBtn" data-i18n="whiteboard.collab.create">创建</button>
+      </div>
+      <div id="joinTab" style="display:none;">
+        <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.yourName">你的名称</label>
+        <input type="text" class="modal-input" id="joinUserName" data-i18n-placeholder="whiteboard.collab.namePlaceholder" placeholder="输入你的名称...">
+        <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.boardName">白板名称</label>
+        <input type="text" class="modal-input" id="joinBoardName" data-i18n-placeholder="whiteboard.collab.boardNamePlaceholder" placeholder="输入白板名称...">
+        <button class="modal-btn" id="joinBoardBtn" data-i18n="whiteboard.collab.join">加入</button>
+        <div class="modal-error" id="joinError" style="display:none;"></div>
+      </div>
+      <div class="modal-local-link">
+        <a id="localModeLink" data-i18n="whiteboard.collab.localMode">本地模式</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remote Cursors Container -->
+  <div id="remoteCursors"></div>
+
   <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
     <div class="max-w-full mx-auto px-4 py-2 flex items-center gap-4">
       <a href="../../index.html" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
@@ -474,8 +721,25 @@
         <span class="save-indicator" id="saveIndicator" data-i18n="whiteboard.status.saved">已保存</span>
       </div>
 
-      <button class="lang-toggle" id="langToggle">中文</button>
+      <!-- Connection Status -->
+      <div class="ws-status connecting" id="wsStatus">
+        <span class="ws-dot"></span>
+        <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
       </div>
+
+      <!-- Users Online -->
+      <div class="users-online" id="usersOnline"></div>
+
+      <!-- Board Info -->
+      <div class="board-info" id="boardInfo" style="display:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18"/>
+        </svg>
+        <span id="boardNameDisplay"></span>
+      </div>
+
+      <button class="lang-toggle" id="langToggle">中文</button>
     </div>
   </nav>
 
@@ -513,6 +777,579 @@
   </div>
 
   <script>
+    // ========== Collaboration State ==========
+    let socket = null;
+    let currentBoard = null;
+    let currentUser = null;
+    let remoteUsers = {};
+    let isLocalMode = false;
+    let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+
+    // User colors for avatars
+    const userColors = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#30d158', '#00c7be', '#007aff', '#5856d6', '#af52de', '#ff2d55'];
+
+    function generateUserColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return userColors[Math.abs(hash) % userColors.length];
+    }
+
+    function generateRandomName() {
+      const adjectives = ['Happy', 'Swift', 'Clever', 'Bright', 'Cool', 'Calm', 'Bold', 'Kind'];
+      const nouns = ['Panda', 'Tiger', 'Eagle', 'Fox', 'Wolf', 'Bear', 'Owl', 'Hawk'];
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      return `${adj}${noun}${Math.floor(Math.random() * 100)}`;
+    }
+
+    // ========== Board Modal ==========
+    const boardModal = document.getElementById('boardModal');
+    const createTab = document.getElementById('createTab');
+    const joinTab = document.getElementById('joinTab');
+    const userNameInput = document.getElementById('userName');
+    const joinUserNameInput = document.getElementById('joinUserName');
+    const newBoardNameInput = document.getElementById('newBoardName');
+    const joinBoardNameInput = document.getElementById('joinBoardName');
+    const createBoardBtn = document.getElementById('createBoardBtn');
+    const joinBoardBtn = document.getElementById('joinBoardBtn');
+    const joinError = document.getElementById('joinError');
+    const localModeLink = document.getElementById('localModeLink');
+
+    // Load saved user name
+    const savedUserName = localStorage.getItem('wb-user-name') || generateRandomName();
+    userNameInput.value = savedUserName;
+    joinUserNameInput.value = savedUserName;
+
+    // Tab switching
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const tabName = tab.dataset.tab;
+        createTab.style.display = tabName === 'create' ? 'block' : 'none';
+        joinTab.style.display = tabName === 'join' ? 'block' : 'none';
+        joinError.style.display = 'none';
+      });
+    });
+
+    // Create board
+    createBoardBtn.addEventListener('click', async () => {
+      const boardName = newBoardNameInput.value.trim();
+      const userName = userNameInput.value.trim() || generateRandomName();
+      if (!boardName) return;
+
+      localStorage.setItem('wb-user-name', userName);
+      localStorage.setItem('wb-last-board', boardName);
+      currentUser = { id: userId, name: userName, color: generateUserColor(userName) };
+      currentBoard = { id: boardName, name: boardName };
+
+      boardModal.style.display = 'none';
+      document.getElementById('boardNameDisplay').textContent = boardName;
+      document.getElementById('boardInfo').style.display = 'flex';
+
+      connectWebSocket();
+    });
+
+    // Join board
+    joinBoardBtn.addEventListener('click', async () => {
+      const boardName = joinBoardNameInput.value.trim();
+      const userName = joinUserNameInput.value.trim() || generateRandomName();
+      if (!boardName) return;
+
+      joinError.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${boardName}/exists`);
+        const data = await res.json();
+
+        if (data.exists) {
+          localStorage.setItem('wb-user-name', userName);
+          localStorage.setItem('wb-last-board', boardName);
+          currentUser = { id: userId, name: userName, color: generateUserColor(userName) };
+          currentBoard = { id: boardName, name: boardName };
+
+          boardModal.style.display = 'none';
+          document.getElementById('boardNameDisplay').textContent = boardName;
+          document.getElementById('boardInfo').style.display = 'flex';
+
+          connectWebSocket();
+          loadBoardFromServer();
+        } else {
+          joinError.textContent = I18n.t('whiteboard.collab.boardNotFound');
+          joinError.style.display = 'block';
+        }
+      } catch (e) {
+        joinError.textContent = I18n.t('whiteboard.collab.boardNotFound');
+        joinError.style.display = 'block';
+      }
+    });
+
+    // Local mode
+    localModeLink.addEventListener('click', () => {
+      isLocalMode = true;
+      boardModal.style.display = 'none';
+      updateConnectionStatus('local');
+      loadFromLocalStorage();
+    });
+
+    // ========== WebSocket ==========
+    const wsStatus = document.getElementById('wsStatus');
+    const wsStatusText = document.getElementById('wsStatusText');
+    const usersOnlineEl = document.getElementById('usersOnline');
+    const remoteCursorsEl = document.getElementById('remoteCursors');
+
+    function updateConnectionStatus(status) {
+      wsStatus.className = 'ws-status ' + status;
+      if (status === 'connected') {
+        wsStatusText.textContent = I18n.t('whiteboard.collab.connected');
+      } else if (status === 'disconnected') {
+        wsStatusText.textContent = I18n.t('whiteboard.collab.disconnected');
+      } else if (status === 'connecting') {
+        wsStatusText.textContent = I18n.t('whiteboard.collab.connecting');
+      } else if (status === 'local') {
+        wsStatusText.textContent = I18n.t('whiteboard.collab.localMode');
+        wsStatus.className = 'ws-status';
+      }
+    }
+
+    function connectWebSocket() {
+      updateConnectionStatus('connecting');
+
+      socket = io(API_CONFIG.BASE_URL, {
+        transports: ['websocket', 'polling']
+      });
+
+      socket.on('connect', () => {
+        console.log('[WB] Connected to server');
+        updateConnectionStatus('connected');
+
+        socket.emit('wb_join', {
+          board_id: currentBoard.id,
+          user: currentUser,
+          sid: userId
+        });
+      });
+
+      socket.on('disconnect', () => {
+        console.log('[WB] Disconnected');
+        updateConnectionStatus('disconnected');
+        remoteUsers = {};
+        updateUsersDisplay();
+        clearRemoteCursors();
+      });
+
+      socket.on('connect_error', () => {
+        updateConnectionStatus('disconnected');
+      });
+
+      // User events
+      socket.on('wb_joined', (data) => {
+        console.log('[WB] Joined board:', data);
+        if (data.users) {
+          remoteUsers = {};
+          data.users.forEach(u => {
+            if (u.id !== userId) remoteUsers[u.id] = u;
+          });
+          updateUsersDisplay();
+        }
+      });
+
+      socket.on('wb_user_joined', (data) => {
+        console.log('[WB] User joined:', data.user);
+        if (data.user && data.user.id !== userId) {
+          remoteUsers[data.user.id] = data.user;
+          updateUsersDisplay();
+        }
+      });
+
+      socket.on('wb_user_left', (data) => {
+        console.log('[WB] User left:', data.user_id);
+        delete remoteUsers[data.user_id];
+        removeRemoteCursor(data.user_id);
+        updateUsersDisplay();
+      });
+
+      // Cursor events
+      socket.on('wb_cursor_update', (data) => {
+        if (data.user_id !== userId) {
+          updateRemoteCursor(data.user_id, data.x, data.y);
+        }
+      });
+
+      // Object events
+      socket.on('wb_object_update', (data) => {
+        console.log('[WB] Object update:', data);
+        handleRemoteObjectUpdate(data);
+      });
+
+      // Drawing events (real-time brush strokes)
+      socket.on('wb_drawing_update', (data) => {
+        handleRemoteDrawing(data);
+      });
+
+      // State events (undo/redo)
+      socket.on('wb_state_update', (data) => {
+        console.log('[WB] State update:', data);
+        handleRemoteStateUpdate(data);
+      });
+
+      // Clear event
+      socket.on('wb_clear_update', (data) => {
+        console.log('[WB] Clear update:', data);
+        if (data.page_index === currentPageIndex) {
+          objects = [];
+          history = [];
+          historyIndex = -1;
+          selectedObjects = [];
+          updateSelectedControls();
+          saveCurrentPageState();
+          redraw();
+          updatePageUI();
+        }
+      });
+
+      // Page events
+      socket.on('wb_page_update', (data) => {
+        console.log('[WB] Page update:', data);
+        handleRemotePageUpdate(data);
+      });
+
+      // Full sync
+      socket.on('wb_synced', (data) => {
+        console.log('[WB] Board synced:', data);
+        loadBoardData(data);
+      });
+    }
+
+    function updateUsersDisplay() {
+      const users = Object.values(remoteUsers);
+      usersOnlineEl.innerHTML = '';
+
+      // Add current user first
+      if (currentUser) {
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+        avatar.style.background = currentUser.color;
+        avatar.innerHTML = `${currentUser.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${currentUser.name} (${I18n.t('whiteboard.collab.you')})</span>`;
+        usersOnlineEl.appendChild(avatar);
+      }
+
+      // Add remote users
+      users.slice(0, 5).forEach(user => {
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+        avatar.style.background = user.color;
+        avatar.innerHTML = `${user.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${user.name}</span>`;
+        usersOnlineEl.appendChild(avatar);
+      });
+
+      if (users.length > 5) {
+        const more = document.createElement('div');
+        more.className = 'user-avatar';
+        more.style.background = '#86868b';
+        more.textContent = `+${users.length - 5}`;
+        usersOnlineEl.appendChild(more);
+      }
+    }
+
+    function updateRemoteCursor(uid, x, y) {
+      const user = remoteUsers[uid];
+      if (!user) return;
+
+      let cursor = document.getElementById('cursor-' + uid);
+      if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = 'cursor-' + uid;
+        cursor.className = 'remote-cursor';
+        cursor.style.color = user.color;
+        cursor.innerHTML = `
+          <div class="remote-cursor-pointer"></div>
+          <div class="remote-cursor-label" style="background:${user.color}">${user.name}</div>
+        `;
+        remoteCursorsEl.appendChild(cursor);
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      cursor.style.left = (rect.left + x) + 'px';
+      cursor.style.top = (rect.top + y) + 'px';
+    }
+
+    function removeRemoteCursor(uid) {
+      const cursor = document.getElementById('cursor-' + uid);
+      if (cursor) cursor.remove();
+    }
+
+    function clearRemoteCursors() {
+      remoteCursorsEl.innerHTML = '';
+    }
+
+    // Emit cursor position
+    let lastCursorEmit = 0;
+    function emitCursor(x, y) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      const now = Date.now();
+      if (now - lastCursorEmit < 50) return; // Throttle to 20fps
+      lastCursorEmit = now;
+      socket.emit('wb_cursor', {
+        board_id: currentBoard.id,
+        sid: userId,
+        x, y
+      });
+    }
+
+    // Emit object changes
+    function emitObjectChange(action, obj, pageIndex) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      saveBoardToServer();
+      socket.emit('wb_object', {
+        board_id: currentBoard.id,
+        sid: userId,
+        action,
+        object: obj ? JSON.parse(JSON.stringify(obj)) : null,
+        page_index: pageIndex !== undefined ? pageIndex : currentPageIndex
+      });
+    }
+
+    // Emit drawing (real-time brush strokes)
+    function emitDrawing(objId, points) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      socket.emit('wb_drawing', {
+        board_id: currentBoard.id,
+        sid: userId,
+        obj_id: objId,
+        points,
+        page_index: currentPageIndex
+      });
+    }
+
+    // Emit undo/redo
+    function emitUndoRedo(action, state) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      saveBoardToServer();
+      socket.emit(action === 'undo' ? 'wb_undo' : 'wb_redo', {
+        board_id: currentBoard.id,
+        sid: userId,
+        state,
+        page_index: currentPageIndex
+      });
+    }
+
+    // Emit clear
+    function emitClear() {
+      if (!socket || !socket.connected || !currentBoard) return;
+      saveBoardToServer();
+      socket.emit('wb_clear', {
+        board_id: currentBoard.id,
+        sid: userId,
+        page_index: currentPageIndex
+      });
+    }
+
+    // Emit page operation
+    function emitPageOperation(action, pageIndex) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      saveBoardToServer();
+      socket.emit('wb_page', {
+        board_id: currentBoard.id,
+        sid: userId,
+        action,
+        page_index: pageIndex
+      });
+    }
+
+    // Handle remote object update
+    function handleRemoteObjectUpdate(data) {
+      if (data.page_index !== currentPageIndex) {
+        // Update other page
+        if (pages[data.page_index]) {
+          if (data.action === 'add' && data.object) {
+            pages[data.page_index].objects.push(data.object);
+          }
+        }
+        return;
+      }
+
+      if (data.action === 'add' && data.object) {
+        if (data.object.type === 'image' && data.object.imgSrc) {
+          const img = new Image();
+          img.onload = () => {
+            data.object.img = img;
+            objects.push(data.object);
+            redraw();
+          };
+          img.src = data.object.imgSrc;
+        } else {
+          objects.push(data.object);
+          redraw();
+        }
+      } else if (data.action === 'update' && data.object) {
+        const idx = objects.findIndex(o => o.id === data.object.id);
+        if (idx >= 0) {
+          if (data.object.type === 'image' && data.object.imgSrc && !objects[idx].img) {
+            const img = new Image();
+            img.onload = () => {
+              data.object.img = img;
+              objects[idx] = data.object;
+              redraw();
+            };
+            img.src = data.object.imgSrc;
+          } else {
+            objects[idx] = { ...objects[idx], ...data.object };
+            redraw();
+          }
+        }
+      } else if (data.action === 'delete' && data.object) {
+        const idx = objects.findIndex(o => o.id === data.object.id);
+        if (idx >= 0) {
+          objects.splice(idx, 1);
+          redraw();
+        }
+      } else if (data.action === 'move' && data.object) {
+        const idx = objects.findIndex(o => o.id === data.object.id);
+        if (idx >= 0) {
+          Object.assign(objects[idx], data.object);
+          redraw();
+        }
+      }
+    }
+
+    // Handle remote drawing (real-time brush)
+    let remoteDrawingObjects = {};
+    function handleRemoteDrawing(data) {
+      if (data.page_index !== currentPageIndex) return;
+
+      if (!remoteDrawingObjects[data.obj_id]) {
+        // Find or create the brush object
+        let obj = objects.find(o => o.id === data.obj_id);
+        if (!obj) {
+          obj = {
+            id: data.obj_id,
+            type: 'brush',
+            color: remoteUsers[data.user_id]?.color || '#1d1d1f',
+            size: 3,
+            opacity: 1,
+            points: []
+          };
+          objects.push(obj);
+        }
+        remoteDrawingObjects[data.obj_id] = obj;
+      }
+
+      const obj = remoteDrawingObjects[data.obj_id];
+      if (data.points && data.points.length > 0) {
+        obj.points.push(...data.points);
+        redraw();
+      }
+    }
+
+    // Handle remote state update (undo/redo)
+    function handleRemoteStateUpdate(data) {
+      if (data.page_index !== currentPageIndex) return;
+
+      if (data.state) {
+        loadState(data.state).then(state => {
+          objects = state;
+          selectedObjects = [];
+          updateSelectedControls();
+          saveCurrentPageState();
+          redraw();
+          updatePageUI();
+        });
+      }
+    }
+
+    // Handle remote page update
+    function handleRemotePageUpdate(data) {
+      if (data.action === 'add') {
+        pages.push({ objects: [], history: [], historyIndex: -1 });
+        updatePageUI();
+      } else if (data.action === 'delete') {
+        if (pages.length > 1 && data.page_index < pages.length) {
+          pages.splice(data.page_index, 1);
+          if (currentPageIndex >= pages.length) {
+            currentPageIndex = pages.length - 1;
+            loadPageState(currentPageIndex);
+          }
+          updatePageUI();
+          redraw();
+        }
+      }
+    }
+
+    // Save board to server
+    async function saveBoardToServer() {
+      if (!currentBoard || isLocalMode) return;
+
+      saveCurrentPageState();
+      const pagesData = pages.map(page => ({
+        objects: page.objects.map(obj => {
+          if (obj.type === 'image') {
+            return { ...obj, imgSrc: obj.imgSrc, img: undefined };
+          }
+          return { ...obj };
+        }),
+        history: [],
+        historyIndex: -1
+      }));
+
+      const boardData = {
+        id: currentBoard.id,
+        name: currentBoard.name,
+        pages: pagesData,
+        currentPageIndex,
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${currentBoard.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(boardData)
+        });
+      } catch (e) {
+        console.error('[WB] Save failed:', e);
+      }
+    }
+
+    // Load board from server
+    async function loadBoardFromServer() {
+      if (!currentBoard) return;
+
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${currentBoard.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          loadBoardData(data);
+        }
+      } catch (e) {
+        console.error('[WB] Load failed:', e);
+      }
+    }
+
+    // Load board data
+    async function loadBoardData(data) {
+      if (!data || !data.pages) return;
+
+      pages = [];
+      for (const pageData of data.pages) {
+        const loadedObjects = await loadState(JSON.stringify(pageData.objects));
+        pages.push({
+          objects: loadedObjects,
+          history: [],
+          historyIndex: -1
+        });
+      }
+
+      currentPageIndex = data.currentPageIndex || 0;
+      if (currentPageIndex >= pages.length) currentPageIndex = 0;
+
+      loadPageState(currentPageIndex);
+      redraw();
+      updatePageUI();
+    }
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const canvasWrapper = document.getElementById('canvasWrapper');
@@ -575,11 +1412,17 @@
     let dragHandle = null;
     let dragStartX, dragStartY;
     let editingObject = null;
+    let currentDrawingId = null;
 
     // Selection box for marquee selection
     let isSelectingBox = false;
     let selectBoxStart = null;
     let selectBoxEnd = null;
+
+    // Generate unique object ID
+    function generateObjectId() {
+      return 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
 
     // Clipboard for copy/paste
     let clipboard = null;
@@ -645,6 +1488,7 @@
       redraw();
       updatePageUI();
       saveToLocalStorage();
+      emitPageOperation('add', currentPageIndex);
     }
 
     function deletePage(pageIndex) {
@@ -677,6 +1521,7 @@
       redraw();
       updatePageUI();
       saveToLocalStorage();
+      emitPageOperation('delete', pageIndex);
     }
 
     function generateThumbnail(pageIndex) {
@@ -1007,6 +1852,7 @@
 
         textarea.remove();
         saveState();
+        emitObjectChange('update', editingObject);
         redraw();
       }
       editingObject = null;
@@ -1072,6 +1918,7 @@
       // Create sticky note or text box on click
       if (currentTool === 'sticky') {
         const newSticky = {
+          id: generateObjectId(),
           type: 'sticky',
           x: pos.x,
           y: pos.y,
@@ -1084,6 +1931,7 @@
         objects.push(newSticky);
         selectedObjects = [newSticky];
         saveState();
+        emitObjectChange('add', newSticky);
         switchToSelectTool();
         updateSelectedControls();
         redraw();
@@ -1093,6 +1941,7 @@
 
       if (currentTool === 'text') {
         const newText = {
+          id: generateObjectId(),
           type: 'textbox',
           x: pos.x,
           y: pos.y,
@@ -1106,6 +1955,7 @@
         objects.push(newText);
         selectedObjects = [newText];
         saveState();
+        emitObjectChange('add', newText);
         switchToSelectTool();
         updateSelectedControls();
         redraw();
@@ -1114,9 +1964,11 @@
       }
 
       isDrawing = true;
+      currentDrawingId = generateObjectId();
 
       if (currentTool === 'brush' || currentTool === 'eraser') {
         objects.push({
+          id: currentDrawingId,
           type: currentTool,
           color: currentTool === 'eraser' ? '#ffffff' : currentColor,
           size: strokeSize,
@@ -1129,6 +1981,9 @@
 
     function handleMouseMove(e) {
       const pos = getMousePos(e);
+
+      // Emit cursor position for collaboration
+      emitCursor(pos.x, pos.y);
 
       // Selection box dragging
       if (isSelectingBox) {
@@ -1197,8 +2052,11 @@
 
       if (currentTool === 'brush' || currentTool === 'eraser') {
         const obj = objects[objects.length - 1];
-        obj.points.push({ x: pos.x, y: pos.y });
+        const newPoint = { x: pos.x, y: pos.y };
+        obj.points.push(newPoint);
         drawBrushStroke(obj);
+        // Emit real-time drawing for collaboration
+        emitDrawing(obj.id, [newPoint]);
       } else {
         redraw();
         drawShapePreview(currentTool, startX, startY, pos.x, pos.y);
@@ -1238,6 +2096,8 @@
 
       if (dragHandle) {
         saveState();
+        // Emit move for all selected objects
+        selectedObjects.forEach(obj => emitObjectChange('move', obj));
         dragHandle = null;
         updateSelectedControls();
         return;
@@ -1249,7 +2109,8 @@
       const pos = getMousePos(e);
 
       if (currentTool !== 'brush' && currentTool !== 'eraser') {
-        objects.push({
+        const newShape = {
+          id: generateObjectId(),
           type: currentTool,
           x1: startX,
           y1: startY,
@@ -1258,7 +2119,15 @@
           color: currentColor,
           size: strokeSize,
           opacity: opacity
-        });
+        };
+        objects.push(newShape);
+        emitObjectChange('add', newShape);
+      } else {
+        // Emit the completed brush/eraser stroke
+        const brushObj = objects[objects.length - 1];
+        if (brushObj) {
+          emitObjectChange('add', brushObj);
+        }
       }
 
       saveState();
@@ -1718,6 +2587,7 @@
           redraw();
           updatePageUI();
           saveToLocalStorage();
+          emitUndoRedo('undo', history[historyIndex]);
         });
       } else if (historyIndex === 0) {
         objects = [];
@@ -1728,6 +2598,7 @@
         redraw();
         updatePageUI();
         saveToLocalStorage();
+        emitUndoRedo('undo', '[]');
       } else if (pageUndoStack.length > 0) {
         // Try to undo page operations
         undoPageOperation();
@@ -1745,6 +2616,7 @@
           redraw();
           updatePageUI();
           saveToLocalStorage();
+          emitUndoRedo('redo', history[historyIndex]);
         });
       }
     }
@@ -1779,6 +2651,7 @@
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjects.length > 0) {
         e.preventDefault();
         selectedObjects.forEach(obj => {
+          emitObjectChange('delete', obj);
           const idx = objects.indexOf(obj);
           if (idx > -1) objects.splice(idx, 1);
         });
@@ -1952,6 +2825,7 @@
         redraw();
         updatePageUI();
         saveToLocalStorage();
+        emitClear();
       }
     });
 
@@ -1995,7 +2869,8 @@
               height *= scale;
             }
 
-            objects.push({
+            const imgObj = {
+              id: generateObjectId(),
               type: 'image',
               img: img,
               imgSrc: ev.target.result,
@@ -2004,9 +2879,11 @@
               width: width,
               height: height,
               opacity: 1
-            });
+            };
+            objects.push(imgObj);
 
             saveState();
+            emitObjectChange('add', imgObj);
             redraw();
           };
           img.src = ev.target.result;
@@ -2102,8 +2979,23 @@
       });
     }
 
-    // Initialize
-    loadFromLocalStorage();
+    // Initialize - show board modal, don't auto-load
+    // Board modal is shown by default, user must choose mode
+    updateConnectionStatus('connecting');
+
+    // Check URL params for board ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlBoardId = urlParams.get('board');
+    if (urlBoardId) {
+      joinBoardNameInput.value = urlBoardId;
+      document.querySelector('[data-tab="join"]').click();
+    }
+
+    // Auto-connect if board in localStorage
+    const lastBoard = localStorage.getItem('wb-last-board');
+    if (lastBoard && !urlBoardId) {
+      newBoardNameInput.value = lastBoard;
+    }
 
     // Handle window resize
     window.addEventListener('resize', () => {

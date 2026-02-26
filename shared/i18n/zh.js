@@ -375,6 +375,31 @@ I18n.register('zh', {
       saving: '保存中...',
       saved: '已保存',
       storageFull: '存储空间已满'
+    },
+    // Collaboration
+    collab: {
+      selectBoard: '选择白板',
+      createNew: '创建新白板',
+      joinExisting: '加入已有白板',
+      boardName: '白板名称',
+      boardNamePlaceholder: '输入白板名称...',
+      create: '创建',
+      join: '加入',
+      boardNotFound: '未找到该白板',
+      connecting: '连接中...',
+      connected: '已连接',
+      disconnected: '连接断开',
+      reconnecting: '重新连接中...',
+      liveSync: '实时同步',
+      usersOnline: '{count} 人在线',
+      you: '你',
+      localMode: '本地模式',
+      switchToLocal: '切换到本地',
+      yourName: '你的名称',
+      namePlaceholder: '输入你的名称...',
+      randomName: '随机名称',
+      userJoined: '{name} 加入了白板',
+      userLeft: '{name} 离开了白板'
     }
   },
 
