@@ -364,9 +364,6 @@ I18n.register('en', {
       sticky: 'Enter sticky note content...',
       text: 'Enter text...'
     },
-    confirm: {
-      clear: 'Are you sure you want to clear this page?'
-    },
     status: {
       saving: 'Saving...',
       saved: 'Saved',

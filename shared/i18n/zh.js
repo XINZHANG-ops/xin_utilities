@@ -364,9 +364,6 @@ I18n.register('zh', {
       sticky: '输入便利贴内容...',
       text: '输入文本...'
     },
-    confirm: {
-      clear: '确定要清空当前页面吗？'
-    },
     status: {
       saving: '保存中...',
       saved: '已保存',
