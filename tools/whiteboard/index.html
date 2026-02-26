@@ -238,7 +238,6 @@
       justify-content: center;
       flex-shrink: 0;
       transition: all 0.2s ease;
-      flex-shrink: 0;
     }
 
     .page-nav-btn:hover { background: rgba(0,0,0,0.1); }
@@ -902,13 +901,7 @@
       document.getElementById('boardNameDisplay').textContent = boardName;
       document.getElementById('boardInfo').style.display = 'flex';
 
-      // Reset canvas position and scroll after layout update
-      requestAnimationFrame(() => {
-        const header = document.getElementById('headerContainer');
-        const wrapper = document.getElementById('canvasWrapper');
-        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
-        wrapper.scrollTo(0, 0);
-      });
+      resetCanvasView();
 
       // Save empty board immediately
       await saveBoardToServer();
@@ -938,13 +931,7 @@
           document.getElementById('boardNameDisplay').textContent = boardName;
           document.getElementById('boardInfo').style.display = 'flex';
 
-          // Reset canvas position and scroll after layout update
-          requestAnimationFrame(() => {
-            const header = document.getElementById('headerContainer');
-            const wrapper = document.getElementById('canvasWrapper');
-            wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
-            wrapper.scrollTo(0, 0);
-          });
+          resetCanvasView();
 
           connectWebSocket();
           loadBoardFromServer();
@@ -964,13 +951,7 @@
       currentUser = null;
       remoteUsers = {};
       boardModal.style.display = 'none';
-      // Reset canvas position and scroll after layout update
-      requestAnimationFrame(() => {
-        const header = document.getElementById('headerContainer');
-        const wrapper = document.getElementById('canvasWrapper');
-        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
-        wrapper.scrollTo(0, 0);
-      });
+      resetCanvasView();
       wsStatus.style.display = 'flex';
       updateConnectionStatus('local');
       usersOnlineEl.innerHTML = '';
@@ -982,6 +963,16 @@
     const wsStatusText = document.getElementById('wsStatusText');
     const usersOnlineEl = document.getElementById('usersOnline');
     const remoteCursorsEl = document.getElementById('remoteCursors');
+
+    // Reset canvas view when entering a board
+    function resetCanvasView() {
+      requestAnimationFrame(() => {
+        const header = document.getElementById('headerContainer');
+        const wrapper = document.getElementById('canvasWrapper');
+        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
+        wrapper.scrollTo(0, 0);
+      });
+    }
 
     function updateConnectionStatus(status) {
       wsStatus.className = 'ws-status ' + status;
@@ -1703,18 +1694,6 @@
       emitObjectChange('update', obj);
     }
 
-    // Update multiple objects with same properties
-    function updateSelectedObjectsProps(props) {
-      if (selectedObjects.length === 0) return false;
-      selectedObjects.forEach(obj => {
-        Object.assign(obj, props);
-        emitObjectChange('update', obj);
-      });
-      saveState();
-      redraw();
-      return true;
-    }
-
     // Clipboard for copy/paste
     let clipboard = null;
     let clipboardType = null; // 'object' or 'page'
@@ -1723,7 +1702,6 @@
     let pageUndoStack = [];
 
     // Page navigation elements
-    const pageNav = document.getElementById('pageNav');
     const pageThumbnails = document.getElementById('pageThumbnails');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
