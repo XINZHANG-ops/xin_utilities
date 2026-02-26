@@ -219,25 +219,47 @@
       background: rgba(255, 159, 10, 0.1);
     }
 
-    /* Page navigation */
+    /* Page navigation - compact Jamboard style */
     .page-nav {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
+      gap: 4px;
+      padding: 4px 12px;
       border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 1;
       background: rgba(255,255,255,0.95);
     }
 
+    .page-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .page-nav-center {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .page-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
     .page-nav-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
       border: none;
-      background: rgba(0,0,0,0.05);
-      color: var(--fg);
+      background: transparent;
+      color: var(--fg-muted);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -246,40 +268,37 @@
       transition: all 0.2s ease;
     }
 
-    .page-nav-btn:hover { background: rgba(0,0,0,0.1); }
+    .page-nav-btn:hover { background: rgba(0,0,0,0.08); color: var(--fg); }
     .page-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .page-nav-btn.add { background: var(--accent); color: #fff; }
-    .page-nav-btn.add:hover { background: var(--accent-hover); }
+    .page-nav-btn.add { color: var(--accent); }
+    .page-nav-btn.add:hover { background: rgba(48, 209, 88, 0.1); }
 
     .page-thumbnails {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       overflow-x: auto;
-      flex: 1;
-      min-width: 0;
-      padding: 4px 0;
-      scrollbar-width: thin;
+      max-width: 200px;
+      padding: 2px 0;
+      scrollbar-width: none;
     }
-
-    .page-thumbnails::-webkit-scrollbar { height: 4px; }
-    .page-thumbnails::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
+    .page-thumbnails::-webkit-scrollbar { display: none; }
 
     .page-thumb {
-      width: 64px;
-      height: 40px;
-      border-radius: 4px;
+      width: 32px;
+      height: 20px;
+      border-radius: 3px;
       border: 2px solid transparent;
       background: #fff;
       cursor: pointer;
       flex-shrink: 0;
       overflow: hidden;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       position: relative;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .page-thumb:hover { border-color: rgba(0,0,0,0.2); }
-    .page-thumb.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(48, 209, 88, 0.2); }
+    .page-thumb.active { border-color: var(--accent); }
 
     .page-thumb img {
       width: 100%;
@@ -287,42 +306,16 @@
       object-fit: cover;
     }
 
-    .page-thumb-label {
-      position: absolute;
-      bottom: 2px;
-      right: 4px;
-      font-size: 10px;
-      color: #666;
-      background: rgba(255,255,255,0.8);
-      padding: 1px 4px;
-      border-radius: 3px;
-    }
-
-    .page-thumb-delete {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(255,59,48,0.9);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      line-height: 1;
-    }
-
-    .page-thumb:hover .page-thumb-delete { display: flex; }
+    .page-thumb-label { display: none; }
+    .page-thumb-delete { display: none; }
 
     .page-info {
       font-size: 11px;
       color: var(--fg-muted);
       white-space: nowrap;
       flex-shrink: 0;
+      min-width: 32px;
+      text-align: center;
     }
 
     /* Text edit overlay */
@@ -766,29 +759,48 @@
   <div id="remoteCursors"></div>
 
   <div class="header-container" id="headerContainer">
-  <!-- Page Navigation (above toolbar) -->
+  <!-- Page Navigation (above toolbar) - Jamboard style -->
   <div class="page-nav" id="pageNav">
-    <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
+    <div class="page-nav-left">
+      <!-- Board Info & Status -->
+      <div class="board-info" id="boardInfo" style="display:none;" data-i18n-title="whiteboard.collab.clickToCopy" title="点击复制">
+        <span id="boardNameDisplay"></span>
+        <span class="board-info-tooltip" id="boardInfoTooltip" data-i18n="whiteboard.collab.clickToCopy">点击复制</span>
+      </div>
+      <div class="ws-status connecting" id="wsStatus">
+        <span class="ws-dot"></span>
+        <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
+      </div>
+    </div>
 
-    <div class="page-thumbnails" id="pageThumbnails"></div>
+    <div class="page-nav-center">
+      <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
 
-    <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
+      <div class="page-thumbnails" id="pageThumbnails"></div>
 
-    <button class="page-nav-btn add" id="addPageBtn" data-i18n-title="whiteboard.page.add" title="新建页面">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </button>
+      <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
 
-    <span class="page-info" id="pageInfo">1 / 1</span>
+      <span class="page-info" id="pageInfo">1 / 1</span>
+
+      <button class="page-nav-btn add" id="addPageBtn" data-i18n-title="whiteboard.page.add" title="新建页面">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="page-nav-right">
+      <!-- Users Online -->
+      <div class="users-online" id="usersOnline"></div>
+    </div>
   </div>
 
   <nav class="nav-blur">
@@ -914,21 +926,6 @@
 
       <!-- Right side controls -->
       <div class="flex items-center gap-2 flex-shrink-0">
-        <!-- Connection Status -->
-        <div class="ws-status connecting" id="wsStatus">
-          <span class="ws-dot"></span>
-          <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
-        </div>
-
-        <!-- Users Online -->
-        <div class="users-online" id="usersOnline"></div>
-
-        <!-- Board Info -->
-        <div class="board-info" id="boardInfo" style="display:none;" data-i18n-title="whiteboard.collab.clickToCopy" title="点击复制">
-          <span id="boardNameDisplay"></span>
-          <span class="board-info-tooltip" id="boardInfoTooltip" data-i18n="whiteboard.collab.clickToCopy">点击复制</span>
-        </div>
-
         <button class="lang-toggle" id="langToggle">中文</button>
       </div>
     </div>
@@ -2240,10 +2237,10 @@
       e.stopPropagation();
       const isOpen = shapeDropdown.classList.toggle('open');
       if (isOpen) {
-        // Position the dropdown below the button
+        // Position the dropdown directly below the button
         const rect = shapeBtn.getBoundingClientRect();
         shapeDropdown.style.left = rect.left + 'px';
-        shapeDropdown.style.top = (rect.bottom + 4) + 'px';
+        shapeDropdown.style.top = (rect.bottom + 2) + 'px';
       }
     });
 
