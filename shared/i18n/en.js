@@ -333,9 +333,7 @@ I18n.register('en', {
       bold: 'Bold'
     },
     actions: {
-      download: 'Download',
-      undo: 'Undo (Ctrl+Z)',
-      redo: 'Redo (Ctrl+Y)',
+      download: 'Download PDF',
       clear: 'Clear Canvas'
     },
     tools: {
@@ -353,10 +351,8 @@ I18n.register('en', {
     },
     colors: {
       black: 'Black',
-      red: 'Red',
       blue: 'Blue',
-      green: 'Green',
-      orange: 'Orange'
+      yellow: 'Yellow'
     },
     page: {
       previous: 'Previous Page',

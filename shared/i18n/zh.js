@@ -333,9 +333,7 @@ I18n.register('zh', {
       bold: '粗体'
     },
     actions: {
-      download: '下载',
-      undo: '撤销 (Ctrl+Z)',
-      redo: '重做 (Ctrl+Y)',
+      download: '下载 PDF',
       clear: '清空画布'
     },
     tools: {
@@ -353,10 +351,8 @@ I18n.register('zh', {
     },
     colors: {
       black: '黑色',
-      red: '红色',
       blue: '蓝色',
-      green: '绿色',
-      orange: '橙色'
+      yellow: '黄色'
     },
     page: {
       previous: '上一页',
