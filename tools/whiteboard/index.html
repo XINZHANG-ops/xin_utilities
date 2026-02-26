@@ -1566,6 +1566,25 @@
       return 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
+    // Unified function to update object properties and sync
+    // Usage: updateObjectProps(obj, { color: '#ff0000', size: 5 })
+    function updateObjectProps(obj, props) {
+      Object.assign(obj, props);
+      emitObjectChange('update', obj);
+    }
+
+    // Update multiple objects with same properties
+    function updateSelectedObjectsProps(props) {
+      if (selectedObjects.length === 0) return false;
+      selectedObjects.forEach(obj => {
+        Object.assign(obj, props);
+        emitObjectChange('update', obj);
+      });
+      saveState();
+      redraw();
+      return true;
+    }
+
     // Clipboard for copy/paste
     let clipboard = null;
     let clipboardType = null; // 'object' or 'page'
@@ -1817,7 +1836,7 @@
     textSizeSlider.addEventListener('input', e => {
       const textboxes = selectedObjects.filter(o => o.type === 'textbox');
       if (textboxes.length > 0) {
-        textboxes.forEach(obj => obj.fontSize = parseInt(e.target.value));
+        textboxes.forEach(obj => updateObjectProps(obj, { fontSize: parseInt(e.target.value) }));
         saveState();
         redraw();
       }
@@ -1827,7 +1846,7 @@
       const textboxes = selectedObjects.filter(o => o.type === 'textbox');
       if (textboxes.length > 0) {
         const newBold = !textboxes[0].bold;
-        textboxes.forEach(obj => obj.bold = newBold);
+        textboxes.forEach(obj => updateObjectProps(obj, { bold: newBold }));
         textBoldBtn.classList.toggle('active', newBold);
         saveState();
         redraw();
@@ -1870,15 +1889,10 @@
 
       // Apply to selected objects only if user clicked (not just updating UI)
       if (fromUserAction && selectedObjects.length > 0) {
-        let changed = false;
-        selectedObjects.forEach(obj => {
-          if (obj.type === 'textbox' || obj.type === 'rect' ||
-              obj.type === 'circle' || obj.type === 'arrow' || obj.type === 'sticky') {
-            obj.color = color;
-            changed = true;
-          }
-        });
-        if (changed) {
+        const colorableTypes = ['textbox', 'rect', 'circle', 'arrow', 'sticky'];
+        const colorable = selectedObjects.filter(o => colorableTypes.includes(o.type));
+        if (colorable.length > 0) {
+          colorable.forEach(obj => updateObjectProps(obj, { color }));
           saveState();
           redraw();
         }
@@ -1899,7 +1913,7 @@
       const shapes = selectedObjects.filter(o =>
         o.type === 'rect' || o.type === 'circle' || o.type === 'arrow');
       if (shapes.length > 0) {
-        shapes.forEach(obj => obj.size = strokeSize);
+        shapes.forEach(obj => updateObjectProps(obj, { size: strokeSize }));
         saveState();
         redraw();
       }
