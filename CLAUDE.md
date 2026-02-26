@@ -43,11 +43,24 @@ xin_utilities/
 - **Text Diff**: Side-by-side comparison, click to select version, download merged result
 
 ### Canvas Tools
-- **Whiteboard**: Full-screen canvas, brush/eraser, shapes, drag-and-drop images, auto-save to localStorage
+- **Whiteboard**: Full-screen canvas, brush/eraser, shapes, drag-and-drop images. Real-time collaboration via WebSocket with user presence, cursor tracking, and board sharing
 
 ### Share & Productivity Tools
 - **QR Code Generator**: QR codes with qr-code-styling library, optional backend short links with click stats
-- **Kanban Board**: Drag-and-drop task management, three columns (Todo/In Progress/Done), task attachments
+- **Kanban Board**: Drag-and-drop task management, three columns (Todo/In Progress/Done), task attachments. Real-time collaboration via WebSocket with user presence and board sharing
+
+## Real-time Collaboration
+
+Whiteboard and Kanban support real-time collaboration via WebSocket (Socket.IO). Requires backend server with:
+- Flask-SocketIO with `async_mode='threading'`
+- `simple-websocket` package for WebSocket support
+- CORS enabled for cross-origin requests
+
+Backend files (in ai-server repo):
+- `routes/kanban_socket.py` - Kanban WebSocket events
+- `routes/whiteboard_socket.py` - Whiteboard WebSocket events
+- `utils/kanban_utils.py` - Kanban data persistence
+- `utils/whiteboard_utils.py` - Whiteboard data persistence
 
 ## Key Design Patterns
 
@@ -97,7 +110,8 @@ npx serve
 - **Image Cropper**: Rotation uses bounding box calculation to preserve full image
 - **Text Diff**: LCS-based diff algorithm with opcode merging
 - **Image Annotate**: Shape selection with hit testing, drag handles for resize
-- **Whiteboard**: Layer-based object system, localStorage persistence, image drag-and-drop
+- **Whiteboard**: Layer-based object system, multi-page support, image drag-and-drop. Real-time collaboration via Socket.IO with user deduplication (same user in multiple tabs shows once), remote cursor tracking per page, and unified property sync
 - **Image Background Remove**: Binary file upload via FormData, requires backend with CORS headers
 - **QR Code Generator**: Uses qr-code-styling library, optional backend for short links and click statistics
-- **Kanban**: Drag-and-drop cards between columns, file attachments, localStorage persistence
+- **Kanban**: Drag-and-drop cards between columns, file attachments. Real-time collaboration via Socket.IO with user presence and board sharing
+- **Index Page**: Sidebar navigation with hover-to-scroll (200ms delay), category icons centered when collapsed
