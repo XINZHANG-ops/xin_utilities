@@ -1127,18 +1127,19 @@
 
       const isNew = !currentBoard.cards.some(c => c.id === editingCard.id);
       const action = isNew ? 'add' : 'update';
+      const cardToSave = { ...editingCard };  // Copy before closeCardModal sets it to null
 
       // Apply locally
       if (isNew) {
-        currentBoard.cards.push(editingCard);
+        currentBoard.cards.push(cardToSave);
       } else {
-        const idx = currentBoard.cards.findIndex(c => c.id === editingCard.id);
-        if (idx >= 0) currentBoard.cards[idx] = editingCard;
+        const idx = currentBoard.cards.findIndex(c => c.id === cardToSave.id);
+        if (idx >= 0) currentBoard.cards[idx] = cardToSave;
       }
 
       closeCardModal();
       renderCards();
-      emitCardUpdate(action, editingCard);
+      emitCardUpdate(action, cardToSave);
     }
 
     async function deleteCard() {
