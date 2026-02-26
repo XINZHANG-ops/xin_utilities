@@ -98,8 +98,8 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       overflow-x: auto;
-      flex-shrink: 1;
-      min-width: 0;
+      flex: 0 1 auto;
+      max-width: fit-content;
     }
     .toolbar::-webkit-scrollbar { height: 4px; }
     .toolbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
@@ -215,10 +215,10 @@
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
-      padding: 6px 12px;
+      padding: 4px 8px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
     }
 
     .page-nav-btn {
@@ -604,6 +604,7 @@
         <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.boardName">白板名称</label>
         <input type="text" class="modal-input" id="newBoardName" data-i18n-placeholder="whiteboard.collab.boardNamePlaceholder" placeholder="输入白板名称...">
         <button class="modal-btn" id="createBoardBtn" data-i18n="whiteboard.collab.create">创建</button>
+        <div class="modal-error" id="createError" style="display:none;"></div>
       </div>
       <div id="joinTab" style="display:none;">
         <label style="display:block; font-size:0.875rem; margin-bottom:0.5rem; color:var(--fg-muted);" data-i18n="whiteboard.collab.yourName">你的名称</label>
@@ -748,7 +749,7 @@
       </div>
 
       <!-- Right side controls -->
-      <div class="flex items-center gap-2 ml-auto flex-shrink-0">
+      <div class="flex items-center gap-2 flex-shrink-0">
         <!-- Connection Status -->
         <div class="ws-status connecting" id="wsStatus">
           <span class="ws-dot"></span>
@@ -865,17 +866,21 @@
     });
 
     // Create board
+    const createError = document.getElementById('createError');
     createBoardBtn.addEventListener('click', async () => {
       const boardName = newBoardNameInput.value.trim();
       const userName = userNameInput.value.trim() || generateRandomName();
       if (!boardName) return;
+
+      createError.style.display = 'none';
 
       // Check if board already exists
       try {
         const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${boardName}/exists`));
         const data = await res.json();
         if (data.exists) {
-          alert(I18n.t('whiteboard.collab.boardExists') || 'Board already exists. Please join it or use a different name.');
+          createError.textContent = I18n.t('whiteboard.collab.boardExists');
+          createError.style.display = 'block';
           return;
         }
       } catch (e) {
@@ -931,8 +936,12 @@
     // Local mode
     localModeLink.addEventListener('click', () => {
       isLocalMode = true;
+      currentUser = null;
+      remoteUsers = {};
       boardModal.style.display = 'none';
+      wsStatus.style.display = 'flex';
       updateConnectionStatus('local');
+      usersOnlineEl.innerHTML = '';
       loadFromLocalStorage();
     });
 
@@ -957,6 +966,7 @@
     }
 
     function connectWebSocket() {
+      wsStatus.style.display = 'flex';
       updateConnectionStatus('connecting');
 
       socket = io(API_CONFIG.getBaseUrl(), {
@@ -978,7 +988,7 @@
         console.log('[WB] Disconnected');
         updateConnectionStatus('disconnected');
         remoteUsers = {};
-        updateUsersDisplay();
+        usersOnlineEl.innerHTML = '';
         clearRemoteCursors();
       });
 
@@ -3094,7 +3104,8 @@
 
     // Initialize - show board modal, don't auto-load
     // Board modal is shown by default, user must choose mode
-    updateConnectionStatus('connecting');
+    wsStatus.style.display = 'none';
+    usersOnlineEl.innerHTML = '';
 
     // Check URL params for board ID
     const urlParams = new URLSearchParams(window.location.search);
