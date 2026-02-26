@@ -413,6 +413,22 @@ I18n.register('zh', {
     logoRotation: '旋转',
     logoPosition: '位置偏移',
     resetPosition: '重置位置',
-    dragToMove: '拖动 Logo 调整位置'
+    dragToMove: '拖动 Logo 调整位置',
+    // Tracking
+    enableTracking: '启用扫描统计',
+    trackingDesc: '追踪二维码被扫描的次数和设备信息',
+    viewStats: '查看统计',
+    trackingEnabled: '已启用追踪，短链接:',
+    trackingServiceError: '无法连接追踪服务，将使用原始链接生成',
+    // Stats modal
+    scanStats: '扫描统计',
+    loading: '加载中...',
+    loadFailed: '加载失败，请检查后台服务',
+    totalScans: '总扫描次数',
+    uniqueVisitors: '唯一访客',
+    deviceDistribution: '设备分布',
+    noData: '暂无数据',
+    targetUrl: '目标链接',
+    createdAt: '创建时间'
   }
 });

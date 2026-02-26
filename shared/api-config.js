@@ -5,6 +5,7 @@ const API_CONFIG = {
   // Base URLs for different environments
   BASE: {
     LOCAL: 'http://localhost:8080',
+    // LOCAL: 'http://192.168.1.154:8080',  // 局域网测试用
     NGROK: 'https://43b1-99-250-110-81.ngrok-free.app',
     PRODUCTION: 'https://your-api-server.com'
   },
@@ -29,7 +30,11 @@ const API_CONFIG = {
 const ENDPOINTS = {
   CHAT: '/chat',
   IMAGE_BG_REMOVE: '/remove-background',
-  KANBAN: '/kanban'
+  KANBAN: '/kanban',
+  QR_CREATE: '/qr/create',
+  QR_REDIRECT: '/r',
+  QR_STATS: '/qr',
+  QR_LIST: '/qr/list'
 };
 
 // Export for module usage (if needed)

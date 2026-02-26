@@ -413,6 +413,22 @@ I18n.register('en', {
     logoRotation: 'Rotation',
     logoPosition: 'Position Offset',
     resetPosition: 'Reset Position',
-    dragToMove: 'Drag logo to adjust position'
+    dragToMove: 'Drag logo to adjust position',
+    // Tracking
+    enableTracking: 'Enable Scan Tracking',
+    trackingDesc: 'Track scan count and device info for this QR code',
+    viewStats: 'View Stats',
+    trackingEnabled: 'Tracking enabled, short link:',
+    trackingServiceError: 'Cannot connect to tracking service, using original URL',
+    // Stats modal
+    scanStats: 'Scan Statistics',
+    loading: 'Loading...',
+    loadFailed: 'Load failed, please check backend service',
+    totalScans: 'Total Scans',
+    uniqueVisitors: 'Unique Visitors',
+    deviceDistribution: 'Device Distribution',
+    noData: 'No data yet',
+    targetUrl: 'Target URL',
+    createdAt: 'Created At'
   }
 });
