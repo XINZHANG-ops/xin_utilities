@@ -438,15 +438,6 @@
       cursor: pointer;
       padding: 8px;
     }
-
-    /* Refresh button animation */
-    .refresh-spinning svg {
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -515,16 +506,10 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <div id="saveStatus" class="status-indicator">
+          <div id="wsStatus" class="status-indicator">
             <span class="status-dot"></span>
-            <span data-i18n="saved">Saved</span>
+            <span data-i18n="connecting">Connecting...</span>
           </div>
-          <button id="refreshBtn" class="btn-secondary" style="padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            <span data-i18n="refresh">Refresh</span>
-          </button>
           <button id="langSwitchBoard" class="lang-switch">中文 / EN</button>
         </div>
       </div>
@@ -627,6 +612,7 @@
   </div>
 
   <script src="../../shared/api-config.js"></script>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <script>
     // ============ i18n ============
     const translations = {
@@ -666,7 +652,10 @@
         confirmDelete: 'Delete this card?',
         preview: 'Preview',
         download: 'Download',
-        refresh: 'Refresh'
+        connecting: 'Connecting...',
+        liveSync: 'Live Sync',
+        disconnected: 'Disconnected',
+        reconnecting: 'Reconnecting...'
       },
       zh: {
         back: '返回',
@@ -704,7 +693,10 @@
         confirmDelete: '确定删除此卡片？',
         preview: '预览',
         download: '下载',
-        refresh: '刷新'
+        connecting: '连接中...',
+        liveSync: '实时同步',
+        disconnected: '已断开',
+        reconnecting: '重连中...'
       }
     };
 
@@ -735,9 +727,135 @@
     let editingCard = null;
     let saveTimeout = null;
     let draggedCard = null;
-    let autoRefreshInterval = null;
+    let socket = null;
     let isSaving = false;
-    const AUTO_REFRESH_SECONDS = 10;
+
+    // ============ WebSocket ============
+    function updateWsStatus(status) {
+      const el = document.getElementById('wsStatus');
+      if (!el) return;
+      const dot = el.querySelector('.status-dot');
+      const text = el.querySelector('[data-i18n]');
+
+      dot.classList.remove('saving', 'error');
+      if (status === 'connected') {
+        text.dataset.i18n = 'liveSync';
+        text.textContent = t('liveSync');
+      } else if (status === 'disconnected') {
+        dot.classList.add('error');
+        text.dataset.i18n = 'disconnected';
+        text.textContent = t('disconnected');
+      } else if (status === 'reconnecting') {
+        dot.classList.add('saving');
+        text.dataset.i18n = 'reconnecting';
+        text.textContent = t('reconnecting');
+      } else {
+        dot.classList.add('saving');
+        text.dataset.i18n = 'connecting';
+        text.textContent = t('connecting');
+      }
+    }
+
+    function connectWebSocket(boardId) {
+      if (socket) {
+        socket.disconnect();
+      }
+
+      updateWsStatus('connecting');
+
+      try {
+        socket = io(API_CONFIG.getBaseUrl(), {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: Infinity,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000
+        });
+
+        socket.on('connect', () => {
+          console.log('[WS] Connected');
+          socket.emit('join_board', { board_id: boardId });
+          updateWsStatus('connected');
+        });
+
+        socket.on('joined', (data) => {
+          console.log('[WS] Joined board:', data.board_id);
+        });
+
+        socket.on('card_updated', (data) => {
+          console.log('[WS] Card updated:', data.action);
+          applyRemoteUpdate(data);
+        });
+
+        socket.on('board_synced', (board) => {
+          console.log('[WS] Board synced');
+          currentBoard = board;
+          renderCards();
+        });
+
+        socket.on('disconnect', () => {
+          console.log('[WS] Disconnected');
+          updateWsStatus('disconnected');
+        });
+
+        socket.on('reconnecting', () => {
+          console.log('[WS] Reconnecting...');
+          updateWsStatus('reconnecting');
+        });
+
+        socket.on('connect_error', (err) => {
+          console.warn('[WS] Connection error:', err.message);
+          updateWsStatus('disconnected');
+        });
+
+      } catch (e) {
+        console.error('[WS] Init failed:', e);
+        updateWsStatus('disconnected');
+      }
+    }
+
+    function disconnectWebSocket() {
+      if (socket) {
+        if (currentBoard) {
+          socket.emit('leave_board', { board_id: currentBoard.id });
+        }
+        socket.disconnect();
+        socket = null;
+      }
+    }
+
+    function emitCardUpdate(action, card) {
+      if (socket && socket.connected && currentBoard) {
+        socket.emit('card_update', {
+          board_id: currentBoard.id,
+          action: action,
+          card: card
+        });
+        return true;
+      }
+      return false;
+    }
+
+    function applyRemoteUpdate(data) {
+      const { action, card } = data;
+      if (!currentBoard || !card) return;
+
+      if (action === 'add') {
+        const exists = currentBoard.cards.some(c => c.id === card.id);
+        if (!exists) {
+          currentBoard.cards.push(card);
+        }
+      } else if (action === 'update' || action === 'move') {
+        const idx = currentBoard.cards.findIndex(c => c.id === card.id);
+        if (idx >= 0) {
+          currentBoard.cards[idx] = card;
+        }
+      } else if (action === 'delete') {
+        currentBoard.cards = currentBoard.cards.filter(c => c.id !== card.id);
+      }
+
+      renderCards();
+    }
 
     // ============ API ============
     const API_HEADERS = {
@@ -878,50 +996,14 @@
       document.getElementById('boardView').classList.remove('hidden');
       document.getElementById('currentBoardId').textContent = currentBoard.id;
       renderCards();
-      startAutoRefresh();
+      connectWebSocket(currentBoard.id);
     }
 
     function showEntryView() {
       document.getElementById('boardView').classList.add('hidden');
       document.getElementById('entryView').classList.remove('hidden');
-      stopAutoRefresh();
+      disconnectWebSocket();
       currentBoard = null;
-    }
-
-    async function refreshBoard(showAnimation = true) {
-      if (!currentBoard) return;
-
-      // Skip refresh if currently saving or has pending save
-      if (isSaving || saveTimeout) {
-        return;
-      }
-
-      const btn = document.getElementById('refreshBtn');
-      if (showAnimation) btn.classList.add('refresh-spinning');
-
-      try {
-        const freshData = await loadBoard(currentBoard.id);
-        currentBoard = freshData;
-        renderCards();
-      } catch (e) {
-        console.error('Refresh error:', e);
-      } finally {
-        if (showAnimation) {
-          setTimeout(() => btn.classList.remove('refresh-spinning'), 300);
-        }
-      }
-    }
-
-    function startAutoRefresh() {
-      stopAutoRefresh();
-      autoRefreshInterval = setInterval(() => refreshBoard(false), AUTO_REFRESH_SECONDS * 1000);
-    }
-
-    function stopAutoRefresh() {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
-      }
     }
 
     // ============ Card Operations ============
@@ -1047,51 +1129,39 @@
       editingCard.content = contentInput.value.trim();
       editingCard.color = selectedColor ? selectedColor.dataset.color : '';
 
-      // Fetch latest data to merge with others' changes
-      try {
-        const freshData = await loadBoard(currentBoard.id);
+      const isNew = !currentBoard.cards.some(c => c.id === editingCard.id);
+      const action = isNew ? 'add' : 'update';
 
-        // Merge: use fresh data as base, then add/update our card
-        const existingIndex = freshData.cards.findIndex(c => c.id === editingCard.id);
-        if (existingIndex >= 0) {
-          freshData.cards[existingIndex] = editingCard;
-        } else {
-          freshData.cards.push(editingCard);
-        }
-
-        currentBoard = freshData;
-      } catch (e) {
-        // If fetch fails, fall back to local merge
-        const existingIndex = currentBoard.cards.findIndex(c => c.id === editingCard.id);
-        if (existingIndex >= 0) {
-          currentBoard.cards[existingIndex] = editingCard;
-        } else {
-          currentBoard.cards.push(editingCard);
-        }
+      // Apply locally
+      if (isNew) {
+        currentBoard.cards.push(editingCard);
+      } else {
+        const idx = currentBoard.cards.findIndex(c => c.id === editingCard.id);
+        if (idx >= 0) currentBoard.cards[idx] = editingCard;
       }
 
       closeCardModal();
       renderCards();
-      autoSave();
+
+      // Send via WebSocket or fallback to HTTP
+      if (!emitCardUpdate(action, editingCard)) {
+        autoSave();
+      }
     }
 
     async function deleteCard() {
       if (!confirm(t('confirmDelete'))) return;
 
-      const cardIdToDelete = editingCard.id;
-
-      // Fetch latest data to merge
-      try {
-        const freshData = await loadBoard(currentBoard.id);
-        freshData.cards = freshData.cards.filter(c => c.id !== cardIdToDelete);
-        currentBoard = freshData;
-      } catch (e) {
-        currentBoard.cards = currentBoard.cards.filter(c => c.id !== cardIdToDelete);
-      }
+      const cardToDelete = { ...editingCard };
+      currentBoard.cards = currentBoard.cards.filter(c => c.id !== cardToDelete.id);
 
       closeCardModal();
       renderCards();
-      autoSave();
+
+      // Send via WebSocket or fallback to HTTP
+      if (!emitCardUpdate('delete', cardToDelete)) {
+        autoSave();
+      }
     }
 
     // ============ Attachments ============
@@ -1329,24 +1399,23 @@
       e.currentTarget.classList.remove('drag-over');
     }
 
-    async function handleDrop(e) {
+    function handleDrop(e) {
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
       document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
 
       const cardId = e.dataTransfer.getData('text/plain');
-      const localCard = currentBoard.cards.find(c => c.id === cardId);
-      if (!localCard) return;
+      const card = currentBoard.cards.find(c => c.id === cardId);
+      if (!card) return;
 
       const targetList = e.currentTarget;
       const listId = targetList.id;
       const newStatus = listId === 'todoList' ? 'todo' :
                         listId === 'progressList' ? 'progress' : 'done';
-      const needsOrder = newStatus === 'todo' || newStatus === 'progress';
 
-      // Calculate new order before async operation
+      // Calculate new order
       let newOrder = 0;
-      if (needsOrder) {
+      if (newStatus !== 'done') {
         const cards = [...targetList.querySelectorAll('.task-card:not(.dragging)')];
         const dropIndex = cards.findIndex(c => {
           const rect = c.getBoundingClientRect();
@@ -1356,44 +1425,22 @@
         newOrder = dropIndex === -1 ? existingCards.length : dropIndex;
       }
 
-      // Fetch latest and merge
-      try {
-        const freshData = await loadBoard(currentBoard.id);
-        const card = freshData.cards.find(c => c.id === cardId);
-
-        if (card) {
-          card.status = newStatus;
-          card.doneAt = newStatus === 'done' ? Date.now() : null;
-
-          if (needsOrder) {
-            card.order = newOrder;
-            const allInStatus = freshData.cards.filter(c => c.status === newStatus);
-            allInStatus.sort((a, b) => {
-              if (a.id === cardId) return card.order - b.order - 0.5;
-              if (b.id === cardId) return a.order - card.order + 0.5;
-              return a.order - b.order;
-            });
-            allInStatus.forEach((c, i) => c.order = i);
-          }
-
-          currentBoard = freshData;
-        }
-      } catch (err) {
-        const card = currentBoard.cards.find(c => c.id === cardId);
-        if (card) {
-          card.status = newStatus;
-          card.doneAt = newStatus === 'done' ? Date.now() : null;
-          if (needsOrder) {
-            card.order = newOrder;
-            const allInStatus = currentBoard.cards.filter(c => c.status === newStatus);
-            allInStatus.sort((a, b) => a.order - b.order);
-            allInStatus.forEach((c, i) => c.order = i);
-          }
-        }
+      // Update card locally
+      card.status = newStatus;
+      card.doneAt = newStatus === 'done' ? Date.now() : null;
+      if (newStatus !== 'done') {
+        card.order = newOrder;
+        const allInStatus = currentBoard.cards.filter(c => c.status === newStatus);
+        allInStatus.sort((a, b) => a.order - b.order);
+        allInStatus.forEach((c, i) => c.order = i);
       }
 
       renderCards();
-      autoSave();
+
+      // Send via WebSocket or fallback to HTTP
+      if (!emitCardUpdate('move', card)) {
+        autoSave();
+      }
     }
 
     // ============ Event Listeners ============
@@ -1407,7 +1454,6 @@
     document.getElementById('deleteCardBtn').onclick = deleteCard;
     document.getElementById('langSwitchEntry').onclick = toggleLang;
     document.getElementById('langSwitchBoard').onclick = toggleLang;
-    document.getElementById('refreshBtn').onclick = refreshBoard;
 
     document.getElementById('copyCodeBtn').onclick = () => {
       navigator.clipboard.writeText(currentBoard.id);
