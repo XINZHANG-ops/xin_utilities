@@ -1236,14 +1236,19 @@
       });
     }
 
-    // Emit drawing (real-time brush strokes)
+    // Emit drawing (real-time brush strokes) - convert points to ratio
     function emitDrawing(objId, points) {
       if (!socket || !socket.connected || !currentBoard) return;
+      // Convert points to ratio for cross-device sync
+      const ratioPoints = points.map(p => ({
+        x: p.x / REF_WIDTH,
+        y: p.y / REF_HEIGHT
+      }));
       socket.emit('wb_drawing', {
         board_id: currentBoard.id,
         sid: userId,
         obj_id: objId,
-        points,
+        points: ratioPoints,
         page_index: currentPageIndex
       });
     }
@@ -1322,7 +1327,16 @@
       }
 
       if (data.action === 'add' && localObj) {
-        if (localObj.type === 'image' && localObj.imgSrc) {
+        // Check if object already exists (e.g., from real-time drawing)
+        const existingIdx = objects.findIndex(o => o.id === localObj.id);
+        if (existingIdx >= 0) {
+          // Update existing object with complete data
+          Object.assign(objects[existingIdx], localObj);
+          // Clean up remoteDrawingObjects cache
+          delete remoteDrawingObjects[localObj.id];
+          redraw();
+          updatePageUI();
+        } else if (localObj.type === 'image' && localObj.imgSrc) {
           const img = new Image();
           img.onload = () => {
             localObj.img = img;
@@ -1371,7 +1385,7 @@
       }
     }
 
-    // Handle remote drawing (real-time brush)
+    // Handle remote drawing (real-time brush) - convert points from ratio
     let remoteDrawingObjects = {};
     function handleRemoteDrawing(data) {
       if (data.page_index !== currentPageIndex) return;
@@ -1395,7 +1409,12 @@
 
       const obj = remoteDrawingObjects[data.obj_id];
       if (data.points && data.points.length > 0) {
-        obj.points.push(...data.points);
+        // Convert points from ratio to local coordinates
+        const localPoints = data.points.map(p => ({
+          x: p.x * REF_WIDTH,
+          y: p.y * REF_HEIGHT
+        }));
+        obj.points.push(...localPoints);
         redraw();
       }
     }
@@ -1645,9 +1664,9 @@
     let selectBoxStart = null;
     let selectBoxEnd = null;
 
-    // Generate unique object ID
+    // Generate unique object ID (includes userId to prevent collisions across users)
     function generateObjectId() {
-      return 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      return 'obj_' + userId + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
     // Unified function to update object properties and sync
