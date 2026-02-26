@@ -700,17 +700,14 @@
       opacity: 0.5;
     }
     .shape-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 4px;
+      position: fixed;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       padding: 4px;
       display: none;
-      z-index: 100;
+      z-index: 1000;
       flex-direction: column;
       gap: 2px;
     }
@@ -2241,7 +2238,13 @@
 
     shapeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      shapeDropdown.classList.toggle('open');
+      const isOpen = shapeDropdown.classList.toggle('open');
+      if (isOpen) {
+        // Position the dropdown below the button
+        const rect = shapeBtn.getBoundingClientRect();
+        shapeDropdown.style.left = rect.left + 'px';
+        shapeDropdown.style.top = (rect.bottom + 4) + 'px';
+      }
     });
 
     document.querySelectorAll('[data-shape]').forEach(btn => {
