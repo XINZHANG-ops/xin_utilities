@@ -843,20 +843,29 @@
 
     function applyRemoteUpdate(data) {
       const { action, card } = data;
-      if (!currentBoard || !card) return;
+      console.log('[WS] applyRemoteUpdate:', action, card);
+
+      if (!currentBoard || !card) {
+        console.log('[WS] Skipping - currentBoard:', !!currentBoard, 'card:', !!card);
+        return;
+      }
 
       if (action === 'add') {
         const exists = currentBoard.cards.some(c => c.id === card.id);
+        console.log('[WS] Add card - exists:', exists);
         if (!exists) {
           currentBoard.cards.push(card);
+          console.log('[WS] Card added, total cards:', currentBoard.cards.length);
         }
       } else if (action === 'update' || action === 'move') {
         const idx = currentBoard.cards.findIndex(c => c.id === card.id);
+        console.log('[WS] Update/Move card - index:', idx);
         if (idx >= 0) {
           currentBoard.cards[idx] = card;
         }
       } else if (action === 'delete') {
         currentBoard.cards = currentBoard.cards.filter(c => c.id !== card.id);
+        console.log('[WS] Card deleted, total cards:', currentBoard.cards.length);
       }
 
       renderCards();
