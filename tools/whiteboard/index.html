@@ -1245,7 +1245,7 @@
     }
 
     // Emit drawing (real-time brush strokes) - convert points to ratio
-    function emitDrawing(objId, points) {
+    function emitDrawing(objId, points, brushProps) {
       if (!socket || !socket.connected || !currentBoard) return;
       // Convert points to ratio for cross-device sync
       const ratioPoints = points.map(p => ({
@@ -1257,7 +1257,11 @@
         sid: userId,
         obj_id: objId,
         points: ratioPoints,
-        page_index: currentPageIndex
+        page_index: currentPageIndex,
+        color: brushProps?.color,
+        size: brushProps?.size,
+        opacity: brushProps?.opacity,
+        type: brushProps?.type || 'brush'
       });
     }
 
@@ -1404,10 +1408,10 @@
         if (!obj) {
           obj = {
             id: data.obj_id,
-            type: 'brush',
-            color: remoteUsers[data.user_id]?.color || '#1d1d1f',
-            size: 3,
-            opacity: 1,
+            type: data.type || 'brush',
+            color: data.color || '#1d1d1f',
+            size: data.size || 3,
+            opacity: data.opacity !== undefined ? data.opacity : 1,
             points: []
           };
           objects.push(obj);
@@ -2325,8 +2329,13 @@
         const newPoint = { x: pos.x, y: pos.y };
         obj.points.push(newPoint);
         drawBrushStroke(obj);
-        // Emit real-time drawing for collaboration
-        emitDrawing(obj.id, [newPoint]);
+        // Emit real-time drawing for collaboration (include brush properties)
+        emitDrawing(obj.id, [newPoint], {
+          color: obj.color,
+          size: obj.size,
+          opacity: obj.opacity,
+          type: obj.type
+        });
       } else {
         redraw();
         drawShapePreview(currentTool, startX, startY, pos.x, pos.y);
