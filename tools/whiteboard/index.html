@@ -1544,32 +1544,35 @@
     // High DPI support
     const dpr = window.devicePixelRatio || 1;
 
-    // Canvas size - full screen with high DPI support
-    let canvasLogicalWidth = window.innerWidth;
-    let canvasLogicalHeight = window.innerHeight - 80;
+    // Fixed reference size for coordinate normalization (independent of zoom/screen)
+    const REF_WIDTH = 1920;
+    const REF_HEIGHT = 1080;
+
+    // Canvas display size - fixed to reference size for consistency
+    let canvasLogicalWidth = REF_WIDTH;
+    let canvasLogicalHeight = REF_HEIGHT;
 
     function updateCanvasPosition() {
       const header = document.getElementById('headerContainer');
       const headerHeight = header ? header.offsetHeight : 80;
       canvasWrapper.style.top = headerHeight + 'px';
-      canvasLogicalHeight = window.innerHeight - headerHeight;
     }
 
-    // Coordinate conversion for cross-device sync
+    // Coordinate conversion for cross-device sync (use fixed reference size)
     function toRatio(obj) {
       const copy = JSON.parse(JSON.stringify(obj));
-      if (copy.x !== undefined) copy.x = copy.x / canvasLogicalWidth;
-      if (copy.y !== undefined) copy.y = copy.y / canvasLogicalHeight;
-      if (copy.x1 !== undefined) copy.x1 = copy.x1 / canvasLogicalWidth;
-      if (copy.y1 !== undefined) copy.y1 = copy.y1 / canvasLogicalHeight;
-      if (copy.x2 !== undefined) copy.x2 = copy.x2 / canvasLogicalWidth;
-      if (copy.y2 !== undefined) copy.y2 = copy.y2 / canvasLogicalHeight;
-      if (copy.width !== undefined) copy.width = copy.width / canvasLogicalWidth;
-      if (copy.height !== undefined) copy.height = copy.height / canvasLogicalHeight;
+      if (copy.x !== undefined) copy.x = copy.x / REF_WIDTH;
+      if (copy.y !== undefined) copy.y = copy.y / REF_HEIGHT;
+      if (copy.x1 !== undefined) copy.x1 = copy.x1 / REF_WIDTH;
+      if (copy.y1 !== undefined) copy.y1 = copy.y1 / REF_HEIGHT;
+      if (copy.x2 !== undefined) copy.x2 = copy.x2 / REF_WIDTH;
+      if (copy.y2 !== undefined) copy.y2 = copy.y2 / REF_HEIGHT;
+      if (copy.width !== undefined) copy.width = copy.width / REF_WIDTH;
+      if (copy.height !== undefined) copy.height = copy.height / REF_HEIGHT;
       if (copy.points) {
         copy.points = copy.points.map(p => ({
-          x: p.x / canvasLogicalWidth,
-          y: p.y / canvasLogicalHeight
+          x: p.x / REF_WIDTH,
+          y: p.y / REF_HEIGHT
         }));
       }
       return copy;
@@ -1577,18 +1580,18 @@
 
     function fromRatio(obj) {
       const copy = JSON.parse(JSON.stringify(obj));
-      if (copy.x !== undefined) copy.x = copy.x * canvasLogicalWidth;
-      if (copy.y !== undefined) copy.y = copy.y * canvasLogicalHeight;
-      if (copy.x1 !== undefined) copy.x1 = copy.x1 * canvasLogicalWidth;
-      if (copy.y1 !== undefined) copy.y1 = copy.y1 * canvasLogicalHeight;
-      if (copy.x2 !== undefined) copy.x2 = copy.x2 * canvasLogicalWidth;
-      if (copy.y2 !== undefined) copy.y2 = copy.y2 * canvasLogicalHeight;
-      if (copy.width !== undefined) copy.width = copy.width * canvasLogicalWidth;
-      if (copy.height !== undefined) copy.height = copy.height * canvasLogicalHeight;
+      if (copy.x !== undefined) copy.x = copy.x * REF_WIDTH;
+      if (copy.y !== undefined) copy.y = copy.y * REF_HEIGHT;
+      if (copy.x1 !== undefined) copy.x1 = copy.x1 * REF_WIDTH;
+      if (copy.y1 !== undefined) copy.y1 = copy.y1 * REF_HEIGHT;
+      if (copy.x2 !== undefined) copy.x2 = copy.x2 * REF_WIDTH;
+      if (copy.y2 !== undefined) copy.y2 = copy.y2 * REF_HEIGHT;
+      if (copy.width !== undefined) copy.width = copy.width * REF_WIDTH;
+      if (copy.height !== undefined) copy.height = copy.height * REF_HEIGHT;
       if (copy.points) {
         copy.points = copy.points.map(p => ({
-          x: p.x * canvasLogicalWidth,
-          y: p.y * canvasLogicalHeight
+          x: p.x * REF_WIDTH,
+          y: p.y * REF_HEIGHT
         }));
       }
       return copy;
