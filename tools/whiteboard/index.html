@@ -1225,7 +1225,7 @@
       });
     }
 
-    // Emit object changes
+    // Emit object changes (convert to ratio for cross-device sync)
     function emitObjectChange(action, obj, pageIndex) {
       if (!socket || !socket.connected || !currentBoard) return;
       saveBoardToServer();
@@ -1233,7 +1233,7 @@
         board_id: currentBoard.id,
         sid: userId,
         action,
-        object: obj ? JSON.parse(JSON.stringify(obj)) : null,
+        object: obj ? toRatio(obj) : null,
         page_index: pageIndex !== undefined ? pageIndex : currentPageIndex
       });
     }
@@ -1285,12 +1285,15 @@
       });
     }
 
-    // Handle remote object update
+    // Handle remote object update (convert from ratio to local coordinates)
     function handleRemoteObjectUpdate(data) {
       let needsPageUIUpdate = false;
 
       // Ensure page_index is valid, default to 0
       const pageIndex = (typeof data.page_index === 'number' && data.page_index >= 0) ? data.page_index : 0;
+
+      // Convert from ratio to local coordinates
+      const localObj = data.object ? fromRatio(data.object) : null;
 
       // Create missing pages if needed (for sync)
       while (pages.length <= pageIndex) {
@@ -1300,19 +1303,19 @@
 
       if (pageIndex !== currentPageIndex) {
         // Update other page
-        if (data.action === 'add' && data.object) {
-          pages[pageIndex].objects.push(data.object);
+        if (data.action === 'add' && localObj) {
+          pages[pageIndex].objects.push(localObj);
           needsPageUIUpdate = true;
-        } else if (data.action === 'delete' && data.object) {
-          const idx = pages[pageIndex].objects.findIndex(o => o.id === data.object.id);
+        } else if (data.action === 'delete' && localObj) {
+          const idx = pages[pageIndex].objects.findIndex(o => o.id === localObj.id);
           if (idx >= 0) {
             pages[pageIndex].objects.splice(idx, 1);
             needsPageUIUpdate = true;
           }
-        } else if ((data.action === 'update' || data.action === 'move') && data.object) {
-          const idx = pages[pageIndex].objects.findIndex(o => o.id === data.object.id);
+        } else if ((data.action === 'update' || data.action === 'move') && localObj) {
+          const idx = pages[pageIndex].objects.findIndex(o => o.id === localObj.id);
           if (idx >= 0) {
-            Object.assign(pages[pageIndex].objects[idx], data.object);
+            Object.assign(pages[pageIndex].objects[idx], localObj);
             needsPageUIUpdate = true;
           }
         }
@@ -1320,50 +1323,50 @@
         return;
       }
 
-      if (data.action === 'add' && data.object) {
-        if (data.object.type === 'image' && data.object.imgSrc) {
+      if (data.action === 'add' && localObj) {
+        if (localObj.type === 'image' && localObj.imgSrc) {
           const img = new Image();
           img.onload = () => {
-            data.object.img = img;
-            objects.push(data.object);
+            localObj.img = img;
+            objects.push(localObj);
             redraw();
             updatePageUI();
           };
-          img.src = data.object.imgSrc;
+          img.src = localObj.imgSrc;
         } else {
-          objects.push(data.object);
+          objects.push(localObj);
           redraw();
           updatePageUI();
         }
-      } else if (data.action === 'update' && data.object) {
-        const idx = objects.findIndex(o => o.id === data.object.id);
+      } else if (data.action === 'update' && localObj) {
+        const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
-          if (data.object.type === 'image' && data.object.imgSrc && !objects[idx].img) {
+          if (localObj.type === 'image' && localObj.imgSrc && !objects[idx].img) {
             const img = new Image();
             img.onload = () => {
-              data.object.img = img;
-              objects[idx] = data.object;
+              localObj.img = img;
+              objects[idx] = localObj;
               redraw();
               updatePageUI();
             };
-            img.src = data.object.imgSrc;
+            img.src = localObj.imgSrc;
           } else {
-            objects[idx] = { ...objects[idx], ...data.object };
+            Object.assign(objects[idx], localObj);
             redraw();
             updatePageUI();
           }
         }
-      } else if (data.action === 'delete' && data.object) {
-        const idx = objects.findIndex(o => o.id === data.object.id);
+      } else if (data.action === 'delete' && localObj) {
+        const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
           objects.splice(idx, 1);
           redraw();
           updatePageUI();
         }
-      } else if (data.action === 'move' && data.object) {
-        const idx = objects.findIndex(o => o.id === data.object.id);
+      } else if (data.action === 'move' && localObj) {
+        const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
-          Object.assign(objects[idx], data.object);
+          Object.assign(objects[idx], localObj);
           redraw();
           updatePageUI();
         }
@@ -1449,17 +1452,18 @@
       }
     }
 
-    // Save board to server
+    // Save board to server (convert to ratio for cross-device compatibility)
     async function saveBoardToServer() {
       if (!currentBoard || isLocalMode) return;
 
       saveCurrentPageState();
       const pagesData = pages.map(page => ({
         objects: page.objects.map(obj => {
+          const ratioObj = toRatio(obj);
           if (obj.type === 'image') {
-            return { ...obj, imgSrc: obj.imgSrc, img: undefined };
+            return { ...ratioObj, imgSrc: obj.imgSrc, img: undefined };
           }
-          return { ...obj };
+          return ratioObj;
         }),
         history: [],
         historyIndex: -1
@@ -1499,13 +1503,15 @@
       }
     }
 
-    // Load board data
+    // Load board data (convert from ratio to local coordinates)
     async function loadBoardData(data) {
       if (!data || !data.pages) return;
 
       pages = [];
       for (const pageData of data.pages) {
-        const loadedObjects = await loadState(JSON.stringify(pageData.objects));
+        // Convert ratio coordinates to local coordinates
+        const localObjects = pageData.objects.map(obj => fromRatio(obj));
+        const loadedObjects = await loadState(JSON.stringify(localObjects));
         pages.push({
           objects: loadedObjects,
           history: [],
@@ -1538,17 +1544,54 @@
     // High DPI support
     const dpr = window.devicePixelRatio || 1;
 
-    // Fixed canvas size for consistency across all users (scrollable if needed)
-    const CANVAS_STANDARD_WIDTH = 3000;
-    const CANVAS_STANDARD_HEIGHT = 2000;
-    let canvasLogicalWidth = CANVAS_STANDARD_WIDTH;
-    let canvasLogicalHeight = CANVAS_STANDARD_HEIGHT;
+    // Canvas size - full screen with high DPI support
+    let canvasLogicalWidth = window.innerWidth;
+    let canvasLogicalHeight = window.innerHeight - 80;
 
     function updateCanvasPosition() {
       const header = document.getElementById('headerContainer');
       const headerHeight = header ? header.offsetHeight : 80;
       canvasWrapper.style.top = headerHeight + 'px';
-      // Keep fixed canvas size, don't change based on window
+      canvasLogicalHeight = window.innerHeight - headerHeight;
+    }
+
+    // Coordinate conversion for cross-device sync
+    function toRatio(obj) {
+      const copy = JSON.parse(JSON.stringify(obj));
+      if (copy.x !== undefined) copy.x = copy.x / canvasLogicalWidth;
+      if (copy.y !== undefined) copy.y = copy.y / canvasLogicalHeight;
+      if (copy.x1 !== undefined) copy.x1 = copy.x1 / canvasLogicalWidth;
+      if (copy.y1 !== undefined) copy.y1 = copy.y1 / canvasLogicalHeight;
+      if (copy.x2 !== undefined) copy.x2 = copy.x2 / canvasLogicalWidth;
+      if (copy.y2 !== undefined) copy.y2 = copy.y2 / canvasLogicalHeight;
+      if (copy.width !== undefined) copy.width = copy.width / canvasLogicalWidth;
+      if (copy.height !== undefined) copy.height = copy.height / canvasLogicalHeight;
+      if (copy.points) {
+        copy.points = copy.points.map(p => ({
+          x: p.x / canvasLogicalWidth,
+          y: p.y / canvasLogicalHeight
+        }));
+      }
+      return copy;
+    }
+
+    function fromRatio(obj) {
+      const copy = JSON.parse(JSON.stringify(obj));
+      if (copy.x !== undefined) copy.x = copy.x * canvasLogicalWidth;
+      if (copy.y !== undefined) copy.y = copy.y * canvasLogicalHeight;
+      if (copy.x1 !== undefined) copy.x1 = copy.x1 * canvasLogicalWidth;
+      if (copy.y1 !== undefined) copy.y1 = copy.y1 * canvasLogicalHeight;
+      if (copy.x2 !== undefined) copy.x2 = copy.x2 * canvasLogicalWidth;
+      if (copy.y2 !== undefined) copy.y2 = copy.y2 * canvasLogicalHeight;
+      if (copy.width !== undefined) copy.width = copy.width * canvasLogicalWidth;
+      if (copy.height !== undefined) copy.height = copy.height * canvasLogicalHeight;
+      if (copy.points) {
+        copy.points = copy.points.map(p => ({
+          x: p.x * canvasLogicalWidth,
+          y: p.y * canvasLogicalHeight
+        }));
+      }
+      return copy;
     }
 
     function setupCanvas() {
