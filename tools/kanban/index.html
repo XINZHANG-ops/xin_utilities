@@ -830,11 +830,14 @@
 
       // Then broadcast via WebSocket for real-time sync (best effort)
       if (socket && socket.connected && currentBoard) {
+        console.log('[WS] Emitting card_broadcast:', action, card.id);
         socket.emit('card_broadcast', {
           board_id: currentBoard.id,
           action: action,
           card: card
         });
+      } else {
+        console.log('[WS] Cannot emit - socket:', !!socket, 'connected:', socket?.connected);
       }
     }
 
