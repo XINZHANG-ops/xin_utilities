@@ -42,6 +42,19 @@
       background: rgba(255,255,255,0.85);
     }
 
+    .header-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
     .btn-icon {
       width: 32px;
       height: 32px;
@@ -169,7 +182,7 @@
 
     .canvas-wrapper {
       position: fixed;
-      top: 100px;
+      top: 0;
       left: 0;
       right: 0;
       bottom: 0;
@@ -207,18 +220,11 @@
 
     /* Page navigation */
     .page-nav {
-      position: fixed;
-      top: 48px;
-      left: 0;
-      right: 0;
-      z-index: 40;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 4px 8px;
       display: flex;
       align-items: center;
       gap: 6px;
+      padding: 4px 8px;
+      border-top: 1px solid var(--border);
     }
 
     .page-nav-btn {
@@ -623,7 +629,8 @@
   <!-- Remote Cursors Container -->
   <div id="remoteCursors"></div>
 
-  <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+  <div class="header-container" id="headerContainer">
+  <nav class="nav-blur">
     <div class="max-w-full mx-auto px-2 py-1 flex items-center gap-2 flex-wrap">
       <a href="../../index.html" class="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -793,6 +800,7 @@
 
     <span class="page-info" id="pageInfo">1 / 1</span>
   </div>
+  </div><!-- end header-container -->
 
   <div class="canvas-wrapper" id="canvasWrapper">
     <canvas id="canvas"></canvas>
@@ -999,13 +1007,16 @@
       // User events
       socket.on('wb_joined', (data) => {
         console.log('[WB] Joined board:', data);
-        if (data.users) {
-          remoteUsers = {};
+        // Clear all remote users first
+        remoteUsers = {};
+        clearRemoteCursors();
+        // Only add users from the server response
+        if (data.users && Array.isArray(data.users)) {
           data.users.forEach(u => {
             if (u.id !== userId) remoteUsers[u.id] = u;
           });
-          updateUsersDisplay();
         }
+        updateUsersDisplay();
       });
 
       socket.on('wb_user_joined', (data) => {
@@ -1491,9 +1502,18 @@
 
     // Canvas size - full screen with high DPI support (accounting for nav + page bar)
     let canvasLogicalWidth = window.innerWidth;
-    let canvasLogicalHeight = window.innerHeight - 100;
+    let canvasLogicalHeight = window.innerHeight - 80; // Will be updated by updateCanvasPosition
+
+    function updateCanvasPosition() {
+      const header = document.getElementById('headerContainer');
+      const headerHeight = header ? header.offsetHeight : 80;
+      canvasWrapper.style.top = headerHeight + 'px';
+      canvasLogicalHeight = window.innerHeight - headerHeight;
+    }
 
     function setupCanvas() {
+      updateCanvasPosition();
+
       // Set display size (CSS)
       canvas.style.width = canvasLogicalWidth + 'px';
       canvas.style.height = canvasLogicalHeight + 'px';
@@ -3123,13 +3143,12 @@
 
     // Handle window resize
     window.addEventListener('resize', () => {
+      updateCanvasPosition();
       const w = window.innerWidth;
-      const h = window.innerHeight - 100;
 
       // Only expand, never shrink to avoid losing content
-      if (w > canvasLogicalWidth || h > canvasLogicalHeight) {
+      if (w > canvasLogicalWidth || canvasLogicalHeight > canvas.height / dpr) {
         canvasLogicalWidth = Math.max(w, canvasLogicalWidth);
-        canvasLogicalHeight = Math.max(h, canvasLogicalHeight);
         setupCanvas();
         redraw();
       }
