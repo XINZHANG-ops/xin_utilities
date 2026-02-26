@@ -1082,7 +1082,14 @@
       // Clear event
       socket.on('wb_clear_update', (data) => {
         console.log('[WB] Clear update:', data);
-        if (data.page_index === currentPageIndex) {
+        const pageIndex = (typeof data.page_index === 'number' && data.page_index >= 0) ? data.page_index : 0;
+
+        // Create missing pages if needed
+        while (pages.length <= pageIndex) {
+          pages.push({ objects: [], history: [], historyIndex: -1 });
+        }
+
+        if (pageIndex === currentPageIndex) {
           objects = [];
           history = [];
           historyIndex = -1;
@@ -1091,10 +1098,10 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
-        } else if (pages[data.page_index]) {
-          pages[data.page_index].objects = [];
-          pages[data.page_index].history = [];
-          pages[data.page_index].historyIndex = -1;
+        } else {
+          pages[pageIndex].objects = [];
+          pages[pageIndex].history = [];
+          pages[pageIndex].historyIndex = -1;
           updatePageUI();
         }
       });
@@ -1282,24 +1289,31 @@
     function handleRemoteObjectUpdate(data) {
       let needsPageUIUpdate = false;
 
-      if (data.page_index !== currentPageIndex) {
+      // Ensure page_index is valid, default to 0
+      const pageIndex = (typeof data.page_index === 'number' && data.page_index >= 0) ? data.page_index : 0;
+
+      // Create missing pages if needed (for sync)
+      while (pages.length <= pageIndex) {
+        pages.push({ objects: [], history: [], historyIndex: -1 });
+        needsPageUIUpdate = true;
+      }
+
+      if (pageIndex !== currentPageIndex) {
         // Update other page
-        if (pages[data.page_index]) {
-          if (data.action === 'add' && data.object) {
-            pages[data.page_index].objects.push(data.object);
+        if (data.action === 'add' && data.object) {
+          pages[pageIndex].objects.push(data.object);
+          needsPageUIUpdate = true;
+        } else if (data.action === 'delete' && data.object) {
+          const idx = pages[pageIndex].objects.findIndex(o => o.id === data.object.id);
+          if (idx >= 0) {
+            pages[pageIndex].objects.splice(idx, 1);
             needsPageUIUpdate = true;
-          } else if (data.action === 'delete' && data.object) {
-            const idx = pages[data.page_index].objects.findIndex(o => o.id === data.object.id);
-            if (idx >= 0) {
-              pages[data.page_index].objects.splice(idx, 1);
-              needsPageUIUpdate = true;
-            }
-          } else if ((data.action === 'update' || data.action === 'move') && data.object) {
-            const idx = pages[data.page_index].objects.findIndex(o => o.id === data.object.id);
-            if (idx >= 0) {
-              Object.assign(pages[data.page_index].objects[idx], data.object);
-              needsPageUIUpdate = true;
-            }
+          }
+        } else if ((data.action === 'update' || data.action === 'move') && data.object) {
+          const idx = pages[pageIndex].objects.findIndex(o => o.id === data.object.id);
+          if (idx >= 0) {
+            Object.assign(pages[pageIndex].objects[idx], data.object);
+            needsPageUIUpdate = true;
           }
         }
         if (needsPageUIUpdate) updatePageUI();
@@ -1387,11 +1401,18 @@
 
     // Handle remote state update (undo/redo)
     function handleRemoteStateUpdate(data) {
-      if (data.page_index !== currentPageIndex) {
+      const pageIndex = (typeof data.page_index === 'number' && data.page_index >= 0) ? data.page_index : 0;
+
+      // Create missing pages if needed
+      while (pages.length <= pageIndex) {
+        pages.push({ objects: [], history: [], historyIndex: -1 });
+      }
+
+      if (pageIndex !== currentPageIndex) {
         // Update other page state
-        if (pages[data.page_index] && data.state) {
+        if (data.state) {
           loadState(data.state).then(state => {
-            pages[data.page_index].objects = state;
+            pages[pageIndex].objects = state;
             updatePageUI();
           });
         }
@@ -1517,15 +1538,17 @@
     // High DPI support
     const dpr = window.devicePixelRatio || 1;
 
-    // Canvas size - full screen with high DPI support (accounting for nav + page bar)
-    let canvasLogicalWidth = window.innerWidth;
-    let canvasLogicalHeight = window.innerHeight - 80; // Will be updated by updateCanvasPosition
+    // Fixed canvas size for consistency across all users (scrollable if needed)
+    const CANVAS_STANDARD_WIDTH = 3000;
+    const CANVAS_STANDARD_HEIGHT = 2000;
+    let canvasLogicalWidth = CANVAS_STANDARD_WIDTH;
+    let canvasLogicalHeight = CANVAS_STANDARD_HEIGHT;
 
     function updateCanvasPosition() {
       const header = document.getElementById('headerContainer');
       const headerHeight = header ? header.offsetHeight : 80;
       canvasWrapper.style.top = headerHeight + 'px';
-      canvasLogicalHeight = window.innerHeight - headerHeight;
+      // Keep fixed canvas size, don't change based on window
     }
 
     function setupCanvas() {
@@ -2663,8 +2686,12 @@
     }
 
     function redraw() {
+      // Reset transform and clear entire canvas to handle browser zoom
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Restore DPI scaling
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // Layer 1: Brush strokes and eraser (can be erased)
       for (const obj of objects) {
@@ -3172,17 +3199,9 @@
       newBoardNameInput.value = lastBoard;
     }
 
-    // Handle window resize
+    // Handle window resize - just update position, canvas size is fixed
     window.addEventListener('resize', () => {
       updateCanvasPosition();
-      const w = window.innerWidth;
-
-      // Only expand, never shrink to avoid losing content
-      if (w > canvasLogicalWidth || canvasLogicalHeight > canvas.height / dpr) {
-        canvasLogicalWidth = Math.max(w, canvasLogicalWidth);
-        setupCanvas();
-        redraw();
-      }
     });
   </script>
 </body>
