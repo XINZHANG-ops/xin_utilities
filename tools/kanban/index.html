@@ -885,7 +885,7 @@
       if (!currentBoard) return;
 
       isSaving = true;
-      updateSaveStatus('saving');
+      console.log('[HTTP] Saving board...');
       try {
         const res = await fetch(API_CONFIG.getUrl(`/kanban/${currentBoard.id}`), {
           method: 'POST',
@@ -893,10 +893,9 @@
           body: JSON.stringify(currentBoard)
         });
         if (!res.ok) throw new Error('Save failed');
-        updateSaveStatus('saved');
+        console.log('[HTTP] Board saved');
       } catch (e) {
-        console.error('Save error:', e);
-        updateSaveStatus('error');
+        console.error('[HTTP] Save error:', e);
       } finally {
         isSaving = false;
       }
@@ -908,23 +907,6 @@
         await saveBoard();
         saveTimeout = null;
       }, 500);
-    }
-
-    function updateSaveStatus(status) {
-      const el = document.getElementById('saveStatus');
-      const dot = el.querySelector('.status-dot');
-      const text = el.querySelector('[data-i18n]');
-
-      dot.classList.remove('saving', 'error');
-      if (status === 'saving') {
-        dot.classList.add('saving');
-        text.textContent = t('saving');
-      } else if (status === 'error') {
-        dot.classList.add('error');
-        text.textContent = t('errorSaving');
-      } else {
-        text.textContent = t('saved');
-      }
     }
 
     // ============ Board Operations ============
