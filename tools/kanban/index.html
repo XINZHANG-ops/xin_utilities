@@ -798,7 +798,7 @@
           updateWsStatus('disconnected');
         });
 
-        socket.on('reconnecting', () => {
+        socket.on('reconnect_attempt', () => {
           console.log('[WS] Reconnecting...');
           updateWsStatus('reconnecting');
         });
@@ -825,15 +825,17 @@
     }
 
     function emitCardUpdate(action, card) {
+      // Always save via HTTP first (reliable)
+      autoSave();
+
+      // Then broadcast via WebSocket for real-time sync (best effort)
       if (socket && socket.connected && currentBoard) {
-        socket.emit('card_update', {
+        socket.emit('card_broadcast', {
           board_id: currentBoard.id,
           action: action,
           card: card
         });
-        return true;
       }
-      return false;
     }
 
     function applyRemoteUpdate(data) {
@@ -1142,11 +1144,7 @@
 
       closeCardModal();
       renderCards();
-
-      // Send via WebSocket or fallback to HTTP
-      if (!emitCardUpdate(action, editingCard)) {
-        autoSave();
-      }
+      emitCardUpdate(action, editingCard);
     }
 
     async function deleteCard() {
@@ -1157,11 +1155,7 @@
 
       closeCardModal();
       renderCards();
-
-      // Send via WebSocket or fallback to HTTP
-      if (!emitCardUpdate('delete', cardToDelete)) {
-        autoSave();
-      }
+      emitCardUpdate('delete', cardToDelete);
     }
 
     // ============ Attachments ============
@@ -1436,11 +1430,7 @@
       }
 
       renderCards();
-
-      // Send via WebSocket or fallback to HTTP
-      if (!emitCardUpdate('move', card)) {
-        autoSave();
-      }
+      emitCardUpdate('move', card);
     }
 
     // ============ Event Listeners ============
