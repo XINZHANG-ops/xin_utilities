@@ -765,11 +765,17 @@
 
       try {
         socket = io(API_CONFIG.getBaseUrl(), {
-          transports: ['websocket', 'polling'],
+          // Use polling first (sends headers), then upgrade to websocket
+          transports: ['polling', 'websocket'],
+          extraHeaders: {
+            'ngrok-skip-browser-warning': 'true'
+          },
           reconnection: true,
           reconnectionAttempts: Infinity,
           reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000
+          reconnectionDelayMax: 5000,
+          timeout: 20000,
+          upgrade: true
         });
 
         socket.on('connect', () => {
@@ -806,6 +812,10 @@
         socket.on('connect_error', (err) => {
           console.warn('[WS] Connection error:', err.message);
           updateWsStatus('disconnected');
+          // Show hint for ngrok users
+          if (err.message && err.message.includes('xhr')) {
+            console.log('[WS] Hint: Try visiting the server URL directly first:', API_CONFIG.getBaseUrl());
+          }
         });
 
       } catch (e) {

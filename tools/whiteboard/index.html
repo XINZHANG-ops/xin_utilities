@@ -884,7 +884,7 @@
 
       // Check if board already exists
       try {
-        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${boardName}/exists`));
+        const res = await API_CONFIG.fetch(`/whiteboard/${boardName}/exists`);
         const data = await res.json();
         if (data.exists) {
           createError.textContent = I18n.t('whiteboard.collab.boardExists');
@@ -919,7 +919,7 @@
       joinError.style.display = 'none';
 
       try {
-        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${boardName}/exists`));
+        const res = await API_CONFIG.fetch(`/whiteboard/${boardName}/exists`);
         const data = await res.json();
 
         if (data.exists) {
@@ -981,7 +981,16 @@
       updateConnectionStatus('connecting');
 
       socket = io(API_CONFIG.getBaseUrl(), {
-        transports: ['websocket', 'polling']
+        // Use polling first (sends headers), then upgrade to websocket
+        transports: ['polling', 'websocket'],
+        extraHeaders: {
+          'ngrok-skip-browser-warning': 'true'
+        },
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        timeout: 20000,
+        upgrade: true
       });
 
       socket.on('connect', () => {
@@ -1003,8 +1012,13 @@
         clearRemoteCursors();
       });
 
-      socket.on('connect_error', () => {
+      socket.on('connect_error', (err) => {
+        console.error('[WB] Connection error:', err.message);
         updateConnectionStatus('disconnected');
+        // Show hint for ngrok users
+        if (err.message && err.message.includes('xhr')) {
+          console.log('[WB] Hint: Try visiting the server URL directly first:', API_CONFIG.getBaseUrl());
+        }
       });
 
       // User events
@@ -1439,7 +1453,7 @@
       };
 
       try {
-        await fetch(API_CONFIG.getUrl(`/whiteboard/${currentBoard.id}`), {
+        await API_CONFIG.fetch(`/whiteboard/${currentBoard.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(boardData)
@@ -1454,7 +1468,7 @@
       if (!currentBoard) return;
 
       try {
-        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${currentBoard.id}`));
+        const res = await API_CONFIG.fetch(`/whiteboard/${currentBoard.id}`);
         if (res.ok) {
           const data = await res.json();
           loadBoardData(data);

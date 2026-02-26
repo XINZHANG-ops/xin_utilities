@@ -23,6 +23,16 @@ const API_CONFIG = {
   // Get full URL for an endpoint
   getUrl(endpoint) {
     return this.getBaseUrl() + endpoint;
+  },
+
+  // Fetch with ngrok headers (bypasses interstitial page)
+  async fetch(endpoint, options = {}) {
+    const url = this.getUrl(endpoint);
+    const headers = {
+      'ngrok-skip-browser-warning': 'true',
+      ...options.headers
+    };
+    return fetch(url, { ...options, headers });
   }
 };
 
