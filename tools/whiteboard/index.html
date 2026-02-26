@@ -41,6 +41,8 @@
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
       background: rgba(255,255,255,0.85);
+      position: relative;
+      z-index: 10;
     }
 
     .header-container {
@@ -223,7 +225,10 @@
       align-items: center;
       gap: 6px;
       padding: 4px 8px;
-      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,0.95);
     }
 
     .page-nav-btn {
@@ -764,6 +769,31 @@
   <div id="remoteCursors"></div>
 
   <div class="header-container" id="headerContainer">
+  <!-- Page Navigation (above toolbar) -->
+  <div class="page-nav" id="pageNav">
+    <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="page-thumbnails" id="pageThumbnails"></div>
+
+    <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+    <button class="page-nav-btn add" id="addPageBtn" data-i18n-title="whiteboard.page.add" title="新建页面">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+
+    <span class="page-info" id="pageInfo">1 / 1</span>
+  </div>
+
   <nav class="nav-blur">
     <div class="max-w-full mx-auto px-2 py-1 flex items-center gap-2 flex-wrap">
       <a href="../../index.html" class="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0">
@@ -906,31 +936,6 @@
       </div>
     </div>
   </nav>
-
-  <!-- Page Navigation -->
-  <div class="page-nav" id="pageNav">
-    <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
-
-    <div class="page-thumbnails" id="pageThumbnails"></div>
-
-    <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
-
-    <button class="page-nav-btn add" id="addPageBtn" data-i18n-title="whiteboard.page.add" title="新建页面">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </button>
-
-    <span class="page-info" id="pageInfo">1 / 1</span>
-  </div>
   </div><!-- end header-container -->
 
   <div class="canvas-wrapper" id="canvasWrapper">
