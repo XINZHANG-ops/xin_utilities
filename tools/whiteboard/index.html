@@ -902,6 +902,9 @@
       document.getElementById('boardNameDisplay').textContent = boardName;
       document.getElementById('boardInfo').style.display = 'flex';
 
+      // Reset canvas scroll position
+      document.getElementById('canvasWrapper').scrollTo(0, 0);
+
       // Save empty board immediately
       await saveBoardToServer();
 
@@ -930,6 +933,9 @@
           document.getElementById('boardNameDisplay').textContent = boardName;
           document.getElementById('boardInfo').style.display = 'flex';
 
+          // Reset canvas scroll position
+          document.getElementById('canvasWrapper').scrollTo(0, 0);
+
           connectWebSocket();
           loadBoardFromServer();
         } else {
@@ -948,6 +954,8 @@
       currentUser = null;
       remoteUsers = {};
       boardModal.style.display = 'none';
+      // Reset canvas scroll position
+      document.getElementById('canvasWrapper').scrollTo(0, 0);
       wsStatus.style.display = 'flex';
       updateConnectionStatus('local');
       usersOnlineEl.innerHTML = '';
@@ -2311,7 +2319,9 @@
       }
 
       if (currentTool === 'brush' || currentTool === 'eraser') {
-        const obj = objects[objects.length - 1];
+        // Find the object by currentDrawingId (not last in array - remote objects may have been added)
+        const obj = objects.find(o => o.id === currentDrawingId);
+        if (!obj) return;
         const newPoint = { x: pos.x, y: pos.y };
         obj.points.push(newPoint);
         drawBrushStroke(obj);
