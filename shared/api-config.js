@@ -1,4 +1,4 @@
-// Shared API Configuration for Xin Utilities
+﻿// Shared API Configuration for Xin Utilities
 // Each tool can define its own endpoint path
 
 const API_CONFIG = {
@@ -6,7 +6,7 @@ const API_CONFIG = {
   BASE: {
     LOCAL: 'http://localhost:8080',
     // LOCAL: 'http://192.168.1.154:8080',  // 局域网测试用
-    NGROK: 'https://43b1-99-250-110-81.ngrok-free.app',
+    NGROK: 'https://jule-uncranked-overlavishly.ngrok-free.dev',
     PRODUCTION: 'https://your-api-server.com'
   },
 
@@ -41,3 +41,4 @@ const ENDPOINTS = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { API_CONFIG, ENDPOINTS };
 }
+
