@@ -902,8 +902,13 @@
       document.getElementById('boardNameDisplay').textContent = boardName;
       document.getElementById('boardInfo').style.display = 'flex';
 
-      // Reset canvas scroll position
-      document.getElementById('canvasWrapper').scrollTo(0, 0);
+      // Reset canvas position and scroll after layout update
+      requestAnimationFrame(() => {
+        const header = document.getElementById('headerContainer');
+        const wrapper = document.getElementById('canvasWrapper');
+        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
+        wrapper.scrollTo(0, 0);
+      });
 
       // Save empty board immediately
       await saveBoardToServer();
@@ -933,8 +938,13 @@
           document.getElementById('boardNameDisplay').textContent = boardName;
           document.getElementById('boardInfo').style.display = 'flex';
 
-          // Reset canvas scroll position
-          document.getElementById('canvasWrapper').scrollTo(0, 0);
+          // Reset canvas position and scroll after layout update
+          requestAnimationFrame(() => {
+            const header = document.getElementById('headerContainer');
+            const wrapper = document.getElementById('canvasWrapper');
+            wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
+            wrapper.scrollTo(0, 0);
+          });
 
           connectWebSocket();
           loadBoardFromServer();
@@ -954,8 +964,13 @@
       currentUser = null;
       remoteUsers = {};
       boardModal.style.display = 'none';
-      // Reset canvas scroll position
-      document.getElementById('canvasWrapper').scrollTo(0, 0);
+      // Reset canvas position and scroll after layout update
+      requestAnimationFrame(() => {
+        const header = document.getElementById('headerContainer');
+        const wrapper = document.getElementById('canvasWrapper');
+        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
+        wrapper.scrollTo(0, 0);
+      });
       wsStatus.style.display = 'flex';
       updateConnectionStatus('local');
       usersOnlineEl.innerHTML = '';
@@ -3287,9 +3302,13 @@
       newBoardNameInput.value = lastBoard;
     }
 
-    // Handle window resize - just update position, canvas size is fixed
+    // Handle window resize - update position and ensure scroll is valid
     window.addEventListener('resize', () => {
       updateCanvasPosition();
+      // Ensure scroll position is valid after resize
+      const wrapper = document.getElementById('canvasWrapper');
+      if (wrapper.scrollTop < 0) wrapper.scrollTop = 0;
+      if (wrapper.scrollLeft < 0) wrapper.scrollLeft = 0;
     });
   </script>
 </body>
