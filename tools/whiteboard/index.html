@@ -1753,6 +1753,9 @@
           updatePageUI();
           redraw();
         }
+      } else if (data.action === 'restore') {
+        // Page was restored via undo - reload board data from server
+        loadBoardFromServer();
       }
     }
 
@@ -3338,6 +3341,9 @@
           redraw();
           updatePageUI();
           saveToLocalStorage();
+
+          // Sync to other users
+          emitPageOperation('restore', op.index);
         });
       }
     }
