@@ -222,9 +222,9 @@
     }
 
     .page-nav-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       border: none;
       background: rgba(0,0,0,0.05);
       color: var(--fg);
@@ -232,6 +232,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
       transition: all 0.2s ease;
       flex-shrink: 0;
     }
@@ -243,9 +244,10 @@
 
     .page-thumbnails {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       overflow-x: auto;
       flex: 1;
+      min-width: 0;
       padding: 4px 0;
       scrollbar-width: thin;
     }
@@ -254,9 +256,9 @@
     .page-thumbnails::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
 
     .page-thumb {
-      width: 80px;
-      height: 50px;
-      border-radius: 6px;
+      width: 64px;
+      height: 40px;
+      border-radius: 4px;
       border: 2px solid transparent;
       background: #fff;
       cursor: pointer;
@@ -308,9 +310,10 @@
     .page-thumb:hover .page-thumb-delete { display: flex; }
 
     .page-info {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--fg-muted);
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     /* Text edit overlay */
@@ -805,7 +808,12 @@
     let currentUser = null;
     let remoteUsers = {};
     let isLocalMode = false;
-    let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    // Persistent user ID to avoid duplicates on reconnect
+    let userId = localStorage.getItem('wb-user-id');
+    if (!userId) {
+      userId = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('wb-user-id', userId);
+    }
 
     // User colors for avatars
     const userColors = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#30d158', '#00c7be', '#007aff', '#5856d6', '#af52de', '#ff2d55'];
@@ -861,6 +869,18 @@
       const boardName = newBoardNameInput.value.trim();
       const userName = userNameInput.value.trim() || generateRandomName();
       if (!boardName) return;
+
+      // Check if board already exists
+      try {
+        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${boardName}/exists`));
+        const data = await res.json();
+        if (data.exists) {
+          alert(I18n.t('whiteboard.collab.boardExists') || 'Board already exists. Please join it or use a different name.');
+          return;
+        }
+      } catch (e) {
+        // If check fails, proceed anyway
+      }
 
       localStorage.setItem('wb-user-name', userName);
       localStorage.setItem('wb-last-board', boardName);
@@ -996,7 +1016,11 @@
       // Cursor events
       socket.on('wb_cursor_update', (data) => {
         if (data.user_id !== userId) {
-          updateRemoteCursor(data.user_id, data.x, data.y);
+          // Update user's page info
+          if (remoteUsers[data.user_id]) {
+            remoteUsers[data.user_id].page = data.page;
+          }
+          updateRemoteCursor(data.user_id, data.x, data.y, data.page);
         }
       });
 
@@ -1029,6 +1053,11 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
+        } else if (pages[data.page_index]) {
+          pages[data.page_index].objects = [];
+          pages[data.page_index].history = [];
+          pages[data.page_index].historyIndex = -1;
+          updatePageUI();
         }
       });
 
@@ -1046,7 +1075,12 @@
     }
 
     function updateUsersDisplay() {
-      const users = Object.values(remoteUsers);
+      // Filter out duplicates by user id
+      const uniqueUsers = {};
+      Object.values(remoteUsers).forEach(u => {
+        uniqueUsers[u.id] = u;
+      });
+      const users = Object.values(uniqueUsers);
       usersOnlineEl.innerHTML = '';
 
       // Add current user first
@@ -1058,12 +1092,13 @@
         usersOnlineEl.appendChild(avatar);
       }
 
-      // Add remote users
+      // Add remote users with page indicator
       users.slice(0, 5).forEach(user => {
         const avatar = document.createElement('div');
         avatar.className = 'user-avatar';
         avatar.style.background = user.color;
-        avatar.innerHTML = `${user.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${user.name}</span>`;
+        const pageInfo = user.page !== undefined && user.page !== currentPageIndex ? ` [P${user.page + 1}]` : '';
+        avatar.innerHTML = `${user.name.charAt(0).toUpperCase()}<span class="user-avatar-tooltip">${user.name}${pageInfo}</span>`;
         usersOnlineEl.appendChild(avatar);
       });
 
@@ -1076,11 +1111,22 @@
       }
     }
 
-    function updateRemoteCursor(uid, x, y) {
+    function updateRemoteCursor(uid, x, y, page) {
       const user = remoteUsers[uid];
       if (!user) return;
 
       let cursor = document.getElementById('cursor-' + uid);
+
+      // Hide cursor if user is on different page or position is invalid
+      const onSamePage = page === currentPageIndex;
+      const validPosition = x >= 0 && y >= 0;
+
+      if (!onSamePage || !validPosition) {
+        if (cursor) cursor.style.display = 'none';
+        updateUsersDisplay(); // Update to show page info
+        return;
+      }
+
       if (!cursor) {
         cursor = document.createElement('div');
         cursor.id = 'cursor-' + uid;
@@ -1093,6 +1139,7 @@
         remoteCursorsEl.appendChild(cursor);
       }
 
+      cursor.style.display = 'block';
       const rect = canvas.getBoundingClientRect();
       cursor.style.left = (rect.left + x) + 'px';
       cursor.style.top = (rect.top + y) + 'px';
@@ -1107,7 +1154,7 @@
       remoteCursorsEl.innerHTML = '';
     }
 
-    // Emit cursor position
+    // Emit cursor position with page info
     let lastCursorEmit = 0;
     function emitCursor(x, y) {
       if (!socket || !socket.connected || !currentBoard) return;
@@ -1117,7 +1164,19 @@
       socket.emit('wb_cursor', {
         board_id: currentBoard.id,
         sid: userId,
-        x, y
+        x, y,
+        page: currentPageIndex
+      });
+    }
+
+    // Emit page change to let others know which page we're on
+    function emitPageChange() {
+      if (!socket || !socket.connected || !currentBoard) return;
+      socket.emit('wb_cursor', {
+        board_id: currentBoard.id,
+        sid: userId,
+        x: -1, y: -1,
+        page: currentPageIndex
       });
     }
 
@@ -1183,13 +1242,29 @@
 
     // Handle remote object update
     function handleRemoteObjectUpdate(data) {
+      let needsPageUIUpdate = false;
+
       if (data.page_index !== currentPageIndex) {
         // Update other page
         if (pages[data.page_index]) {
           if (data.action === 'add' && data.object) {
             pages[data.page_index].objects.push(data.object);
+            needsPageUIUpdate = true;
+          } else if (data.action === 'delete' && data.object) {
+            const idx = pages[data.page_index].objects.findIndex(o => o.id === data.object.id);
+            if (idx >= 0) {
+              pages[data.page_index].objects.splice(idx, 1);
+              needsPageUIUpdate = true;
+            }
+          } else if ((data.action === 'update' || data.action === 'move') && data.object) {
+            const idx = pages[data.page_index].objects.findIndex(o => o.id === data.object.id);
+            if (idx >= 0) {
+              Object.assign(pages[data.page_index].objects[idx], data.object);
+              needsPageUIUpdate = true;
+            }
           }
         }
+        if (needsPageUIUpdate) updatePageUI();
         return;
       }
 
@@ -1200,11 +1275,13 @@
             data.object.img = img;
             objects.push(data.object);
             redraw();
+            updatePageUI();
           };
           img.src = data.object.imgSrc;
         } else {
           objects.push(data.object);
           redraw();
+          updatePageUI();
         }
       } else if (data.action === 'update' && data.object) {
         const idx = objects.findIndex(o => o.id === data.object.id);
@@ -1215,11 +1292,13 @@
               data.object.img = img;
               objects[idx] = data.object;
               redraw();
+              updatePageUI();
             };
             img.src = data.object.imgSrc;
           } else {
             objects[idx] = { ...objects[idx], ...data.object };
             redraw();
+            updatePageUI();
           }
         }
       } else if (data.action === 'delete' && data.object) {
@@ -1227,12 +1306,14 @@
         if (idx >= 0) {
           objects.splice(idx, 1);
           redraw();
+          updatePageUI();
         }
       } else if (data.action === 'move' && data.object) {
         const idx = objects.findIndex(o => o.id === data.object.id);
         if (idx >= 0) {
           Object.assign(objects[idx], data.object);
           redraw();
+          updatePageUI();
         }
       }
     }
@@ -1268,7 +1349,16 @@
 
     // Handle remote state update (undo/redo)
     function handleRemoteStateUpdate(data) {
-      if (data.page_index !== currentPageIndex) return;
+      if (data.page_index !== currentPageIndex) {
+        // Update other page state
+        if (pages[data.page_index] && data.state) {
+          loadState(data.state).then(state => {
+            pages[data.page_index].objects = state;
+            updatePageUI();
+          });
+        }
+        return;
+      }
 
       if (data.state) {
         loadState(data.state).then(state => {
@@ -1489,6 +1579,7 @@
       redraw();
       updatePageUI();
       saveToLocalStorage();
+      emitPageChange();
     }
 
     function addNewPage() {

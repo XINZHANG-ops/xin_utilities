@@ -386,6 +386,7 @@ I18n.register('zh', {
       create: '创建',
       join: '加入',
       boardNotFound: '未找到该白板',
+      boardExists: '该白板已存在，请加入或使用其他名称',
       connecting: '连接中...',
       connected: '已连接',
       disconnected: '连接断开',

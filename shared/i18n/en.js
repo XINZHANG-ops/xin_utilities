@@ -386,6 +386,7 @@ I18n.register('en', {
       create: 'Create',
       join: 'Join',
       boardNotFound: 'Board not found',
+      boardExists: 'Board already exists. Please join it or use a different name',
       connecting: 'Connecting...',
       connected: 'Connected',
       disconnected: 'Disconnected',
