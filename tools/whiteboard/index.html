@@ -43,18 +43,19 @@
     }
 
     .btn-icon {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       padding: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 8px;
+      border-radius: 6px;
       background: rgba(0,0,0,0.05);
       border: none;
       color: var(--fg);
       cursor: pointer;
       transition: all 0.2s ease;
+      flex-shrink: 0;
     }
 
     .btn-icon:hover { background: rgba(0,0,0,0.1); }
@@ -90,13 +91,18 @@
     .toolbar {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow-x: auto;
+      flex-shrink: 1;
+      min-width: 0;
     }
+    .toolbar::-webkit-scrollbar { height: 4px; }
+    .toolbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
 
     .toolbar-divider {
       width: 1px;
@@ -107,14 +113,15 @@
 
     .color-picker-wrapper {
       position: relative;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
     }
 
     .color-picker-display {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
       border: 2px solid rgba(0,0,0,0.15);
       cursor: pointer;
       transition: border-color 0.2s ease;
@@ -135,12 +142,13 @@
     }
 
     .slider {
-      width: 80px;
+      width: 60px;
       height: 4px;
       -webkit-appearance: none;
       background: rgba(0,0,0,0.1);
       border-radius: 2px;
       outline: none;
+      flex-shrink: 0;
     }
 
     .slider::-webkit-slider-thumb {
@@ -161,7 +169,7 @@
 
     .canvas-wrapper {
       position: fixed;
-      top: 110px;
+      top: 100px;
       left: 0;
       right: 0;
       bottom: 0;
@@ -200,14 +208,14 @@
     /* Page navigation */
     .page-nav {
       position: fixed;
-      top: 60px;
+      top: 48px;
       left: 0;
       right: 0;
       z-index: 40;
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
-      padding: 8px 16px;
+      padding: 6px 12px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -330,23 +338,23 @@
     }
 
     .lang-toggle {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.1);
       color: var(--fg);
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
     .lang-toggle:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.1);
     }
 
     /* Board Selection Modal */
@@ -554,12 +562,27 @@
     .board-info {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 0.75rem;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
       background: rgba(0,0,0,0.05);
-      border-radius: 8px;
-      font-size: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
       color: var(--fg-muted);
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Responsive: hide some elements on small screens */
+    @media (max-width: 900px) {
+      .board-info { display: none !important; }
+      .save-indicator { display: none !important; }
+      .toolbar .text-xs { display: none !important; }
+    }
+    @media (max-width: 700px) {
+      .toolbar-divider { display: none !important; }
+      .toolbar { gap: 0.25rem; padding: 0.25rem 0.5rem; }
     }
   </style>
 </head>
@@ -597,12 +620,12 @@
   <div id="remoteCursors"></div>
 
   <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
-    <div class="max-w-full mx-auto px-4 py-2 flex items-center gap-4">
-      <a href="../../index.html" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
+    <div class="max-w-full mx-auto px-2 py-1 flex items-center gap-2 flex-wrap">
+      <a href="../../index.html" class="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        <span class="font-medium text-sm" data-i18n="common.back">返回</span>
+        <span class="font-medium text-sm" data-i18n="common.backShort">返回</span>
       </a>
 
       <div class="toolbar">
@@ -721,25 +744,24 @@
         <span class="save-indicator" id="saveIndicator" data-i18n="whiteboard.status.saved">已保存</span>
       </div>
 
-      <!-- Connection Status -->
-      <div class="ws-status connecting" id="wsStatus">
-        <span class="ws-dot"></span>
-        <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
+      <!-- Right side controls -->
+      <div class="flex items-center gap-2 ml-auto flex-shrink-0">
+        <!-- Connection Status -->
+        <div class="ws-status connecting" id="wsStatus">
+          <span class="ws-dot"></span>
+          <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
+        </div>
+
+        <!-- Users Online -->
+        <div class="users-online" id="usersOnline"></div>
+
+        <!-- Board Info -->
+        <div class="board-info" id="boardInfo" style="display:none;">
+          <span id="boardNameDisplay"></span>
+        </div>
+
+        <button class="lang-toggle" id="langToggle">中文</button>
       </div>
-
-      <!-- Users Online -->
-      <div class="users-online" id="usersOnline"></div>
-
-      <!-- Board Info -->
-      <div class="board-info" id="boardInfo" style="display:none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M3 9h18"/>
-        </svg>
-        <span id="boardNameDisplay"></span>
-      </div>
-
-      <button class="lang-toggle" id="langToggle">中文</button>
     </div>
   </nav>
 
@@ -861,7 +883,7 @@
       joinError.style.display = 'none';
 
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${boardName}/exists`);
+        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${boardName}/exists`));
         const data = await res.json();
 
         if (data.exists) {
@@ -917,7 +939,7 @@
     function connectWebSocket() {
       updateConnectionStatus('connecting');
 
-      socket = io(API_CONFIG.BASE_URL, {
+      socket = io(API_CONFIG.getBaseUrl(), {
         transports: ['websocket', 'polling']
       });
 
@@ -1303,7 +1325,7 @@
       };
 
       try {
-        await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${currentBoard.id}`, {
+        await fetch(API_CONFIG.getUrl(`/whiteboard/${currentBoard.id}`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(boardData)
@@ -1318,7 +1340,7 @@
       if (!currentBoard) return;
 
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WHITEBOARD}/${currentBoard.id}`);
+        const res = await fetch(API_CONFIG.getUrl(`/whiteboard/${currentBoard.id}`));
         if (res.ok) {
           const data = await res.json();
           loadBoardData(data);
@@ -1369,7 +1391,7 @@
 
     // Canvas size - full screen with high DPI support (accounting for nav + page bar)
     let canvasLogicalWidth = window.innerWidth;
-    let canvasLogicalHeight = window.innerHeight - 110;
+    let canvasLogicalHeight = window.innerHeight - 100;
 
     function setupCanvas() {
       // Set display size (CSS)
@@ -3000,7 +3022,7 @@
     // Handle window resize
     window.addEventListener('resize', () => {
       const w = window.innerWidth;
-      const h = window.innerHeight - 110;
+      const h = window.innerHeight - 100;
 
       // Only expand, never shrink to avoid losing content
       if (w > canvasLogicalWidth || h > canvasLogicalHeight) {
