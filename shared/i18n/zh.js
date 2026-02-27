@@ -334,7 +334,10 @@ I18n.register('zh', {
     },
     actions: {
       download: '下载 PDF',
-      clear: '清空画布'
+      clear: '清空画布',
+      clearFrame: '清空画布',
+      undo: '撤销',
+      redo: '重做'
     },
     tools: {
       select: '选择',
@@ -347,7 +350,9 @@ I18n.register('zh', {
       stickyNote: '便利贴',
       sticky: '便利贴',
       textBox: '文本框',
-      text: '文本框'
+      text: '文本框',
+      image: '图片',
+      shapes: '形状'
     },
     colors: {
       black: '黑色',
@@ -401,6 +406,13 @@ I18n.register('zh', {
       },
       clickToCopy: '点击复制',
       copied: '已复制'
+    },
+    menu: {
+      edit: '编辑',
+      duplicate: '复制',
+      delete: '删除',
+      bringToFront: '置于顶层',
+      sendToBack: '置于底层'
     }
   },
 

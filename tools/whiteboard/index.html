@@ -37,25 +37,265 @@
       height: 100vh;
     }
 
-    .nav-blur {
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      background: rgba(255,255,255,0.85);
-      position: relative;
-      z-index: 10;
-    }
-
-    .header-container {
+    /* ===== Top Header Bar (Jamboard style) ===== */
+    .top-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(10px);
+      height: 48px;
+      background: var(--bg-card);
       border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      z-index: 50;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .top-bar-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--fg-muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .back-link:hover { background: rgba(0,0,0,0.05); color: var(--fg); }
+
+    .board-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .board-title:hover { background: rgba(0,0,0,0.05); }
+
+    /* Page selector (< 1/5▼ >) */
+    .page-selector {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-nav-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--fg-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .page-nav-btn:hover { background: rgba(0,0,0,0.08); color: var(--fg); }
+    .page-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .page-indicator {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .page-indicator:hover .page-card-front,
+    .page-indicator:hover .page-card-back { border-color: var(--fg-muted); }
+    .page-cards-icon {
+      position: relative;
+      width: 36px;
+      height: 28px;
+    }
+    .page-card-back {
+      position: absolute;
+      top: 0;
+      left: 4px;
+      width: 28px;
+      height: 20px;
+      border: 1.5px solid var(--fg-muted);
+      border-radius: 2px;
+      background: var(--bg-card);
+    }
+    .page-card-front {
+      position: absolute;
+      top: 6px;
+      left: 0;
+      width: 28px;
+      height: 20px;
+      border: 1.5px solid var(--fg-muted);
+      border-radius: 2px;
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--fg);
+    }
+    .page-indicator::after {
+      content: '';
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--fg-muted);
+      margin-left: 2px;
+    }
+
+    /* Page dropdown with thumbnails */
+    .page-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      padding: 12px;
+      display: none;
+      z-index: 100;
+      min-width: 200px;
+    }
+    .page-dropdown.open { display: flex; }
+
+    .page-grid {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      overflow-x: auto;
+      max-width: 400px;
+      padding-bottom: 4px;
+    }
+    .page-grid::-webkit-scrollbar {
+      height: 10px;
+    }
+    .page-grid::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+      border-radius: 5px;
+    }
+    .page-grid::-webkit-scrollbar-thumb {
+      background: var(--fg-muted);
+      border-radius: 5px;
+      border: 2px solid var(--bg-secondary);
+    }
+    .page-grid::-webkit-scrollbar-thumb:hover {
+      background: var(--fg);
+    }
+
+    .page-thumb {
+      width: 80px;
+      min-width: 80px;
+      height: 50px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      background: #fff;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .page-thumb:hover { border-color: rgba(0,0,0,0.2); transform: scale(1.05); }
+    .page-thumb.active { border-color: var(--accent); }
+    .page-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .page-thumb-label {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      color: var(--fg-muted);
+      background: rgba(255,255,255,0.9);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .page-thumb-delete {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,59,48,0.9);
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .page-thumb:hover .page-thumb-delete { display: flex; }
+    .page-thumb-delete:hover { background: #ff3b30; transform: scale(1.1); }
+    .page-thumb.dragging { opacity: 0.5; }
+    .page-thumb.drag-over { border-color: var(--accent); transform: scale(1.08); }
+
+    .page-add-btn {
+      width: 80px;
+      min-width: 80px;
+      height: 50px;
+      border-radius: 6px;
+      border: 2px dashed var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--fg-muted);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .page-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Secondary toolbar */
+    .secondary-bar {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: rgba(255,255,255,0.95);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      z-index: 49;
     }
 
     .btn-icon {
@@ -66,477 +306,335 @@
       align-items: center;
       justify-content: center;
       border-radius: 6px;
-      background: rgba(0,0,0,0.05);
+      background: transparent;
       border: none;
       color: var(--fg);
       cursor: pointer;
       transition: all 0.2s ease;
       flex-shrink: 0;
     }
-
-    .btn-icon:hover { background: rgba(0,0,0,0.1); }
-    .btn-icon.active { background: var(--accent); color: #fff; }
-
-    .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .btn-primary:hover { background: var(--accent-hover); }
-
-    .btn-secondary {
-      background: rgba(0,0,0,0.05);
-      color: var(--fg);
-    }
-
-    .btn-secondary:hover { background: rgba(0,0,0,0.1); }
-
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.375rem 0.75rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      overflow-x: auto;
-      flex: 0 1 auto;
-      max-width: fit-content;
-    }
-    .toolbar::-webkit-scrollbar { height: 4px; }
-    .toolbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
+    .btn-icon:hover { background: rgba(0,0,0,0.08); }
+    .btn-icon.active { background: var(--fg); color: #fff; }
+    .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .toolbar-divider {
       width: 1px;
       height: 24px;
       background: var(--border);
-      margin: 0 0.25rem;
+      margin: 0 4px;
     }
 
-    .color-picker-wrapper {
+    /* Zoom dropdown */
+    .zoom-selector {
       position: relative;
-      width: 32px;
-      height: 32px;
-      flex-shrink: 0;
+    }
+    .zoom-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 8px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--fg);
+    }
+    .zoom-btn:hover { background: rgba(0,0,0,0.08); }
+    .zoom-btn svg { stroke: var(--fg-muted); }
+    .zoom-arrow {
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--fg-muted);
     }
 
-    .color-picker-display {
+    .zoom-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 4px;
+      display: none;
+      z-index: 100;
+      min-width: 100px;
+    }
+    .zoom-dropdown.open { display: block; }
+    .zoom-option {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .zoom-option:hover { background: rgba(0,0,0,0.05); }
+    .zoom-option.active { background: rgba(48, 209, 88, 0.15); color: var(--accent); }
+
+    .clear-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--fg);
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { background: rgba(0,0,0,0.08); }
+
+    /* ===== Left Sidebar Toolbar (Jamboard style) ===== */
+    .left-toolbar {
+      position: fixed;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 40;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .tool-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .tool-btn:hover { background: rgba(0,0,0,0.08); }
+    .tool-btn.active { background: var(--fg); color: #fff; }
+
+    .tool-btn.has-panel::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      width: 0;
+      height: 0;
+      border-left: 3px solid transparent;
+      border-right: 3px solid transparent;
+      border-top: 4px solid currentColor;
+      opacity: 0.5;
+    }
+
+    .tool-divider {
+      width: 24px;
+      height: 1px;
+      background: var(--border);
+      margin: 4px auto;
+    }
+
+    /* Tool property panel (appears next to toolbar) */
+    .tool-panel {
+      position: fixed;
+      left: 72px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      display: none;
+      z-index: 41;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .tool-panel.open { display: block; }
+
+    .panel-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .panel-row:last-child { margin-bottom: 0; }
+
+    .brush-size-btn {
       width: 32px;
       height: 32px;
       border-radius: 6px;
-      border: 2px solid rgba(0,0,0,0.15);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
       cursor: pointer;
-      transition: border-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
     }
+    .brush-size-btn:hover { border-color: var(--fg-muted); }
+    .brush-size-btn.active { border-color: var(--accent); background: rgba(48, 209, 88, 0.1); }
 
-    .color-picker-display:hover {
-      border-color: rgba(0,0,0,0.3);
+    .color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
     }
-
-    .color-picker-input {
+    .color-btn:hover { transform: scale(1.1); }
+    .color-btn.active { border-color: var(--fg); }
+    .color-btn.active::after {
+      content: '✓';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .color-picker-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+      position: relative;
+      overflow: hidden;
+    }
+    .color-picker-btn input {
+      position: absolute;
+      inset: 0;
       opacity: 0;
       cursor: pointer;
     }
 
-    .slider {
-      width: 60px;
-      height: 4px;
-      -webkit-appearance: none;
-      background: rgba(0,0,0,0.1);
-      border-radius: 2px;
-      outline: none;
-      flex-shrink: 0;
+    /* Hidden file input for image upload */
+    #imageUploadInput { display: none; }
+
+    /* ===== Canvas Area ===== */
+    .canvas-wrapper {
+      position: fixed;
+      top: 88px;
+      left: 72px;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      overflow: auto;
     }
 
-    .slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      background: var(--accent);
-      border-radius: 50%;
-      cursor: pointer;
+    .canvas-container {
+      position: relative;
+      background: #fff;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      border: 1px solid rgba(0,0,0,0.08);
     }
 
     #canvas {
       display: block;
       cursor: crosshair;
       background: #ffffff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
-    .canvas-wrapper {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--bg);
-      overflow: auto;
-      padding: 20px;
-    }
-
-    .hint {
-      position: fixed;
-      bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 0.75rem;
-      color: var(--fg-muted);
-      background: var(--bg-card);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .save-indicator {
-      font-size: 0.75rem;
-      color: var(--fg-muted);
-      padding: 0.25rem 0.5rem;
-      background: rgba(48, 209, 88, 0.1);
-      border-radius: 4px;
-    }
-
-    .save-indicator.saving {
-      background: rgba(255, 159, 10, 0.1);
-    }
-
-    /* Page navigation - compact Jamboard style */
-    .page-nav {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 12px;
-      border-bottom: 1px solid var(--border);
-      position: relative;
-      z-index: 1;
-      background: rgba(255,255,255,0.95);
-    }
-
-    .page-nav-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .page-nav-center {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex: 1;
-      justify-content: center;
-    }
-
-    .page-nav-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .page-nav-btn {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      border: none;
-      background: transparent;
-      color: var(--fg-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
-    }
-
-    .page-nav-btn:hover { background: rgba(0,0,0,0.08); color: var(--fg); }
-    .page-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .page-nav-btn.add { color: var(--accent); }
-    .page-nav-btn.add:hover { background: rgba(48, 209, 88, 0.1); }
-
-    .page-thumbnails {
-      display: flex;
-      gap: 4px;
-      overflow-x: auto;
-      max-width: 200px;
-      padding: 2px 0;
-      scrollbar-width: none;
-    }
-    .page-thumbnails::-webkit-scrollbar { display: none; }
-
-    .page-thumb {
-      width: 32px;
-      height: 20px;
-      border-radius: 3px;
-      border: 2px solid transparent;
-      background: #fff;
-      cursor: pointer;
-      flex-shrink: 0;
-      overflow: hidden;
-      transition: all 0.15s ease;
-      position: relative;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .page-thumb:hover { border-color: rgba(0,0,0,0.2); }
-    .page-thumb.active { border-color: var(--accent); }
-
-    .page-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .page-thumb-label { display: none; }
-    .page-thumb-delete { display: none; }
-
-    .page-info {
-      font-size: 11px;
-      color: var(--fg-muted);
-      white-space: nowrap;
-      flex-shrink: 0;
-      min-width: 32px;
-      text-align: center;
-    }
-
-    /* Text edit overlay */
-    .text-edit-overlay {
-      position: fixed;
-      z-index: 100;
-      background: transparent;
-      border: 2px solid #30d158;
-      border-radius: 4px;
-      padding: 8px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 16px;
-      line-height: 1.4;
-      resize: none;
-      outline: none;
-      overflow: hidden;
-      min-width: 100px;
-      min-height: 40px;
-    }
-
-    .text-edit-overlay.sticky {
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    }
-
-    .lang-toggle {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      background: rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      color: var(--fg);
-      font-size: 0.65rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .lang-toggle:hover {
-      background: rgba(0, 0, 0, 0.1);
-    }
-
-    /* Board Selection Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: var(--bg-card);
-      border-radius: 16px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .modal-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-    .modal-tabs {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .modal-tab {
-      flex: 1;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(0,0,0,0.05);
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-    .modal-tab.active {
-      background: var(--accent);
-      color: #fff;
-    }
-    .modal-input {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 1rem;
-      margin-bottom: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .modal-input:focus {
-      border-color: var(--accent);
-    }
-    .modal-btn {
-      width: 100%;
-      padding: 0.875rem;
-      border: none;
-      border-radius: 8px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .modal-btn:hover {
-      background: var(--accent-hover);
-    }
-    .modal-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .modal-error {
-      color: #ff3b30;
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-      text-align: center;
-    }
-    .modal-local-link {
-      text-align: center;
-      margin-top: 1rem;
-      font-size: 0.875rem;
-      color: var(--fg-muted);
-    }
-    .modal-local-link a {
-      color: var(--accent);
-      cursor: pointer;
-    }
-
-    /* Connection Status */
-    .ws-status {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      background: rgba(0,0,0,0.05);
-    }
-    .ws-status.connected {
-      background: rgba(48, 209, 88, 0.15);
-      color: #30d158;
-    }
-    .ws-status.disconnected {
-      background: rgba(255, 59, 48, 0.15);
-      color: #ff3b30;
-    }
-    .ws-status.connecting {
-      background: rgba(255, 159, 10, 0.15);
-      color: #ff9f0a;
-    }
-    .ws-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-    }
-    .ws-status.connecting .ws-dot {
-      animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* Users Online */
+    /* ===== Users & Connection Status ===== */
     .users-online {
       display: flex;
       align-items: center;
-      gap: -8px;
-      margin-left: 0.5rem;
     }
     .user-avatar {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: 2px solid var(--bg-card);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.625rem;
+      font-size: 12px;
       font-weight: 600;
       color: #fff;
       margin-left: -8px;
       cursor: default;
       position: relative;
     }
-    .user-avatar:first-child {
-      margin-left: 0;
-    }
+    .user-avatar:first-child { margin-left: 0; }
     .user-avatar-tooltip {
       position: absolute;
-      bottom: -24px;
+      top: calc(100% + 8px);
       left: 50%;
       transform: translateX(-50%);
       background: var(--fg);
       color: var(--bg);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
       white-space: nowrap;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
+      z-index: 100;
     }
-    .user-avatar:hover .user-avatar-tooltip {
-      opacity: 1;
+    .user-avatar:hover .user-avatar-tooltip { opacity: 1; }
+    .user-avatar.remote { cursor: pointer; transition: transform 0.2s; }
+    .user-avatar.remote:hover { transform: translateY(-2px); }
+    .user-avatar.following {
+      box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5);
+      animation: follow-pulse 2s infinite;
     }
 
-    /* Remote Cursors */
+    @keyframes follow-pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(48, 209, 88, 0.2); }
+    }
+
+    .ws-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(0,0,0,0.05);
+    }
+    .ws-status.connected { background: rgba(48, 209, 88, 0.15); color: #30d158; }
+    .ws-status.disconnected { background: rgba(255, 59, 48, 0.15); color: #ff3b30; }
+    .ws-status.connecting { background: rgba(255, 159, 10, 0.15); color: #ff9f0a; }
+    .ws-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .ws-status.connecting .ws-dot { animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Download button */
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .download-btn:hover { background: var(--accent-hover); }
+
+    /* ===== Remote Cursors ===== */
     .remote-cursor {
       position: fixed;
       pointer-events: none;
@@ -563,164 +661,463 @@
       white-space: nowrap;
     }
 
-    /* Board info */
-    .board-info {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.5rem;
-      background: rgba(0,0,0,0.05);
-      border-radius: 6px;
-      font-size: 0.7rem;
-      color: var(--fg-muted);
-      max-width: 100px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: background 0.2s ease;
-      position: relative;
-    }
-    .board-info:hover {
-      background: rgba(0,0,0,0.1);
-    }
-    .board-info:active {
-      background: rgba(48, 209, 88, 0.2);
-    }
-    .board-info-tooltip {
-      position: absolute;
-      bottom: -28px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--fg);
-      color: var(--bg);
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    .board-info:hover .board-info-tooltip {
-      opacity: 1;
-    }
-    .board-info.copied .board-info-tooltip {
-      opacity: 1;
-      background: var(--accent);
-    }
-
-    /* Avatar following state */
-    .user-avatar.following {
-      box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5);
-      animation: follow-pulse 2s infinite;
-    }
-
-    @keyframes follow-pulse {
-      0%, 100% { box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.5); }
-      50% { box-shadow: 0 0 0 6px rgba(48, 209, 88, 0.2); }
-    }
-
-    .user-avatar.remote {
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-
-    .user-avatar.remote:hover {
-      transform: translateY(-2px);
-    }
-
-    /* Follow indicator */
+    /* ===== Follow Indicator ===== */
     .follow-indicator {
       position: fixed;
-      bottom: 4rem;
+      bottom: 2rem;
       left: 50%;
       transform: translateX(-50%);
       display: none;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1.25rem;
+      gap: 12px;
+      padding: 12px 20px;
       background: var(--bg-card);
       border: 2px solid var(--accent);
       border-radius: 24px;
       z-index: 60;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
-
-    .follow-indicator.active {
-      display: flex;
-    }
-
-    .follow-indicator-text {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--fg);
-    }
-
+    .follow-indicator.active { display: flex; }
+    .follow-indicator-text { font-size: 14px; font-weight: 500; color: var(--fg); }
     .follow-exit-btn {
-      padding: 0.375rem 0.75rem;
+      padding: 6px 12px;
       border: none;
       border-radius: 16px;
       background: rgba(0,0,0,0.08);
       color: var(--fg-muted);
-      font-size: 0.75rem;
+      font-size: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
+    .follow-exit-btn:hover { background: rgba(0,0,0,0.15); color: var(--fg); }
 
-    .follow-exit-btn:hover {
-      background: rgba(0,0,0,0.15);
-      color: var(--fg);
-    }
-
-    /* Shape selector dropdown */
-    .shape-selector {
-      position: relative;
-    }
-    .shape-selector-btn {
-      position: relative;
-    }
-    .shape-selector-btn::after {
-      content: '';
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 0;
-      height: 0;
-      border-left: 4px solid transparent;
-      border-right: 4px solid transparent;
-      border-top: 4px solid currentColor;
-      opacity: 0.5;
-    }
-    .shape-dropdown {
+    /* ===== Text Edit Overlay ===== */
+    .text-edit-overlay {
       position: fixed;
+      z-index: 100;
+      background: transparent;
+      border: 2px solid var(--accent);
+      border-radius: 4px;
+      padding: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+      overflow: hidden;
+      min-width: 100px;
+      min-height: 40px;
+    }
+    .text-edit-overlay.sticky {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .modal-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .modal-tab {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.05);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .modal-tab.active { background: var(--accent); color: #fff; }
+    .modal-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-btn {
+      width: 100%;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-btn:hover { background: var(--accent-hover); }
+    .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-error { color: #ff3b30; font-size: 0.875rem; margin-top: 0.5rem; text-align: center; }
+    .modal-local-link { text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--fg-muted); }
+    .modal-local-link a { color: var(--accent); cursor: pointer; }
+
+    /* ===== Hint ===== */
+    .hint {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      font-size: 11px;
+      color: var(--fg-muted);
+      background: var(--bg-card);
+      padding: 8px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      max-width: 300px;
+    }
+
+    /* ===== Sticky Note Modal ===== */
+    .sticky-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .sticky-modal.open { display: flex; }
+    .sticky-modal-content {
+      background: var(--bg-card);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .sticky-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sticky-modal-title { font-size: 16px; font-weight: 600; }
+    .sticky-color-options {
+      display: flex;
+      gap: 8px;
+    }
+    .sticky-color-opt {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .sticky-color-opt:hover { transform: scale(1.1); }
+    .sticky-color-opt.active { border-color: var(--fg); }
+    .sticky-color-opt.active::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #333;
+    }
+    .sticky-modal-body {
+      padding: 0;
+    }
+    .sticky-textarea {
+      width: 100%;
+      min-height: 150px;
+      border: none;
+      padding: 20px;
+      font-size: 18px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+    }
+    .sticky-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .sticky-modal-btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sticky-modal-btn.cancel { background: rgba(0,0,0,0.05); color: var(--fg); }
+    .sticky-modal-btn.cancel:hover { background: rgba(0,0,0,0.1); }
+    .sticky-modal-btn.save { background: #007aff; color: #fff; }
+    .sticky-modal-btn.save:hover { background: #0066dd; }
+
+    /* ===== Object Context Menu (3-dot) ===== */
+    .object-menu-btn {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 50;
+    }
+    .object-menu-btn:hover { background: #e8e8e8; }
+    .object-menu-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 4px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      padding: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      min-width: 140px;
       display: none;
-      z-index: 1000;
-      flex-direction: column;
-      gap: 2px;
+      z-index: 51;
     }
-    .shape-dropdown.open {
+    .object-menu-dropdown.open { display: block; }
+    .object-menu-item {
       display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .shape-dropdown .btn-icon {
-      width: 36px;
-      height: 36px;
+    .object-menu-item:first-child { border-radius: 8px 8px 0 0; }
+    .object-menu-item:last-child { border-radius: 0 0 8px 8px; }
+    .object-menu-item:hover { background: rgba(0,0,0,0.05); }
+    .object-menu-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .object-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ===== Rotation Handle ===== */
+    .rotation-handle {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid #007aff;
+      cursor: grab;
+      z-index: 50;
+      display: none;
+    }
+    .rotation-handle::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border: 2px solid #007aff;
+      border-radius: 50%;
+      border-top-color: transparent;
     }
 
-    /* Responsive: hide some elements on small screens */
-    @media (max-width: 900px) {
-      .board-info { display: none !important; }
-      .save-indicator { display: none !important; }
-      .toolbar .text-xs { display: none !important; }
+    /* ===== Dynamic Secondary Toolbar ===== */
+    .secondary-toolbar-section {
+      display: none;
+      align-items: center;
+      gap: 8px;
     }
-    @media (max-width: 700px) {
-      .toolbar-divider { display: none !important; }
-      .toolbar { gap: 0.25rem; padding: 0.25rem 0.5rem; }
+    .secondary-toolbar-section.active { display: flex; }
+
+    .toolbar-color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toolbar-color-btn:hover { border-color: var(--fg-muted); }
+
+    .toolbar-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .toolbar-icon-btn:hover { background: var(--bg-hover); }
+    .toolbar-icon-btn svg { flex-shrink: 0; }
+    .toolbar-color-indicator {
+      width: 18px;
+      height: 4px;
+      border-radius: 2px;
+      position: absolute;
+      bottom: 4px;
+    }
+
+    .toolbar-color-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 100;
+    }
+    .toolbar-color-dropdown.open { display: block; }
+    .toolbar-color-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .toolbar-color-option {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toolbar-color-option:hover { transform: scale(1.1); }
+    .toolbar-color-option.active { border-color: var(--fg); }
+    .toolbar-color-option.transparent {
+      background: linear-gradient(45deg, #ccc 25%, transparent 25%),
+                  linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                  linear-gradient(45deg, transparent 75%, #ccc 75%),
+                  linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 8px 8px;
+      background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    }
+
+    .text-style-dropdown {
+      position: relative;
+    }
+    .text-style-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .text-style-btn:hover { border-color: var(--fg-muted); }
+    .text-style-btn::after {
+      content: '';
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--fg-muted);
+    }
+    .text-style-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      min-width: 140px;
+      display: none;
+      z-index: 100;
+    }
+    .text-style-menu.open { display: block; }
+    .text-style-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .text-style-option:hover { background: rgba(0,0,0,0.05); }
+    .text-style-option.display { font-size: 28px; font-weight: 300; }
+    .text-style-option.title { font-size: 22px; font-weight: 600; }
+    .text-style-option.subtitle { font-size: 18px; font-weight: 500; }
+    .text-style-option.normal { font-size: 14px; }
+    .text-style-option.caption { font-size: 12px; color: var(--fg-muted); }
+    .text-style-option.active::before { content: '✓ '; }
+
+    .align-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .align-btn:hover { background: rgba(0,0,0,0.08); }
+    .align-btn.active { background: rgba(0,0,0,0.12); }
+
+    .sticky-toolbar-color {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sticky-toolbar-color:hover { transform: scale(1.1); }
+    .sticky-toolbar-color.active { border-color: var(--fg); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .left-toolbar {
+        top: auto;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        flex-direction: row;
+        border-radius: 20px;
+      }
+      .tool-divider { width: 1px; height: 24px; margin: 0 4px; }
+      .canvas-wrapper { left: 0; top: 88px; }
+      .tool-panel { left: auto; bottom: 80px; left: 50%; transform: translateX(-50%); }
+      .board-title { display: none; }
+      .download-btn span { display: none; }
     }
   </style>
 </head>
@@ -758,181 +1155,383 @@
   <!-- Remote Cursors Container -->
   <div id="remoteCursors"></div>
 
-  <div class="header-container" id="headerContainer">
-  <!-- Page Navigation (above toolbar) - Jamboard style -->
-  <div class="page-nav" id="pageNav">
-    <div class="page-nav-left">
-      <!-- Board Info & Status -->
-      <div class="board-info" id="boardInfo" style="display:none;" data-i18n-title="whiteboard.collab.clickToCopy" title="点击复制">
-        <span id="boardNameDisplay"></span>
-        <span class="board-info-tooltip" id="boardInfoTooltip" data-i18n="whiteboard.collab.clickToCopy">点击复制</span>
+  <!-- Sticky Note Modal -->
+  <div class="sticky-modal" id="stickyModal">
+    <div class="sticky-modal-content">
+      <div class="sticky-modal-header">
+        <span class="sticky-modal-title" data-i18n="whiteboard.tools.sticky">Sticky note</span>
+        <div class="sticky-color-options">
+          <button class="sticky-color-opt active" data-color="#ffd60a" style="background:#ffd60a;" title="Yellow"></button>
+          <button class="sticky-color-opt" data-color="#34c759" style="background:#34c759;" title="Green"></button>
+          <button class="sticky-color-opt" data-color="#5ac8fa" style="background:#5ac8fa;" title="Cyan"></button>
+          <button class="sticky-color-opt" data-color="#ff9ff3" style="background:#ff9ff3;" title="Pink"></button>
+          <button class="sticky-color-opt" data-color="#ff9500" style="background:#ff9500;" title="Orange"></button>
+        </div>
       </div>
-      <div class="ws-status connecting" id="wsStatus">
+      <div class="sticky-modal-body">
+        <textarea class="sticky-textarea" id="stickyTextarea" placeholder="Enter text..."></textarea>
+      </div>
+      <div class="sticky-modal-footer">
+        <button class="sticky-modal-btn cancel" id="stickyCancelBtn" data-i18n="common.cancel">Cancel</button>
+        <button class="sticky-modal-btn save" id="stickySaveBtn" data-i18n="common.save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Object Context Menu (floating, positioned via JS) -->
+  <div class="object-menu-btn" id="objectMenuBtn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+    </svg>
+    <div class="object-menu-dropdown" id="objectMenuDropdown">
+      <div class="object-menu-item" data-action="duplicate">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span data-i18n="whiteboard.menu.duplicate">Duplicate</span>
+      </div>
+      <div class="object-menu-divider"></div>
+      <div class="object-menu-item" data-action="bringToFront">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1" fill="currentColor"/><path d="M14 10V8a2 2 0 0 0-2-2h-2m-4 8h2a2 2 0 0 0 2-2v-2"/></svg>
+        <span data-i18n="whiteboard.menu.bringToFront">Bring to Front</span>
+      </div>
+      <div class="object-menu-item" data-action="sendToBack">
+        <svg viewBox="0 0 24 24"><rect x="14" y="14" width="8" height="8" rx="1"/><rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor"/><path d="M10 14v2a2 2 0 0 0 2 2h2m4-8h-2a2 2 0 0 0-2 2v2"/></svg>
+        <span data-i18n="whiteboard.menu.sendToBack">Send to Back</span>
+      </div>
+      <div class="object-menu-divider"></div>
+      <div class="object-menu-item" data-action="delete">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span data-i18n="whiteboard.menu.delete">Delete</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Top Bar (Jamboard style) ===== -->
+  <div class="top-bar" id="topBar">
+    <div class="top-bar-left">
+      <a href="../../index.html" class="back-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="board-title" id="boardTitle" data-i18n-title="whiteboard.collab.clickToCopy" title="点击复制">Whiteboard</span>
+      <div class="ws-status connecting" id="wsStatus" style="display:none;">
         <span class="ws-dot"></span>
         <span id="wsStatusText" data-i18n="whiteboard.collab.connecting">连接中...</span>
       </div>
     </div>
 
-    <div class="page-nav-center">
-      <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </button>
-
-      <div class="page-thumbnails" id="pageThumbnails"></div>
-
-      <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </button>
-
-      <span class="page-info" id="pageInfo">1 / 1</span>
-    </div>
-
-    <div class="page-nav-right">
-      <!-- Users Online -->
-      <div class="users-online" id="usersOnline"></div>
-    </div>
-  </div>
-
-  <nav class="nav-blur">
-    <div class="max-w-full mx-auto px-2 py-1 flex items-center gap-2 flex-wrap">
-      <a href="../../index.html" class="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-        <span class="font-medium text-sm" data-i18n="common.backShort">返回</span>
-      </a>
-
-      <div class="toolbar">
-        <button class="btn-icon active" data-tool="select" data-i18n-title="whiteboard.tools.select" title="选择">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-            <path d="M13 13l6 6"/>
+    <div class="top-bar-center">
+      <!-- Page Selector: < 1/5▼ > -->
+      <div class="page-selector">
+        <button class="page-nav-btn" id="prevPageBtn" data-i18n-title="whiteboard.page.previous" title="上一页">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
-        <button class="btn-icon" data-tool="brush" data-i18n-title="whiteboard.tools.brush" title="画笔">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-          </svg>
-        </button>
-        <button class="btn-icon" data-tool="eraser" data-i18n-title="whiteboard.tools.eraser" title="橡皮擦">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8l10-10c.8-.8 2-.8 2.8 0l6.2 6.2c.8.8.8 2 0 2.8L12 22"/>
-            <path d="M7 13l5 5"/>
-          </svg>
-        </button>
-        <!-- Shape selector with dropdown -->
-        <div class="shape-selector" id="shapeSelector">
-          <button class="btn-icon shape-selector-btn" id="shapeBtn" data-tool="circle" data-i18n-title="whiteboard.tools.circle" title="圆形">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="shapeBtnIcon">
-              <circle cx="12" cy="12" r="9"/>
-            </svg>
-          </button>
-          <div class="shape-dropdown" id="shapeDropdown">
-            <button class="btn-icon" data-shape="rect" data-i18n-title="whiteboard.tools.rect" title="矩形">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-              </svg>
-            </button>
-            <button class="btn-icon" data-shape="circle" data-i18n-title="whiteboard.tools.circle" title="圆形">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="9"/>
-              </svg>
-            </button>
-            <button class="btn-icon" data-shape="arrow" data-i18n-title="whiteboard.tools.arrow" title="箭头">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <polyline points="12 5 19 12 12 19"/>
-              </svg>
-            </button>
+
+        <div class="page-indicator" id="pageIndicator">
+          <div class="page-cards-icon">
+            <div class="page-card-back"></div>
+            <div class="page-card-front"><span id="pageInfo">1/1</span></div>
+          </div>
+          <div class="page-dropdown" id="pageDropdown">
+            <div class="page-grid" id="pageGrid"></div>
           </div>
         </div>
-        <button class="btn-icon" data-tool="sticky" data-i18n-title="whiteboard.tools.sticky" title="便利贴">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/>
-            <path d="M15 3v6h6"/>
-          </svg>
-        </button>
-        <button class="btn-icon" data-tool="text" data-i18n-title="whiteboard.tools.text" title="文本框">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 7V4h16v3"/>
-            <path d="M9 20h6"/>
-            <path d="M12 4v16"/>
-          </svg>
-        </button>
 
-        <div class="toolbar-divider"></div>
-
-        <div class="toolbar-divider"></div>
-
-        <!-- Unified color picker -->
-        <div class="color-picker-wrapper">
-          <div class="color-picker-display" id="colorDisplay" style="background: #1d1d1f;"></div>
-          <input type="color" class="color-picker-input" id="colorPicker" value="#1d1d1f">
-        </div>
-
-        <button class="btn-icon" style="background: #1d1d1f;" data-color="#1d1d1f" data-i18n-title="whiteboard.colors.black" title="黑色"></button>
-        <button class="btn-icon" style="background: #007aff;" data-color="#007aff" data-i18n-title="whiteboard.colors.blue" title="蓝色"></button>
-        <button class="btn-icon" style="background: #ffd60a;" data-color="#ffd60a" data-i18n-title="whiteboard.colors.yellow" title="黄色"></button>
-
-
-        <div class="toolbar-divider"></div>
-
-        <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.strokeSize">粗细</span>
-        <input type="range" class="slider" id="strokeSize" min="1" max="30" value="3">
-
-        <!-- Text size (shown when text selected) -->
-        <div id="textSizeControl" style="display: none; align-items: center; gap: 0.5rem;">
-          <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.fontSize">字号</span>
-          <input type="range" class="slider" id="textSizeSlider" min="12" max="48" value="18" style="width: 60px;">
-          <button class="btn-icon" id="textBoldBtn" data-i18n-title="whiteboard.controls.bold" title="粗体" style="width: 28px; height: 28px; font-weight: bold; font-size: 14px;">B</button>
-        </div>
-
-        <span class="text-xs text-gray-500" data-i18n="whiteboard.controls.opacity">透明度</span>
-        <input type="range" class="slider" id="opacity" min="10" max="100" value="100">
-
-        <div class="toolbar-divider"></div>
-
-        <button class="btn-icon" id="clearBtn" data-i18n-title="whiteboard.actions.clear" title="清空画布">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
-
-        <div class="toolbar-divider"></div>
-
-        <button class="btn btn-primary" id="downloadBtn">
+        <button class="page-nav-btn" id="nextPageBtn" data-i18n-title="whiteboard.page.next" title="下一页">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
+            <path d="M9 18l6-6-6-6"/>
           </svg>
-          <span data-i18n="whiteboard.actions.download">下载</span>
         </button>
-
-        <span class="save-indicator" id="saveIndicator" data-i18n="whiteboard.status.saved">已保存</span>
-      </div>
-
-      <!-- Right side controls -->
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <button class="lang-toggle" id="langToggle">中文</button>
       </div>
     </div>
-  </nav>
-  </div><!-- end header-container -->
 
+    <div class="top-bar-right">
+      <div class="users-online" id="usersOnline"></div>
+      <button class="download-btn" id="downloadBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span data-i18n="whiteboard.actions.download">下载</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Secondary Toolbar ===== -->
+  <div class="secondary-bar" id="secondaryBar">
+    <button class="btn-icon" id="undoBtn" data-i18n-title="whiteboard.actions.undo" title="撤销">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 14L4 9l5-5"/>
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+      </svg>
+    </button>
+    <button class="btn-icon" id="redoBtn" data-i18n-title="whiteboard.actions.redo" title="重做">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 14l5-5-5-5"/>
+        <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/>
+      </svg>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="zoom-selector" id="zoomSelector">
+      <button class="zoom-btn" id="zoomBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="10" cy="10" r="6"/>
+          <line x1="10" y1="7" x2="10" y2="13"/>
+          <line x1="7" y1="10" x2="13" y2="10"/>
+          <line x1="14.5" y1="14.5" x2="20" y2="20"/>
+        </svg>
+        <span class="zoom-arrow"></span>
+      </button>
+      <div class="zoom-dropdown" id="zoomDropdown">
+        <div class="zoom-option" data-zoom="50">50%</div>
+        <div class="zoom-option" data-zoom="75">75%</div>
+        <div class="zoom-option active" data-zoom="100">100%</div>
+        <div class="zoom-option" data-zoom="125">125%</div>
+        <div class="zoom-option" data-zoom="150">150%</div>
+        <div class="zoom-option" data-zoom="200">200%</div>
+      </div>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Default: Clear button -->
+    <div class="secondary-toolbar-section active" id="defaultToolbarSection">
+      <button class="clear-btn" id="clearBtn" data-i18n="whiteboard.actions.clearFrame">清空画布</button>
+    </div>
+
+    <!-- Shape tool: stroke & fill color -->
+    <div class="secondary-toolbar-section" id="shapeToolbarSection">
+      <div style="position:relative;">
+        <button class="toolbar-icon-btn" id="shapeStrokeBtn" title="Stroke color">
+          <!-- Border/Stroke icon: outlined square -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+          <span class="toolbar-color-indicator" id="shapeStrokeIndicator" style="background:#1d1d1f;"></span>
+        </button>
+        <div class="toolbar-color-dropdown" id="shapeStrokeDropdown">
+          <div class="toolbar-color-grid">
+            <button class="toolbar-color-option active" data-color="#1d1d1f" style="background:#1d1d1f;"></button>
+            <button class="toolbar-color-option" data-color="#007aff" style="background:#007aff;"></button>
+            <button class="toolbar-color-option" data-color="#34c759" style="background:#34c759;"></button>
+            <button class="toolbar-color-option" data-color="#ffd60a" style="background:#ffd60a;"></button>
+            <button class="toolbar-color-option" data-color="#ff3b30" style="background:#ff3b30;"></button>
+            <button class="toolbar-color-option transparent" data-color="transparent" title="No stroke"></button>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative;">
+        <button class="toolbar-icon-btn" id="shapeFillBtn" title="Fill color">
+          <!-- Fill icon: filled square -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+          <span class="toolbar-color-indicator" id="shapeFillIndicator"></span>
+        </button>
+        <div class="toolbar-color-dropdown" id="shapeFillDropdown">
+          <div class="toolbar-color-grid">
+            <button class="toolbar-color-option" data-color="#1d1d1f" style="background:#1d1d1f;"></button>
+            <button class="toolbar-color-option" data-color="#5ac8fa" style="background:#5ac8fa;"></button>
+            <button class="toolbar-color-option" data-color="#a8e6cf" style="background:#a8e6cf;"></button>
+            <button class="toolbar-color-option" data-color="#ffeaa7" style="background:#ffeaa7;"></button>
+            <button class="toolbar-color-option" data-color="#fab1a0" style="background:#fab1a0;"></button>
+            <button class="toolbar-color-option transparent active" data-color="transparent" title="Transparent"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text tool: style, color, align -->
+    <div class="secondary-toolbar-section" id="textToolbarSection">
+      <div class="text-style-dropdown" id="textStyleDropdown">
+        <button class="text-style-btn" id="textStyleBtn">
+          <span id="textStyleLabel">Normal</span>
+        </button>
+        <div class="text-style-menu" id="textStyleMenu">
+          <div class="text-style-option display" data-style="display" data-size="36">Display</div>
+          <div class="text-style-option title" data-style="title" data-size="28">Title</div>
+          <div class="text-style-option subtitle" data-style="subtitle" data-size="22">Subtitle</div>
+          <div class="text-style-option normal active" data-style="normal" data-size="16">Normal</div>
+          <div class="text-style-option caption" data-style="caption" data-size="12">Caption</div>
+        </div>
+      </div>
+      <div style="position:relative;">
+        <button class="toolbar-color-btn" id="textColorBtn" style="background:#fff;border:1px solid var(--border);" title="Text color">
+          <span style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+            <span style="font-weight:bold;font-size:14px;color:var(--fg);">A</span>
+            <span id="textColorIndicator" style="width:16px;height:3px;background:#1d1d1f;border-radius:1px;"></span>
+          </span>
+        </button>
+        <div class="toolbar-color-dropdown" id="textColorDropdown">
+          <div class="toolbar-color-grid">
+            <button class="toolbar-color-option active" data-color="#1d1d1f" style="background:#1d1d1f;"></button>
+            <button class="toolbar-color-option" data-color="#007aff" style="background:#007aff;"></button>
+            <button class="toolbar-color-option" data-color="#34c759" style="background:#34c759;"></button>
+            <button class="toolbar-color-option" data-color="#ffd60a" style="background:#ffd60a;"></button>
+            <button class="toolbar-color-option" data-color="#ff3b30" style="background:#ff3b30;"></button>
+            <button class="toolbar-color-option" data-color="#86868b" style="background:#86868b;"></button>
+          </div>
+        </div>
+      </div>
+      <button class="align-btn active" id="alignLeftBtn" data-align="left" title="Align left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+      </button>
+      <button class="align-btn" id="alignCenterBtn" data-align="center" title="Align center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+      </button>
+      <button class="align-btn" id="alignRightBtn" data-align="right" title="Align right">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Sticky note: background color only -->
+    <div class="secondary-toolbar-section" id="stickyToolbarSection">
+      <span style="font-size:13px;color:var(--fg-muted);margin-right:4px;" data-i18n="common.color">颜色</span>
+      <button class="sticky-toolbar-color" data-sticky-color="#ffd60a" style="background:#ffd60a;" title="Yellow"></button>
+      <button class="sticky-toolbar-color" data-sticky-color="#34c759" style="background:#34c759;" title="Green"></button>
+      <button class="sticky-toolbar-color" data-sticky-color="#5ac8fa" style="background:#5ac8fa;" title="Cyan"></button>
+      <button class="sticky-toolbar-color" data-sticky-color="#ff9ff3" style="background:#ff9ff3;" title="Pink"></button>
+      <button class="sticky-toolbar-color" data-sticky-color="#ff9500" style="background:#ff9500;" title="Orange"></button>
+    </div>
+  </div>
+
+  <!-- ===== Left Sidebar Toolbar ===== -->
+  <div class="left-toolbar" id="leftToolbar">
+    <!-- Brush -->
+    <button class="tool-btn has-panel" id="brushTool" data-tool="brush" data-i18n-title="whiteboard.tools.brush" title="画笔">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+      </svg>
+    </button>
+
+    <!-- Eraser -->
+    <button class="tool-btn has-panel" id="eraserTool" data-tool="eraser" data-i18n-title="whiteboard.tools.eraser" title="橡皮擦">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8l10-10c.8-.8 2-.8 2.8 0l6.2 6.2c.8.8.8 2 0 2.8L12 22"/>
+        <path d="M7 13l5 5"/>
+      </svg>
+    </button>
+
+    <!-- Select -->
+    <button class="tool-btn active" id="selectTool" data-tool="select" data-i18n-title="whiteboard.tools.select" title="选择">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+        <path d="M13 13l6 6"/>
+      </svg>
+    </button>
+
+    <div class="tool-divider"></div>
+
+    <!-- Sticky Note -->
+    <button class="tool-btn" id="stickyTool" data-tool="sticky" data-i18n-title="whiteboard.tools.sticky" title="便利贴">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/>
+        <path d="M15 3v6h6"/>
+      </svg>
+    </button>
+
+    <!-- Image -->
+    <button class="tool-btn" id="imageTool" data-tool="image" data-i18n-title="whiteboard.tools.image" title="图片">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <path d="M21 15l-5-5-11 11"/>
+      </svg>
+    </button>
+    <input type="file" id="imageUploadInput" accept="image/*" multiple>
+
+    <!-- Shapes -->
+    <button class="tool-btn has-panel" id="shapeTool" data-tool="circle" data-i18n-title="whiteboard.tools.shapes" title="形状">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="shapeToolIcon">
+        <circle cx="12" cy="12" r="9"/>
+      </svg>
+    </button>
+
+    <!-- Text -->
+    <button class="tool-btn" id="textTool" data-tool="text" data-i18n-title="whiteboard.tools.text" title="文本框">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 7V4h16v3"/>
+        <path d="M9 20h6"/>
+        <path d="M12 4v16"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ===== Tool Property Panels ===== -->
+  <!-- Brush Panel -->
+  <div class="tool-panel" id="brushPanel">
+    <div class="panel-row">
+      <button class="brush-size-btn" data-size="2" title="细"><svg width="16" height="16"><circle cx="8" cy="8" r="2" fill="currentColor"/></svg></button>
+      <button class="brush-size-btn active" data-size="4" title="中"><svg width="16" height="16"><circle cx="8" cy="8" r="4" fill="currentColor"/></svg></button>
+      <button class="brush-size-btn" data-size="8" title="粗"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="currentColor"/></svg></button>
+      <button class="brush-size-btn" data-size="12" title="特粗"><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="currentColor"/></svg></button>
+    </div>
+    <div class="panel-row">
+      <button class="color-btn active" data-color="#1d1d1f" style="background:#1d1d1f;" title="黑色"></button>
+      <button class="color-btn" data-color="#007aff" style="background:#007aff;" title="蓝色"></button>
+      <button class="color-btn" data-color="#34c759" style="background:#34c759;" title="绿色"></button>
+      <button class="color-btn" data-color="#ff3b30" style="background:#ff3b30;" title="红色"></button>
+      <div class="color-picker-btn" title="自定义颜色">
+        <input type="color" id="colorPicker" value="#1d1d1f">
+      </div>
+    </div>
+  </div>
+
+  <!-- Eraser Panel -->
+  <div class="tool-panel" id="eraserPanel">
+    <div class="panel-row">
+      <button class="brush-size-btn" data-size="10" title="小"><svg width="16" height="16"><circle cx="8" cy="8" r="4" fill="currentColor"/></svg></button>
+      <button class="brush-size-btn active" data-size="20" title="中"><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg></button>
+      <button class="brush-size-btn" data-size="40" title="大"><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Shape Panel -->
+  <div class="tool-panel" id="shapePanel">
+    <div class="panel-row">
+      <button class="brush-size-btn active" data-shape="circle" title="圆形">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+      </button>
+      <button class="brush-size-btn" data-shape="rect" title="矩形">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      </button>
+      <button class="brush-size-btn" data-shape="arrow" title="箭头">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 8 L2 16 L13 16 L13 21 L22 12 L13 3 L13 8 Z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="panel-row">
+      <button class="color-btn active" data-color="#1d1d1f" style="background:#1d1d1f;"></button>
+      <button class="color-btn" data-color="#007aff" style="background:#007aff;"></button>
+      <button class="color-btn" data-color="#34c759" style="background:#34c759;"></button>
+      <button class="color-btn" data-color="#ff3b30" style="background:#ff3b30;"></button>
+    </div>
+  </div>
+
+  <!-- ===== Canvas Area ===== -->
   <div class="canvas-wrapper" id="canvasWrapper">
-    <canvas id="canvas"></canvas>
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="canvas"></canvas>
+    </div>
   </div>
 
-  <div class="hint" data-i18n="whiteboard.hint">
-    拖拽框选 | Shift+点击多选 | Ctrl+C/V 复制粘贴 | Ctrl+Z 撤销 | Delete 删除 | 双击编辑文字
+  <div class="hint">Ctrl+Z 撤销 | Delete 删除 | 双击编辑文字</div>
+
+  <!-- Hidden elements for compatibility -->
+  <input type="range" id="strokeSize" min="1" max="30" value="3" style="display:none;">
+  <input type="range" id="opacity" min="10" max="100" value="100" style="display:none;">
+  <div id="textSizeControl" style="display:none;">
+    <input type="range" id="textSizeSlider" min="12" max="48" value="18">
+    <button id="textBoldBtn">B</button>
   </div>
+  <span id="saveIndicator" style="display:none;"></span>
 
   <!-- Follow indicator -->
   <div class="follow-indicator" id="followIndicator">
@@ -1036,8 +1635,7 @@
       currentBoard = { id: boardName, name: boardName };
 
       boardModal.style.display = 'none';
-      document.getElementById('boardNameDisplay').textContent = boardName;
-      document.getElementById('boardInfo').style.display = 'flex';
+      document.getElementById('boardTitle').textContent = boardName;
 
       resetCanvasView();
 
@@ -1066,8 +1664,7 @@
           currentBoard = { id: boardName, name: boardName };
 
           boardModal.style.display = 'none';
-          document.getElementById('boardNameDisplay').textContent = boardName;
-          document.getElementById('boardInfo').style.display = 'flex';
+          document.getElementById('boardTitle').textContent = boardName;
 
           resetCanvasView();
 
@@ -1096,24 +1693,6 @@
       loadFromLocalStorage();
     });
 
-    // Click board name to copy
-    const boardInfo = document.getElementById('boardInfo');
-    const boardInfoTooltip = document.getElementById('boardInfoTooltip');
-    boardInfo.addEventListener('click', async () => {
-      if (!currentBoard) return;
-      try {
-        await navigator.clipboard.writeText(currentBoard.name);
-        boardInfo.classList.add('copied');
-        boardInfoTooltip.textContent = I18n.t('whiteboard.collab.copied');
-        setTimeout(() => {
-          boardInfo.classList.remove('copied');
-          boardInfoTooltip.textContent = I18n.t('whiteboard.collab.clickToCopy');
-        }, 1500);
-      } catch (e) {
-        console.error('Failed to copy:', e);
-      }
-    });
-
     // ========== WebSocket ==========
     const wsStatus = document.getElementById('wsStatus');
     const wsStatusText = document.getElementById('wsStatusText');
@@ -1123,9 +1702,7 @@
     // Reset canvas view when entering a board
     function resetCanvasView() {
       requestAnimationFrame(() => {
-        const header = document.getElementById('headerContainer');
         const wrapper = document.getElementById('canvasWrapper');
-        wrapper.style.top = (header ? header.offsetHeight : 80) + 'px';
         wrapper.scrollTo(0, 0);
       });
     }
@@ -1837,8 +2414,8 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const canvasWrapper = document.getElementById('canvasWrapper');
+    const canvasContainer = document.getElementById('canvasContainer');
     const colorPicker = document.getElementById('colorPicker');
-    const colorDisplay = document.getElementById('colorDisplay');
     const strokeSizeSlider = document.getElementById('strokeSize');
     const opacitySlider = document.getElementById('opacity');
     const saveIndicator = document.getElementById('saveIndicator');
@@ -1860,9 +2437,7 @@
     let canvasLogicalHeight = REF_HEIGHT;
 
     function updateCanvasPosition() {
-      const header = document.getElementById('headerContainer');
-      const headerHeight = header ? header.offsetHeight : 80;
-      canvasWrapper.style.top = headerHeight + 'px';
+      // Canvas position is now fixed via CSS (top: 88px, left: 72px)
     }
 
     // Coordinate conversion for cross-device sync (use fixed reference size)
@@ -1904,19 +2479,39 @@
       return copy;
     }
 
+    // Zoom level (declared early for setupCanvas)
+    let canvasZoom = 100;
+
+    // Local storage key (declared early for loadFromLocalStorage)
+    const STORAGE_KEY = 'xin-whiteboard-state';
+
     function setupCanvas() {
       updateCanvasPosition();
 
+      const zoomScale = canvasZoom / 100;
+      const canvasDisplayW = canvasLogicalWidth * zoomScale;
+      const canvasDisplayH = canvasLogicalHeight * zoomScale;
+
       // Set display size (CSS)
-      canvas.style.width = canvasLogicalWidth + 'px';
-      canvas.style.height = canvasLogicalHeight + 'px';
+      canvas.style.width = canvasDisplayW + 'px';
+      canvas.style.height = canvasDisplayH + 'px';
 
-      // Set actual size in memory (scaled for DPI)
-      canvas.width = canvasLogicalWidth * dpr;
-      canvas.height = canvasLogicalHeight * dpr;
+      // Update wrapper padding to allow scrolling to edges when canvas is large
+      const wrapperRect = canvasWrapper.getBoundingClientRect();
+      const padX = Math.max(0, (wrapperRect.width - canvasDisplayW) / 2);
+      const padY = Math.max(0, (wrapperRect.height - canvasDisplayH) / 2);
+      canvasContainer.style.margin = `${padY}px ${padX}px`;
 
-      // Scale context to match DPI
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Set actual size in memory (scaled for DPI and zoom)
+      canvas.width = canvasLogicalWidth * dpr * zoomScale;
+      canvas.height = canvasLogicalHeight * dpr * zoomScale;
+
+      // Update container size
+      canvasContainer.style.width = (canvasLogicalWidth * zoomScale) + 'px';
+      canvasContainer.style.height = (canvasLogicalHeight * zoomScale) + 'px';
+
+      // Scale context to match DPI and zoom
+      ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
       // Fill with white
       ctx.fillStyle = '#ffffff';
@@ -1975,7 +2570,6 @@
     let pageUndoStack = [];
 
     // Page navigation elements
-    const pageThumbnails = document.getElementById('pageThumbnails');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
     const pageInfo = document.getElementById('pageInfo');
@@ -2034,6 +2628,7 @@
       updateSelectedControls();
       redraw();
       updatePageUI();
+      refreshPageGridIfOpen();
       saveToLocalStorage();
       emitPageOperation('add', currentPageIndex);
     }
@@ -2067,6 +2662,7 @@
       updateSelectedControls();
       redraw();
       updatePageUI();
+      refreshPageGridIfOpen();
       saveToLocalStorage();
       emitPageOperation('delete', pageIndex);
     }
@@ -2116,6 +2712,10 @@
           thumbCtx.font = `${obj.bold ? 'bold ' : ''}${obj.fontSize || 18}px sans-serif`;
           thumbCtx.fillText(obj.text.substring(0, 20), obj.x, obj.y + (obj.fontSize || 18));
         } else if (obj.type === 'rect') {
+          if (obj.fillColor && obj.fillColor !== 'transparent') {
+            thumbCtx.fillStyle = obj.fillColor;
+            thumbCtx.fillRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+          }
           thumbCtx.strokeStyle = obj.color;
           thumbCtx.lineWidth = obj.size;
           thumbCtx.strokeRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
@@ -2124,18 +2724,49 @@
           const ry = Math.abs(obj.y2 - obj.y1) / 2;
           const cx = (obj.x1 + obj.x2) / 2;
           const cy = (obj.y1 + obj.y2) / 2;
-          thumbCtx.strokeStyle = obj.color;
-          thumbCtx.lineWidth = obj.size;
           thumbCtx.beginPath();
           thumbCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-          thumbCtx.stroke();
-        } else if (obj.type === 'arrow') {
+          if (obj.fillColor && obj.fillColor !== 'transparent') {
+            thumbCtx.fillStyle = obj.fillColor;
+            thumbCtx.fill();
+          }
           thumbCtx.strokeStyle = obj.color;
           thumbCtx.lineWidth = obj.size;
-          thumbCtx.beginPath();
-          thumbCtx.moveTo(obj.x1, obj.y1);
-          thumbCtx.lineTo(obj.x2, obj.y2);
           thumbCtx.stroke();
+        } else if (obj.type === 'arrow') {
+          // Arrow with x,y,width,height format for thumbnail
+          const { x, y, width, height, rotation } = obj;
+          const cx = x + width / 2;
+          const cy = y + height / 2;
+
+          thumbCtx.save();
+          thumbCtx.translate(cx, cy);
+          thumbCtx.rotate(rotation || 0);
+          thumbCtx.translate(-cx, -cy);
+
+          const w = width, h = height;
+          const bodyWidth = h * 0.5;
+          const headLen = Math.min(w * 0.35, h * 0.8);
+          const bodyEnd = w - headLen;
+
+          thumbCtx.beginPath();
+          thumbCtx.moveTo(x, y + h/2 - bodyWidth/2);
+          thumbCtx.lineTo(x + bodyEnd, y + h/2 - bodyWidth/2);
+          thumbCtx.lineTo(x + bodyEnd, y);
+          thumbCtx.lineTo(x + w, y + h/2);
+          thumbCtx.lineTo(x + bodyEnd, y + h);
+          thumbCtx.lineTo(x + bodyEnd, y + h/2 + bodyWidth/2);
+          thumbCtx.lineTo(x, y + h/2 + bodyWidth/2);
+          thumbCtx.closePath();
+
+          if (obj.fillColor && obj.fillColor !== 'transparent') {
+            thumbCtx.fillStyle = obj.fillColor;
+            thumbCtx.fill();
+          }
+          thumbCtx.strokeStyle = obj.color;
+          thumbCtx.lineWidth = obj.size;
+          thumbCtx.stroke();
+          thumbCtx.restore();
         } else if (obj.type === 'image' && obj.img) {
           thumbCtx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height);
         }
@@ -2146,42 +2777,13 @@
     }
 
     function updatePageUI() {
-      // Update page info
-      pageInfo.textContent = `${currentPageIndex + 1} / ${pages.length}`;
+      // Update page info (Jamboard style: "1/5")
+      pageInfo.textContent = `${currentPageIndex + 1}/${pages.length}`;
 
       // Update navigation buttons
       prevPageBtn.disabled = currentPageIndex === 0;
-      // Next button is never disabled - it adds new page at the end
       nextPageBtn.disabled = false;
       nextPageBtn.style.opacity = (currentPageIndex === pages.length - 1 && pages.length >= MAX_PAGES) ? '0.5' : '1';
-
-      // Update thumbnails
-      pageThumbnails.innerHTML = '';
-      pages.forEach((page, index) => {
-        const thumb = document.createElement('div');
-        thumb.className = 'page-thumb' + (index === currentPageIndex ? ' active' : '');
-        thumb.innerHTML = `
-          <img src="${generateThumbnail(index)}" alt="Page ${index + 1}">
-          <span class="page-thumb-label">${index + 1}</span>
-          ${pages.length > 1 ? `<button class="page-thumb-delete" data-page="${index}">&times;</button>` : ''}
-        `;
-        thumb.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('page-thumb-delete')) {
-            switchToPage(index);
-            pageThumbnailFocused = true;
-          }
-        });
-        pageThumbnails.appendChild(thumb);
-      });
-
-      // Add delete button listeners
-      document.querySelectorAll('.page-thumb-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const pageIndex = parseInt(btn.dataset.page);
-          deletePage(pageIndex);
-        });
-      });
     }
 
     // Page navigation event listeners
@@ -2199,38 +2801,19 @@
     // Initialize page UI
     updatePageUI();
 
-    // Tool selection
-    document.querySelectorAll('[data-tool]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTool = btn.dataset.tool;
+    // ===== Jamboard-style Tool Selection =====
+    const toolPanels = {
+      brush: document.getElementById('brushPanel'),
+      eraser: document.getElementById('eraserPanel'),
+      circle: document.getElementById('shapePanel'),
+      rect: document.getElementById('shapePanel'),
+      arrow: document.getElementById('shapePanel')
+    };
 
-        // Clear selection when switching to drawing tools
-        if (currentTool !== 'select') {
-          selectedObjects = [];
-        }
-
-        // Update cursor
-        if (currentTool === 'select') {
-          canvas.style.cursor = 'default';
-        } else if (currentTool === 'sticky' || currentTool === 'text') {
-          canvas.style.cursor = 'cell';
-        } else {
-          canvas.style.cursor = 'crosshair';
-        }
-
-        updateSelectedControls();
-        redraw();
-      });
-    });
-
-    // Shape selector dropdown
-    const shapeSelector = document.getElementById('shapeSelector');
-    const shapeBtn = document.getElementById('shapeBtn');
-    const shapeDropdown = document.getElementById('shapeDropdown');
-    const shapeBtnIcon = document.getElementById('shapeBtnIcon');
+    const shapeTool = document.getElementById('shapeTool');
+    const shapeToolIcon = document.getElementById('shapeToolIcon');
     let currentShape = 'circle';
+    let activePanel = null;
 
     const shapeIcons = {
       rect: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
@@ -2238,48 +2821,779 @@
       arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'
     };
 
-    shapeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpen = shapeDropdown.classList.toggle('open');
-      if (isOpen) {
-        // Position the dropdown directly below the button
-        const rect = shapeBtn.getBoundingClientRect();
-        shapeDropdown.style.left = rect.left + 'px';
-        shapeDropdown.style.top = (rect.bottom + 2) + 'px';
-      }
-    });
+    function closeAllPanels() {
+      Object.values(toolPanels).forEach(panel => {
+        if (panel) panel.classList.remove('open');
+      });
+      activePanel = null;
+    }
 
-    document.querySelectorAll('[data-shape]').forEach(btn => {
+    function showToolPanel(toolName, btnEl) {
+      closeAllPanels();
+      const panel = toolPanels[toolName];
+      if (panel) {
+        const rect = btnEl.getBoundingClientRect();
+        panel.style.top = (rect.top) + 'px';
+        panel.classList.add('open');
+        activePanel = panel;
+      }
+    }
+
+    function selectTool(toolName, btnEl) {
+      // Update active state
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      currentTool = toolName;
+
+      // Clear selection when switching to drawing tools
+      if (currentTool !== 'select') {
+        selectedObjects = [];
+      }
+
+      // Update cursor
+      if (currentTool === 'select') {
+        canvas.style.cursor = 'default';
+      } else if (currentTool === 'sticky' || currentTool === 'text' || currentTool === 'image') {
+        canvas.style.cursor = 'cell';
+      } else {
+        canvas.style.cursor = 'crosshair';
+      }
+
+      // Update secondary toolbar
+      updateSecondaryToolbar(toolName);
+
+      updateSelectedControls();
+      redraw();
+    }
+
+    // Update secondary toolbar based on selected tool
+    function updateSecondaryToolbar(toolName) {
+      document.querySelectorAll('.secondary-toolbar-section').forEach(s => s.classList.remove('active'));
+
+      if (['rect', 'circle', 'arrow'].includes(toolName)) {
+        document.getElementById('shapeToolbarSection').classList.add('active');
+      } else if (toolName === 'text') {
+        document.getElementById('textToolbarSection').classList.add('active');
+      } else {
+        document.getElementById('defaultToolbarSection').classList.add('active');
+      }
+    }
+
+    // Tool button click handlers
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentShape = btn.dataset.shape;
+        const tool = btn.dataset.tool;
 
-        // Update button icon
-        shapeBtnIcon.innerHTML = shapeIcons[currentShape];
+        // Handle image tool specially
+        if (tool === 'image') {
+          document.getElementById('imageUploadInput').click();
+          return;
+        }
 
-        // Update tool
-        shapeBtn.dataset.tool = currentShape;
-        shapeBtn.title = btn.title;
+        // Handle sticky tool - open modal immediately
+        if (tool === 'sticky') {
+          closeAllPanels();
+          // Calculate center of visible canvas area
+          const wrapper = document.getElementById('canvasWrapper');
+          const rect = canvas.getBoundingClientRect();
+          const centerX = (wrapper.scrollLeft + wrapper.clientWidth / 2) - rect.left + wrapper.getBoundingClientRect().left;
+          const centerY = (wrapper.scrollTop + wrapper.clientHeight / 2) - rect.top + wrapper.getBoundingClientRect().top;
+          openStickyModal(centerX - 100, centerY - 75); // Offset by half sticky size
+          return;
+        }
 
-        // Activate the shape tool
-        document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
-        shapeBtn.classList.add('active');
-        currentTool = currentShape;
-        selectedObjects = [];
-        canvas.style.cursor = 'crosshair';
-        updateSelectedControls();
-        redraw();
-
-        // Close dropdown
-        shapeDropdown.classList.remove('open');
+        // If tool has panel, toggle panel
+        if (btn.classList.contains('has-panel')) {
+          if (btn.classList.contains('active') && activePanel) {
+            closeAllPanels();
+          } else {
+            selectTool(tool, btn);
+            showToolPanel(tool, btn);
+          }
+        } else {
+          closeAllPanels();
+          selectTool(tool, btn);
+        }
       });
     });
 
-    // Close dropdown when clicking outside
+    // Shape panel buttons
+    document.querySelectorAll('#shapePanel [data-shape]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentShape = btn.dataset.shape;
+        currentTool = currentShape;
+
+        // Update shape tool icon
+        shapeToolIcon.innerHTML = shapeIcons[currentShape];
+        shapeTool.dataset.tool = currentShape;
+
+        // Update active state in panel
+        document.querySelectorAll('#shapePanel [data-shape]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Brush size buttons
+    document.querySelectorAll('#brushPanel [data-size]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        strokeSize = parseInt(btn.dataset.size);
+        strokeSizeSlider.value = strokeSize;
+        document.querySelectorAll('#brushPanel [data-size]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Eraser size buttons
+    document.querySelectorAll('#eraserPanel [data-size]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        strokeSize = parseInt(btn.dataset.size);
+        strokeSizeSlider.value = strokeSize;
+        document.querySelectorAll('#eraserPanel [data-size]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Color buttons in panels
+    document.querySelectorAll('.tool-panel .color-btn[data-color]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setColor(btn.dataset.color, true);
+        // Update active state in same panel
+        const panel = btn.closest('.tool-panel');
+        panel.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Close panels when clicking outside
     document.addEventListener('click', (e) => {
-      if (!shapeSelector.contains(e.target)) {
-        shapeDropdown.classList.remove('open');
+      if (!e.target.closest('.tool-panel') && !e.target.closest('.tool-btn')) {
+        closeAllPanels();
       }
+    });
+
+    // ===== Zoom Control =====
+    const zoomBtn = document.getElementById('zoomBtn');
+    const zoomDropdown = document.getElementById('zoomDropdown');
+
+    zoomBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoomDropdown.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.zoom-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        canvasZoom = parseInt(opt.dataset.zoom);
+        applyZoom();
+        document.querySelectorAll('.zoom-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        zoomDropdown.classList.remove('open');
+      });
+    });
+
+    function applyZoom() {
+      const zoomScale = canvasZoom / 100;
+      const canvasDisplayW = canvasLogicalWidth * zoomScale;
+      const canvasDisplayH = canvasLogicalHeight * zoomScale;
+
+      // Update canvas display size (CSS)
+      canvas.style.width = canvasDisplayW + 'px';
+      canvas.style.height = canvasDisplayH + 'px';
+
+      // Update canvas actual size (memory) - scaled for both DPR and zoom
+      canvas.width = canvasLogicalWidth * dpr * zoomScale;
+      canvas.height = canvasLogicalHeight * dpr * zoomScale;
+
+      // Update container size to match
+      canvasContainer.style.width = canvasDisplayW + 'px';
+      canvasContainer.style.height = canvasDisplayH + 'px';
+      canvasContainer.style.transform = 'none'; // Remove CSS scaling
+
+      // Update centering margin based on wrapper size
+      const wrapperRect = canvasWrapper.getBoundingClientRect();
+      const padX = Math.max(0, (wrapperRect.width - canvasDisplayW) / 2);
+      const padY = Math.max(0, (wrapperRect.height - canvasDisplayH) / 2);
+      canvasContainer.style.margin = `${padY}px ${padX}px`;
+
+      // Scale context to match DPR and zoom
+      ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
+
+      // Redraw with new scale
+      redraw();
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.zoom-selector')) {
+        zoomDropdown.classList.remove('open');
+      }
+    });
+
+    // ===== Page Dropdown =====
+    const pageIndicator = document.getElementById('pageIndicator');
+    const pageDropdown = document.getElementById('pageDropdown');
+    const pageGrid = document.getElementById('pageGrid');
+
+    pageIndicator.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pageDropdown.classList.toggle('open');
+      if (pageDropdown.classList.contains('open')) {
+        renderPageGrid();
+      }
+    });
+
+    let draggedPageIndex = null;
+
+    function renderPageGrid() {
+      pageGrid.innerHTML = '';
+      pages.forEach((page, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'page-thumb' + (index === currentPageIndex ? ' active' : '');
+        thumb.draggable = true;
+        thumb.dataset.pageIndex = index;
+        const showDelete = pages.length > 1;
+        thumb.innerHTML = `
+          <img src="${generateThumbnail(index)}" alt="Page ${index + 1}" draggable="false">
+          <span class="page-thumb-label">${index + 1}</span>
+          ${showDelete ? '<button class="page-thumb-delete">×</button>' : ''}
+        `;
+
+        // Click to select page
+        thumb.addEventListener('click', (e) => {
+          if (e.target.classList.contains('page-thumb-delete')) return;
+          e.stopPropagation();
+          switchToPage(index);
+          pageThumbnailFocused = true;
+          renderPageGrid();
+        });
+
+        // Delete button
+        if (showDelete) {
+          thumb.querySelector('.page-thumb-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deletePage(index);
+            renderPageGrid();
+          });
+        }
+
+        // Drag start
+        thumb.addEventListener('dragstart', (e) => {
+          draggedPageIndex = index;
+          thumb.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        // Drag end
+        thumb.addEventListener('dragend', () => {
+          thumb.classList.remove('dragging');
+          draggedPageIndex = null;
+          document.querySelectorAll('.page-thumb').forEach(t => t.classList.remove('drag-over'));
+        });
+
+        // Drag over
+        thumb.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (draggedPageIndex !== null && draggedPageIndex !== index) {
+            thumb.classList.add('drag-over');
+          }
+        });
+
+        // Drag leave
+        thumb.addEventListener('dragleave', () => {
+          thumb.classList.remove('drag-over');
+        });
+
+        // Drop - reorder pages
+        thumb.addEventListener('drop', (e) => {
+          e.preventDefault();
+          thumb.classList.remove('drag-over');
+          if (draggedPageIndex !== null && draggedPageIndex !== index) {
+            // Reorder pages array
+            const [movedPage] = pages.splice(draggedPageIndex, 1);
+            pages.splice(index, 0, movedPage);
+
+            // Adjust currentPageIndex
+            if (currentPageIndex === draggedPageIndex) {
+              currentPageIndex = index;
+            } else if (draggedPageIndex < currentPageIndex && index >= currentPageIndex) {
+              currentPageIndex--;
+            } else if (draggedPageIndex > currentPageIndex && index <= currentPageIndex) {
+              currentPageIndex++;
+            }
+
+            updatePageUI();
+            renderPageGrid();
+            saveToLocalStorage();
+          }
+          draggedPageIndex = null;
+        });
+
+        pageGrid.appendChild(thumb);
+      });
+
+      // Add new page button if under limit
+      if (pages.length < MAX_PAGES) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'page-add-btn';
+        addBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        addBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          addNewPage();
+          renderPageGrid();
+        });
+        pageGrid.appendChild(addBtn);
+      }
+    }
+
+    // Refresh thumbnail grid if dropdown is open
+    function refreshPageGridIfOpen() {
+      if (pageDropdown.classList.contains('open')) {
+        renderPageGrid();
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.page-indicator')) {
+        pageDropdown.classList.remove('open');
+        pageThumbnailFocused = false;
+      }
+    });
+
+    // ===== Undo/Redo Buttons =====
+    document.getElementById('undoBtn').addEventListener('click', () => undo());
+    document.getElementById('redoBtn').addEventListener('click', () => redo());
+
+    // ===== Image Upload Tool =====
+    document.getElementById('imageUploadInput').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+      const centerX = canvasLogicalWidth / 2;
+      const centerY = canvasLogicalHeight / 2;
+
+      files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            const maxSize = 300;
+
+            if (width > maxSize || height > maxSize) {
+              const scale = maxSize / Math.max(width, height);
+              width *= scale;
+              height *= scale;
+            }
+
+            const imgObj = {
+              id: generateObjectId(),
+              type: 'image',
+              img: img,
+              imgSrc: ev.target.result,
+              x: centerX - width / 2 + index * 20,
+              y: centerY - height / 2 + index * 20,
+              width: width,
+              height: height,
+              opacity: 1
+            };
+            objects.push(imgObj);
+
+            saveState();
+            emitObjectChange('add', imgObj);
+            redraw();
+            switchToSelectTool();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      e.target.value = ''; // Reset input
+    });
+
+    // ===== Board Title Click to Copy =====
+    const boardTitle = document.getElementById('boardTitle');
+    boardTitle.addEventListener('click', async () => {
+      if (!currentBoard) return;
+      try {
+        await navigator.clipboard.writeText(currentBoard.name);
+        const original = boardTitle.textContent;
+        boardTitle.textContent = I18n.t('whiteboard.collab.copied');
+        setTimeout(() => {
+          boardTitle.textContent = original;
+        }, 1500);
+      } catch (e) {
+        console.error('Failed to copy:', e);
+      }
+    });
+
+    // ===== Sticky Note Modal =====
+    const stickyModal = document.getElementById('stickyModal');
+    const stickyTextarea = document.getElementById('stickyTextarea');
+    const stickyCancelBtn = document.getElementById('stickyCancelBtn');
+    const stickySaveBtn = document.getElementById('stickySaveBtn');
+    let stickyColor = '#ffd60a';
+    let pendingStickyPosition = null;
+
+    // Sticky color selection
+    document.querySelectorAll('.sticky-color-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        stickyColor = btn.dataset.color;
+        document.querySelectorAll('.sticky-color-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        stickyTextarea.style.background = stickyColor;
+      });
+    });
+
+    function openStickyModal(x, y) {
+      pendingStickyPosition = { x, y };
+      stickyTextarea.value = '';
+      stickyTextarea.style.background = stickyColor;
+      stickyModal.classList.add('open');
+      setTimeout(() => stickyTextarea.focus(), 100);
+    }
+
+    function closeStickyModal() {
+      stickyModal.classList.remove('open');
+      pendingStickyPosition = null;
+    }
+
+    stickyCancelBtn.addEventListener('click', closeStickyModal);
+    stickySaveBtn.addEventListener('click', () => {
+      if (pendingStickyPosition) {
+        const text = stickyTextarea.value;
+        const sticky = {
+          id: generateObjectId(),
+          type: 'sticky',
+          x: pendingStickyPosition.x,
+          y: pendingStickyPosition.y,
+          width: 200,
+          height: 150,
+          color: stickyColor,
+          textColor: '#1d1d1f',
+          text: text,
+          fontSize: 16,
+          bold: false
+        };
+        objects.push(sticky);
+        saveState();
+        emitObjectChange('add', sticky);
+        redraw();
+        switchToSelectTool();
+      }
+      closeStickyModal();
+    });
+
+    stickyModal.addEventListener('click', (e) => {
+      if (e.target === stickyModal) closeStickyModal();
+    });
+
+    // ===== Object Context Menu =====
+    const objectMenuBtn = document.getElementById('objectMenuBtn');
+    const objectMenuDropdown = document.getElementById('objectMenuDropdown');
+
+    function showObjectMenu(obj) {
+      if (!obj) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scale = canvasZoom / 100;
+      const rotation = obj.rotation || 0;
+      let cornerX, cornerY, cx, cy;
+
+      if (obj.type === 'sticky' || obj.type === 'textbox' || obj.type === 'image' || obj.type === 'arrow') {
+        cx = obj.x + obj.width / 2;
+        cy = obj.y + obj.height / 2;
+        // Top-right corner before rotation
+        cornerX = obj.x + obj.width;
+        cornerY = obj.y;
+      } else if (obj.x1 !== undefined) {
+        cx = (obj.x1 + obj.x2) / 2;
+        cy = (obj.y1 + obj.y2) / 2;
+        cornerX = Math.max(obj.x1, obj.x2);
+        cornerY = Math.min(obj.y1, obj.y2);
+      } else {
+        return;
+      }
+
+      // Apply rotation to corner position
+      let rotatedX = cornerX, rotatedY = cornerY;
+      if (rotation !== 0) {
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+        const dx = cornerX - cx;
+        const dy = cornerY - cy;
+        rotatedX = cx + dx * cos - dy * sin;
+        rotatedY = cy + dx * sin + dy * cos;
+      }
+
+      const menuX = rect.left + rotatedX * scale - 14;
+      const menuY = rect.top + rotatedY * scale - 14;
+
+      objectMenuBtn.style.left = menuX + 'px';
+      objectMenuBtn.style.top = menuY + 'px';
+      objectMenuBtn.style.display = 'flex';
+
+      // Hide edit option for images
+      const editItem = objectMenuDropdown.querySelector('[data-action="edit"]');
+      if (editItem) {
+        editItem.style.display = obj.type === 'image' ? 'none' : 'flex';
+      }
+    }
+
+    function hideObjectMenu() {
+      objectMenuBtn.style.display = 'none';
+      objectMenuDropdown.classList.remove('open');
+    }
+
+    objectMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      objectMenuDropdown.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.object-menu-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = item.dataset.action;
+        if (selectedObjects.length === 1) {
+          const obj = selectedObjects[0];
+          if (action === 'edit') {
+            startEditing(obj);
+          } else if (action === 'duplicate') {
+            const copy = JSON.parse(JSON.stringify(obj));
+            copy.id = generateObjectId();
+            copy.x = (copy.x || 0) + 20;
+            copy.y = (copy.y || 0) + 20;
+            if (copy.x1 !== undefined) { copy.x1 += 20; copy.x2 += 20; }
+            if (copy.y1 !== undefined) { copy.y1 += 20; copy.y2 += 20; }
+            // Restore image reference for image objects
+            if (obj.type === 'image' && obj.img) {
+              copy.img = obj.img;
+            }
+            objects.push(copy);
+            saveState();
+            emitObjectChange('add', copy);
+            redraw();
+          } else if (action === 'bringToFront') {
+            const idx = objects.indexOf(obj);
+            if (idx >= 0 && idx < objects.length - 1) {
+              objects.splice(idx, 1);
+              objects.push(obj);
+              saveState();
+              emitObjectChange('move', obj);
+              redraw();
+            }
+          } else if (action === 'sendToBack') {
+            const idx = objects.indexOf(obj);
+            if (idx > 0) {
+              objects.splice(idx, 1);
+              objects.unshift(obj);
+              saveState();
+              emitObjectChange('move', obj);
+              redraw();
+            }
+          } else if (action === 'delete') {
+            const idx = objects.indexOf(obj);
+            if (idx >= 0) {
+              objects.splice(idx, 1);
+              saveState();
+              emitObjectChange('delete', obj);
+              selectedObjects = [];
+              redraw();
+            }
+          }
+        }
+        hideObjectMenu();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#objectMenuBtn')) {
+        objectMenuDropdown.classList.remove('open');
+      }
+    });
+
+    // ===== Secondary Toolbar: Shape Colors =====
+    let shapeStrokeColor = '#1d1d1f';
+    let shapeFillColor = 'transparent';
+
+    const shapeStrokeBtn = document.getElementById('shapeStrokeBtn');
+    const shapeStrokeDropdown = document.getElementById('shapeStrokeDropdown');
+    const shapeFillBtn = document.getElementById('shapeFillBtn');
+    const shapeFillDropdown = document.getElementById('shapeFillDropdown');
+
+    shapeStrokeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      shapeStrokeDropdown.classList.toggle('open');
+      shapeFillDropdown.classList.remove('open');
+    });
+
+    shapeFillBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      shapeFillDropdown.classList.toggle('open');
+      shapeStrokeDropdown.classList.remove('open');
+    });
+
+    document.querySelectorAll('#shapeStrokeDropdown .toolbar-color-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shapeStrokeColor = opt.dataset.color;
+        currentColor = shapeStrokeColor;
+        // Update color indicator
+        const strokeIndicator = document.getElementById('shapeStrokeIndicator');
+        if (shapeStrokeColor === 'transparent') {
+          strokeIndicator.style.background = 'linear-gradient(45deg, #ccc 25%, transparent 25%),linear-gradient(-45deg, #ccc 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #ccc 75%),linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+          strokeIndicator.style.backgroundSize = '4px 4px';
+        } else {
+          strokeIndicator.style.background = shapeStrokeColor;
+          strokeIndicator.style.backgroundSize = '';
+        }
+        document.querySelectorAll('#shapeStrokeDropdown .toolbar-color-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        shapeStrokeDropdown.classList.remove('open');
+        // Apply to selected shapes
+        const shapes = selectedObjects.filter(o => o.type === 'rect' || o.type === 'circle' || o.type === 'arrow');
+        if (shapes.length > 0) {
+          shapes.forEach(obj => updateObjectProps(obj, { color: shapeStrokeColor }));
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    document.querySelectorAll('#shapeFillDropdown .toolbar-color-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shapeFillColor = opt.dataset.color;
+        // Update color indicator
+        const fillIndicator = document.getElementById('shapeFillIndicator');
+        if (shapeFillColor === 'transparent') {
+          fillIndicator.style.background = 'linear-gradient(45deg, #ccc 25%, transparent 25%),linear-gradient(-45deg, #ccc 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #ccc 75%),linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+          fillIndicator.style.backgroundSize = '4px 4px';
+        } else {
+          fillIndicator.style.background = shapeFillColor;
+          fillIndicator.style.backgroundSize = '';
+        }
+        document.querySelectorAll('#shapeFillDropdown .toolbar-color-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        shapeFillDropdown.classList.remove('open');
+        // Apply to selected shapes
+        const shapes = selectedObjects.filter(o => o.type === 'rect' || o.type === 'circle' || o.type === 'arrow');
+        if (shapes.length > 0) {
+          shapes.forEach(obj => updateObjectProps(obj, { fillColor: shapeFillColor }));
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    // ===== Secondary Toolbar: Text Style =====
+    let textStyle = 'normal';
+    let textFontSize = 16;
+    let textAlign = 'left';
+    let textColor = '#1d1d1f';
+
+    const textStyleBtn = document.getElementById('textStyleBtn');
+    const textStyleMenu = document.getElementById('textStyleMenu');
+    const textStyleLabel = document.getElementById('textStyleLabel');
+    const textColorBtn = document.getElementById('textColorBtn');
+    const textColorDropdown = document.getElementById('textColorDropdown');
+
+    textStyleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      textStyleMenu.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.text-style-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        textStyle = opt.dataset.style;
+        textFontSize = parseInt(opt.dataset.size);
+        textStyleLabel.textContent = opt.textContent.trim().replace('✓ ', '');
+        document.querySelectorAll('.text-style-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        textStyleMenu.classList.remove('open');
+        // Apply font size to selected textbox objects (not sticky - those auto-fit)
+        const textElements = selectedObjects.filter(o => o.type === 'textbox');
+        if (textElements.length > 0) {
+          textElements.forEach(obj => updateObjectProps(obj, { fontSize: textFontSize }));
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    textColorBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      textColorDropdown.classList.toggle('open');
+    });
+
+    const textColorIndicator = document.getElementById('textColorIndicator');
+    document.querySelectorAll('#textColorDropdown .toolbar-color-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        textColor = opt.dataset.color;
+        textColorIndicator.style.background = textColor;
+        document.querySelectorAll('#textColorDropdown .toolbar-color-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        textColorDropdown.classList.remove('open');
+        // Apply to selected text objects
+        const textElements = selectedObjects.filter(o => o.type === 'textbox' || o.type === 'sticky');
+        if (textElements.length > 0) {
+          textElements.forEach(obj => {
+            if (obj.type === 'sticky') {
+              updateObjectProps(obj, { textColor: textColor });
+            } else {
+              updateObjectProps(obj, { color: textColor, textColor: textColor });
+            }
+          });
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    document.querySelectorAll('.align-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        textAlign = btn.dataset.align;
+        document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Apply to selected text objects
+        const textElements = selectedObjects.filter(o => o.type === 'textbox');
+        if (textElements.length > 0) {
+          textElements.forEach(obj => updateObjectProps(obj, { textAlign: textAlign }));
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    // ===== Sticky Toolbar Color =====
+    document.querySelectorAll('.sticky-toolbar-color').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newColor = btn.dataset.stickyColor;
+        document.querySelectorAll('.sticky-toolbar-color').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Apply to selected sticky notes
+        const stickyNotes = selectedObjects.filter(o => o.type === 'sticky');
+        if (stickyNotes.length > 0) {
+          stickyNotes.forEach(obj => updateObjectProps(obj, { color: newColor }));
+          saveState();
+          redraw();
+        }
+      });
+    });
+
+    // Close all dropdowns
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.text-style-dropdown')) textStyleMenu.classList.remove('open');
+      if (!e.target.closest('#textColorBtn') && !e.target.closest('#textColorDropdown')) textColorDropdown.classList.remove('open');
+      if (!e.target.closest('#shapeStrokeBtn') && !e.target.closest('#shapeStrokeDropdown')) shapeStrokeDropdown.classList.remove('open');
+      if (!e.target.closest('#shapeFillBtn') && !e.target.closest('#shapeFillDropdown')) shapeFillDropdown.classList.remove('open');
     });
 
     // Text controls (apply to both textbox and sticky)
@@ -2311,33 +3625,61 @@
     }
 
     function updateSelectedControls() {
-      // Show text controls when textbox or sticky selected
-      const hasTextElement = selectedObjects.some(o => o.type === 'textbox' || o.type === 'sticky');
-      textSizeControl.style.display = hasTextElement ? 'flex' : 'none';
+      // Switch secondary toolbar based on selected object type
+      document.querySelectorAll('.secondary-toolbar-section').forEach(s => s.classList.remove('active'));
 
-      // Update controls to reflect first selected object's properties
-      if (selectedObjects.length === 1) {
+      if (selectedObjects.length > 0) {
         const obj = selectedObjects[0];
-        if (obj.type === 'sticky') {
-          setColor(obj.textColor || '#1d1d1f');
-          textSizeSlider.value = obj.fontSize || 16;
-          textBoldBtn.classList.toggle('active', obj.bold || false);
-        } else if (obj.type === 'textbox') {
-          setColor(obj.color || '#1d1d1f');
-          textSizeSlider.value = obj.fontSize || 18;
-          textBoldBtn.classList.toggle('active', obj.bold || false);
-        } else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
+        if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
+          document.getElementById('shapeToolbarSection').classList.add('active');
+          // Update shape toolbar to reflect current object
           setColor(obj.color || '#1d1d1f');
           strokeSizeSlider.value = obj.size || 3;
+          // Update stroke indicator
+          const strokeIndicator = document.getElementById('shapeStrokeIndicator');
+          if (obj.color === 'transparent') {
+            strokeIndicator.style.background = 'linear-gradient(45deg, #ccc 25%, transparent 25%),linear-gradient(-45deg, #ccc 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #ccc 75%),linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+            strokeIndicator.style.backgroundSize = '4px 4px';
+          } else {
+            strokeIndicator.style.background = obj.color || '#1d1d1f';
+            strokeIndicator.style.backgroundSize = '';
+          }
+          // Update fill indicator
+          const fillIndicator = document.getElementById('shapeFillIndicator');
+          const fillColor = obj.fillColor || 'transparent';
+          if (fillColor === 'transparent') {
+            fillIndicator.style.background = 'linear-gradient(45deg, #ccc 25%, transparent 25%),linear-gradient(-45deg, #ccc 25%, transparent 25%),linear-gradient(45deg, transparent 75%, #ccc 75%),linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+            fillIndicator.style.backgroundSize = '4px 4px';
+          } else {
+            fillIndicator.style.background = fillColor;
+            fillIndicator.style.backgroundSize = '';
+          }
+        } else if (obj.type === 'sticky') {
+          document.getElementById('stickyToolbarSection').classList.add('active');
+          // Update sticky toolbar to reflect current object color
+          document.querySelectorAll('.sticky-toolbar-color').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.stickyColor === obj.color);
+          });
+        } else if (obj.type === 'textbox') {
+          document.getElementById('textToolbarSection').classList.add('active');
+          // Update text toolbar to reflect current object
+          textColorIndicator.style.background = obj.textColor || obj.color || '#1d1d1f';
+          // Update alignment buttons
+          const align = obj.textAlign || 'left';
+          document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+          document.querySelector(`.align-btn[data-align="${align}"]`)?.classList.add('active');
+        } else {
+          document.getElementById('defaultToolbarSection').classList.add('active');
         }
+      } else {
+        document.getElementById('defaultToolbarSection').classList.add('active');
       }
     }
 
     // Color selection - applies to current tool or selected objects
     function setColor(color, fromUserAction = false) {
       currentColor = color;
-      colorPicker.value = color;
-      colorDisplay.style.background = color;
+      if (colorPicker) colorPicker.value = color;
 
       // Apply to selected objects only if user clicked (not just updating UI)
       if (fromUserAction && selectedObjects.length > 0) {
@@ -2345,7 +3687,6 @@
         const colorable = selectedObjects.filter(o => colorableTypes.includes(o.type));
         if (colorable.length > 0) {
           colorable.forEach(obj => {
-            // For sticky notes, apply color to text (textColor), not background
             if (obj.type === 'sticky') {
               updateObjectProps(obj, { textColor: color });
             } else {
@@ -2361,7 +3702,11 @@
     colorPicker.addEventListener('input', e => setColor(e.target.value, true));
 
     document.querySelectorAll('[data-color]').forEach(btn => {
-      btn.addEventListener('click', () => setColor(btn.dataset.color, true));
+      btn.addEventListener('click', () => {
+        // Skip toolbar dropdown color buttons - they have their own handlers
+        if (btn.closest('.secondary-toolbar-section')) return;
+        setColor(btn.dataset.color, true);
+      });
     });
 
     // Stroke size - applies to current tool or selected shapes
@@ -2407,28 +3752,30 @@
       editingObject = obj;
 
       const rect = canvas.getBoundingClientRect();
+      const scale = canvasZoom / 100;
       const textarea = document.createElement('textarea');
       textarea.className = 'text-edit-overlay' + (obj.type === 'sticky' ? ' sticky' : '');
       textarea.id = 'textEditOverlay';
 
       if (obj.type === 'sticky') {
-        textarea.style.left = (rect.left + obj.x) + 'px';
-        textarea.style.top = (rect.top + obj.y) + 'px';
-        textarea.style.width = obj.width + 'px';
-        textarea.style.height = obj.height + 'px';
+        textarea.style.left = (rect.left + obj.x * scale) + 'px';
+        textarea.style.top = (rect.top + obj.y * scale) + 'px';
+        textarea.style.width = (obj.width * scale) + 'px';
+        textarea.style.height = (obj.height * scale) + 'px';
         textarea.style.background = obj.color;
         textarea.style.color = obj.textColor || '#1d1d1f';
-        textarea.style.fontSize = (obj.fontSize || 16) + 'px';
+        textarea.style.fontSize = ((obj.fontSize || 16) * scale) + 'px';
         textarea.style.fontWeight = obj.bold ? 'bold' : 'normal';
       } else {
-        textarea.style.left = (rect.left + obj.x - 4) + 'px';
-        textarea.style.top = (rect.top + obj.y - 4) + 'px';
-        textarea.style.width = (obj.width + 8) + 'px';
-        textarea.style.height = (obj.height + 8) + 'px';
+        textarea.style.left = (rect.left + (obj.x - 4) * scale) + 'px';
+        textarea.style.top = (rect.top + (obj.y - 4) * scale) + 'px';
+        textarea.style.width = ((obj.width + 8) * scale) + 'px';
+        textarea.style.height = ((obj.height + 8) * scale) + 'px';
         textarea.style.background = 'rgba(255,255,255,0.95)';
-        textarea.style.color = obj.color;
-        textarea.style.fontSize = (obj.fontSize || 18) + 'px';
+        textarea.style.color = obj.textColor || obj.color || '#1d1d1f';
+        textarea.style.fontSize = ((obj.fontSize || 18) * scale) + 'px';
         textarea.style.fontWeight = obj.bold ? 'bold' : 'normal';
+        textarea.style.textAlign = obj.textAlign || 'left';
       }
 
       textarea.value = obj.text || '';
@@ -2477,9 +3824,10 @@
 
     function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
+      const zoomScale = canvasZoom / 100;
       return {
-        x: (e.clientX - rect.left),
-        y: (e.clientY - rect.top)
+        x: (e.clientX - rect.left) / zoomScale,
+        y: (e.clientY - rect.top) / zoomScale
       };
     }
 
@@ -2521,6 +3869,12 @@
         }
         updateSelectedControls();
         redraw();
+        // Show object menu for single selection
+        if (selectedObjects.length === 1) {
+          showObjectMenu(selectedObjects[0]);
+        } else {
+          hideObjectMenu();
+        }
         return;
       }
 
@@ -2528,6 +3882,7 @@
       if (currentTool === 'select') {
         if (!e.shiftKey) {
           selectedObjects = [];
+          hideObjectMenu();
         }
         isSelectingBox = true;
         selectBoxStart = pos;
@@ -2543,31 +3898,10 @@
       }
 
       selectedObjects = [];
+      hideObjectMenu();
       updateSelectedControls();
 
-      // Create sticky note or text box on click
-      if (currentTool === 'sticky') {
-        const newSticky = {
-          id: generateObjectId(),
-          type: 'sticky',
-          x: pos.x,
-          y: pos.y,
-          width: 200,
-          height: 150,
-          color: currentColor,
-          text: '',
-          fontSize: 16
-        };
-        objects.push(newSticky);
-        selectedObjects = [newSticky];
-        saveState();
-        emitObjectChange('add', newSticky);
-        switchToSelectTool();
-        updateSelectedControls();
-        redraw();
-        startEditing(newSticky);
-        return;
-      }
+      // Sticky tool now opens modal immediately from toolbar click
 
       if (currentTool === 'text') {
         const newText = {
@@ -2577,9 +3911,11 @@
           y: pos.y,
           width: 200,
           height: 40,
-          color: currentColor,
+          color: textColor,
+          textColor: textColor,
           text: '',
-          fontSize: 18,
+          fontSize: textFontSize,
+          textAlign: textAlign,
           bold: false
         };
         objects.push(newText);
@@ -2631,7 +3967,7 @@
         if (dragHandle === 'move') {
           // Move all selected objects
           selectedObjects.forEach(obj => {
-            if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox') {
+            if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox' || obj.type === 'arrow') {
               obj.x += dx;
               obj.y += dy;
             } else {
@@ -2642,15 +3978,40 @@
             }
           });
         } else if (selectedObjects.length === 1) {
-          // Resize only for single selection
+          // Resize/rotate only for single selection
           const obj = selectedObjects[0];
-          if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox') {
+          if (dragHandle === 'rotate') {
+            // Calculate rotation angle - works for both rect objects and shapes
+            let cx, cy;
+            if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox' || obj.type === 'arrow') {
+              cx = obj.x + obj.width / 2;
+              cy = obj.y + obj.height / 2;
+            } else {
+              cx = (obj.x1 + obj.x2) / 2;
+              cy = (obj.y1 + obj.y2) / 2;
+            }
+            const angleNow = Math.atan2(pos.y - cy, pos.x - cx);
+            const angleStart = Math.atan2(dragStartY - cy, dragStartX - cx);
+            obj.rotation = (obj.rotation || 0) + (angleNow - angleStart);
+          } else if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox' || obj.type === 'arrow') {
             if (dragHandle.includes('e')) obj.width += dx;
             if (dragHandle.includes('w')) { obj.x += dx; obj.width -= dx; }
             if (dragHandle.includes('s')) obj.height += dy;
             if (dragHandle.includes('n')) { obj.y += dy; obj.height -= dy; }
-            obj.width = Math.max(60, obj.width);
-            obj.height = Math.max(40, obj.height);
+            // Different minimum sizes for different object types
+            if (obj.type === 'sticky') {
+              // Allow smaller sticky notes - text will scale down with clipping
+              const minWidth = 40;
+              const minHeight = 30;
+              obj.width = Math.max(minWidth, obj.width);
+              obj.height = Math.max(minHeight, obj.height);
+            } else if (obj.type === 'arrow') {
+              obj.width = Math.max(50, obj.width);
+              obj.height = Math.max(40, obj.height);
+            } else {
+              obj.width = Math.max(60, obj.width);
+              obj.height = Math.max(40, obj.height);
+            }
           } else if (dragHandle === 'start') {
             obj.x1 += dx;
             obj.y1 += dy;
@@ -2662,6 +4023,11 @@
 
         dragStartX = pos.x;
         dragStartY = pos.y;
+
+        // Update object menu position during drag
+        if (selectedObjects.length === 1) {
+          showObjectMenu(selectedObjects[0]);
+        }
         redraw();
         return;
       }
@@ -2669,7 +4035,13 @@
       if (!isDrawing) {
         const hit = hitTestObjects(pos.x, pos.y);
         if (hit && currentTool !== 'eraser') {
-          canvas.style.cursor = hit.handle === 'move' ? 'move' : 'nwse-resize';
+          if (hit.handle === 'move') {
+            canvas.style.cursor = 'move';
+          } else if (hit.handle === 'rotate') {
+            canvas.style.cursor = 'grab';
+          } else {
+            canvas.style.cursor = 'nwse-resize';
+          }
         } else if (currentTool === 'select') {
           canvas.style.cursor = 'crosshair';
         } else if (currentTool === 'sticky' || currentTool === 'text') {
@@ -2746,17 +4118,42 @@
       const pos = getMousePos(e);
 
       if (currentTool !== 'brush' && currentTool !== 'eraser') {
-        const newShape = {
-          id: generateObjectId(),
-          type: currentTool,
-          x1: startX,
-          y1: startY,
-          x2: pos.x,
-          y2: pos.y,
-          color: currentColor,
-          size: strokeSize,
-          opacity: opacity
-        };
+        let newShape;
+        if (currentTool === 'arrow') {
+          // Arrow uses x,y,width,height like rect - simple bounding box
+          const x = Math.min(startX, pos.x);
+          const y = Math.min(startY, pos.y);
+          const w = Math.abs(pos.x - startX);
+          const h = Math.abs(pos.y - startY);
+          newShape = {
+            id: generateObjectId(),
+            type: 'arrow',
+            x: x,
+            y: y,
+            width: Math.max(50, w),
+            height: Math.max(40, h),
+            color: shapeStrokeColor,
+            fillColor: shapeFillColor || '#ff9500',
+            size: strokeSize,
+            opacity: opacity,
+            rotation: 0
+          };
+        } else {
+          // rect and circle use x1,y1,x2,y2
+          newShape = {
+            id: generateObjectId(),
+            type: currentTool,
+            x1: startX,
+            y1: startY,
+            x2: pos.x,
+            y2: pos.y,
+            color: shapeStrokeColor,
+            fillColor: shapeFillColor,
+            size: strokeSize,
+            opacity: opacity,
+            rotation: 0
+          };
+        }
         objects.push(newShape);
         emitObjectChange('add', newShape);
       } else {
@@ -2791,12 +4188,17 @@
     function drawShapePreview(type, x1, y1, x2, y2) {
       ctx.save();
       ctx.globalAlpha = opacity;
-      ctx.strokeStyle = currentColor;
+      ctx.strokeStyle = shapeStrokeColor;
       ctx.lineWidth = strokeSize;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      const hasFill = shapeFillColor && shapeFillColor !== 'transparent';
 
       if (type === 'rect') {
+        if (hasFill) {
+          ctx.fillStyle = shapeFillColor;
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+        }
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
       } else if (type === 'circle') {
         const rx = Math.abs(x2 - x1) / 2;
@@ -2805,21 +4207,36 @@
         const cy = (y1 + y2) / 2;
         ctx.beginPath();
         ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        if (hasFill) {
+          ctx.fillStyle = shapeFillColor;
+          ctx.fill();
+        }
         ctx.stroke();
       } else if (type === 'arrow') {
-        const headlen = Math.max(strokeSize * 3, 15);
-        const angle = Math.atan2(y2 - y1, x2 - x1);
+        // Draw filled block arrow shape (preview) - simple bounding box like rect
+        const x = Math.min(x1, x2);
+        const y = Math.min(y1, y2);
+        const w = Math.max(50, Math.abs(x2 - x1));
+        const h = Math.max(40, Math.abs(y2 - y1));
+
+        const bodyWidth = h * 0.5;
+        const headLen = Math.min(w * 0.35, h * 0.8);
+        const bodyEnd = w - headLen;
 
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
+        ctx.moveTo(x, y + h/2 - bodyWidth/2);
+        ctx.lineTo(x + bodyEnd, y + h/2 - bodyWidth/2);
+        ctx.lineTo(x + bodyEnd, y);
+        ctx.lineTo(x + w, y + h/2);
+        ctx.lineTo(x + bodyEnd, y + h);
+        ctx.lineTo(x + bodyEnd, y + h/2 + bodyWidth/2);
+        ctx.lineTo(x, y + h/2 + bodyWidth/2);
+        ctx.closePath();
 
-        ctx.beginPath();
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        if (hasFill) {
+          ctx.fillStyle = shapeFillColor;
+          ctx.fill();
+        }
         ctx.stroke();
       }
       ctx.restore();
@@ -2833,39 +4250,156 @@
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      const { type, x1, y1, x2, y2 } = obj;
+      const { type } = obj;
+      const hasFill = obj.fillColor && obj.fillColor !== 'transparent';
+
+      if (type === 'arrow') {
+        // Arrow uses x,y,width,height format
+        const { x, y, width, height } = obj;
+        const rotation = obj.rotation || 0;
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+
+        // Draw arrow shape within bounding box (pointing right)
+        const w = width;
+        const h = height;
+        const bodyWidth = h * 0.5;
+        const headWidth = h;
+        const headLen = Math.min(w * 0.35, h * 0.8);
+        const bodyEnd = w - headLen;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y + h/2 - bodyWidth/2);                    // top-left of tail
+        ctx.lineTo(x + bodyEnd, y + h/2 - bodyWidth/2);          // top before head
+        ctx.lineTo(x + bodyEnd, y);                               // top of head base
+        ctx.lineTo(x + w, y + h/2);                               // arrow tip
+        ctx.lineTo(x + bodyEnd, y + h);                           // bottom of head base
+        ctx.lineTo(x + bodyEnd, y + h/2 + bodyWidth/2);          // bottom before head
+        ctx.lineTo(x, y + h/2 + bodyWidth/2);                    // bottom-left of tail
+        ctx.closePath();
+
+        if (hasFill) {
+          ctx.fillStyle = obj.fillColor;
+          ctx.fill();
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        if (selected) {
+          drawRectHandles(obj);
+        }
+        return;
+      }
+
+      // rect and circle use x1,y1,x2,y2 format
+      const { x1, y1, x2, y2 } = obj;
+      const rotation = obj.rotation || 0;
+      const cx = (x1 + x2) / 2;
+      const cy = (y1 + y2) / 2;
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
 
       if (type === 'rect') {
+        if (hasFill) {
+          ctx.fillStyle = obj.fillColor;
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+        }
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
       } else if (type === 'circle') {
         const rx = Math.abs(x2 - x1) / 2;
         const ry = Math.abs(y2 - y1) / 2;
-        const cx = (x1 + x2) / 2;
-        const cy = (y1 + y2) / 2;
         ctx.beginPath();
         ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (type === 'arrow') {
-        const headlen = Math.max(obj.size * 3, 15);
-        const angle = Math.atan2(y2 - y1, x2 - x1);
-
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        if (hasFill) {
+          ctx.fillStyle = obj.fillColor;
+          ctx.fill();
+        }
         ctx.stroke();
       }
       ctx.restore();
 
       if (selected) {
-        drawHandles(x1, y1, x2, y2);
+        drawShapeHandles(obj);
       }
+    }
+
+    function drawShapeHandles(obj) {
+      const { x1, y1, x2, y2 } = obj;
+      const rotation = obj.rotation || 0;
+      const cx = (x1 + x2) / 2;
+      const cy = (y1 + y2) / 2;
+
+      ctx.save();
+
+      // Apply same rotation for handles
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
+
+      // Draw corner handle at bottom-right only (top-left is rotation handle)
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#30d158';
+      ctx.lineWidth = 2;
+
+      const maxX = Math.max(x1, x2);
+      const maxY = Math.max(y1, y2);
+      ctx.beginPath();
+      ctx.arc(maxX, maxY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Draw rotation handle at top-left corner
+      const minX = Math.min(x1, x2);
+      const minY = Math.min(y1, y2);
+      const handleX = minX;
+      const handleY = minY;
+      const handleRadius = 8;
+
+      // White circle background with rotation icon
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Draw rotation icon - opening toward bottom-right (toward the object)
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const r = 4;
+      // Arc: start at right (0°), go counterclockwise (through top, left) to bottom (π/2)
+      // This draws 270° arc, leaving 90° gap at bottom-right (toward the object)
+      const startAngle = -Math.PI * 0.05;  // slightly above right
+      const endAngle = Math.PI * 0.55;     // slightly past bottom
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, r, startAngle, endAngle, true);  // counterclockwise = long way
+      ctx.stroke();
+      // Arrow head at end (bottom), pointing clockwise (toward the gap/object)
+      const ax = handleX + r * Math.cos(endAngle);
+      const ay = handleY + r * Math.sin(endAngle);
+      // Tangent direction at endAngle going clockwise (increasing angle in canvas)
+      const tangentAngle = endAngle + Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(ax - 2.5 * Math.cos(tangentAngle - 0.5), ay - 2.5 * Math.sin(tangentAngle - 0.5));
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(ax - 2.5 * Math.cos(tangentAngle + 0.5), ay - 2.5 * Math.sin(tangentAngle + 0.5));
+      ctx.stroke();
+
+      ctx.restore();
     }
 
     function drawHandles(x1, y1, x2, y2) {
@@ -2882,10 +4416,24 @@
     }
 
     function drawImage(obj, selected = false) {
+      // Skip if image not loaded
+      if (!obj.img) return;
+
       ctx.save();
       ctx.globalAlpha = obj.opacity || 1;
+
+      const rotation = obj.rotation || 0;
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
+
       ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height);
-      ctx.restore();
 
       if (selected) {
         ctx.strokeStyle = '#30d158';
@@ -2893,21 +4441,12 @@
         ctx.setLineDash([5, 5]);
         ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
         ctx.setLineDash([]);
+      }
 
-        // Corner handles
-        ctx.fillStyle = '#fff';
-        const handles = [
-          { x: obj.x, y: obj.y, h: 'nw' },
-          { x: obj.x + obj.width, y: obj.y, h: 'ne' },
-          { x: obj.x, y: obj.y + obj.height, h: 'sw' },
-          { x: obj.x + obj.width, y: obj.y + obj.height, h: 'se' }
-        ];
-        handles.forEach(p => {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        });
+      ctx.restore();
+
+      if (selected) {
+        drawRectHandles(obj);
       }
     }
 
@@ -2930,41 +4469,122 @@
 
         if (obj.type === 'brush' || obj.type === 'eraser') continue;
 
-        if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox') {
+        // Objects with x,y,width,height format
+        if (obj.type === 'image' || obj.type === 'sticky' || obj.type === 'textbox' || obj.type === 'arrow') {
           const handleRadius = 10;
+          const rotation = obj.rotation || 0;
+          const cx = obj.x + obj.width / 2;
+          const cy = obj.y + obj.height / 2;
+
+          // Transform click point to object's local coordinate system
+          let localX = x, localY = y;
+          if (rotation !== 0) {
+            const cos = Math.cos(-rotation);
+            const sin = Math.sin(-rotation);
+            const dx = x - cx;
+            const dy = y - cy;
+            localX = cx + dx * cos - dy * sin;
+            localY = cy + dx * sin + dy * cos;
+          }
+
+          // Check rotation handle at top-left corner (only if object is selected)
+          if (selectedObjects.includes(obj)) {
+            const handleX = obj.x;
+            const handleY = obj.y;
+            const handleRadius = 8;
+
+            // Transform handle position to screen space if rotated
+            let screenHandleX = handleX, screenHandleY = handleY;
+            if (rotation !== 0) {
+              const cos = Math.cos(rotation);
+              const sin = Math.sin(rotation);
+              const dx = handleX - cx;
+              const dy = handleY - cy;
+              screenHandleX = cx + dx * cos - dy * sin;
+              screenHandleY = cy + dx * sin + dy * cos;
+            }
+
+            // Check if click is within the rotation handle circle
+            const distFromHandle = Math.hypot(x - screenHandleX, y - screenHandleY);
+            if (distFromHandle <= handleRadius + 4) {
+              return { obj, handle: 'rotate' };
+            }
+          }
+
+          // Other 3 corners for resize (not nw - that's the rotation handle)
           const corners = [
-            { x: obj.x, y: obj.y, h: 'nw' },
             { x: obj.x + obj.width, y: obj.y, h: 'ne' },
             { x: obj.x, y: obj.y + obj.height, h: 'sw' },
             { x: obj.x + obj.width, y: obj.y + obj.height, h: 'se' }
           ];
 
+          // Check corner handles in local space
           for (const c of corners) {
-            if (Math.hypot(x - c.x, y - c.y) < handleRadius) {
+            if (Math.hypot(localX - c.x, localY - c.y) < handleRadius) {
               return { obj, handle: c.h };
             }
           }
 
-          if (x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height) {
+          // Check if inside object bounds (in local space)
+          if (localX >= obj.x && localX <= obj.x + obj.width && localY >= obj.y && localY <= obj.y + obj.height) {
             return { obj, handle: 'move' };
           }
         } else {
           const handleRadius = 10;
+          const cx = (obj.x1 + obj.x2) / 2;
+          const cy = (obj.y1 + obj.y2) / 2;
+          const rotation = obj.rotation || 0;
 
-          if (Math.hypot(x - obj.x2, y - obj.y2) < handleRadius) {
+          // Transform click point to object's local coordinate system
+          let localX = x, localY = y;
+          if (rotation !== 0) {
+            const cos = Math.cos(-rotation);
+            const sin = Math.sin(-rotation);
+            const dx = x - cx;
+            const dy = y - cy;
+            localX = cx + dx * cos - dy * sin;
+            localY = cy + dx * sin + dy * cos;
+          }
+
+          // Check rotation handle at top-left corner (only if object is selected)
+          if (selectedObjects.includes(obj)) {
+            const minX = Math.min(obj.x1, obj.x2);
+            const minY = Math.min(obj.y1, obj.y2);
+            const handleX = minX;
+            const handleY = minY;
+            const handleRadius = 8;
+
+            // Transform handle position to screen space if rotated
+            let screenHandleX = handleX, screenHandleY = handleY;
+            if (rotation !== 0) {
+              const cos = Math.cos(rotation);
+              const sin = Math.sin(rotation);
+              const dx = handleX - cx;
+              const dy = handleY - cy;
+              screenHandleX = cx + dx * cos - dy * sin;
+              screenHandleY = cy + dx * sin + dy * cos;
+            }
+
+            // Check if click is within the rotation handle circle
+            const distFromHandle = Math.hypot(x - screenHandleX, y - screenHandleY);
+            if (distFromHandle <= handleRadius + 4) {
+              return { obj, handle: 'rotate' };
+            }
+          }
+
+          // Check corner handles (in local space)
+          if (Math.hypot(localX - obj.x2, localY - obj.y2) < handleRadius) {
             return { obj, handle: 'end' };
           }
 
-          if (Math.hypot(x - obj.x1, y - obj.y1) < handleRadius) {
+          if (Math.hypot(localX - obj.x1, localY - obj.y1) < handleRadius) {
             return { obj, handle: 'start' };
           }
 
-          const cx = (obj.x1 + obj.x2) / 2;
-          const cy = (obj.y1 + obj.y2) / 2;
           const halfW = Math.abs(obj.x2 - obj.x1) / 2 + 10;
           const halfH = Math.abs(obj.y2 - obj.y1) / 2 + 10;
 
-          if (x >= cx - halfW && x <= cx + halfW && y >= cy - halfH && y <= cy + halfH) {
+          if (localX >= cx - halfW && localX <= cx + halfW && localY >= cy - halfH && localY <= cy + halfH) {
             return { obj, handle: 'move' };
           }
         }
@@ -2976,6 +4596,51 @@
       ctx.save();
 
       const radius = 12;
+      const padding = 6;  // Reduced padding for small notes
+      const fontWeight = obj.bold ? 'bold' : 'normal';
+      // Ensure positive values for text area (minimum 1px)
+      const maxWidth = Math.max(1, obj.width - padding * 2);
+      const maxHeight = Math.max(1, obj.height - padding * 2);
+
+      // Calculate optimal font size to fit text in note
+      const minFontSize = 8;  // Slightly smaller minimum for tight spaces
+      let fontSize = minFontSize;
+      let lines = [];
+
+      if (obj.text) {
+        // Always calculate lines at minimum font size first (fallback)
+        ctx.font = `${fontWeight} ${minFontSize}px 'Plus Jakarta Sans', sans-serif`;
+        lines = wrapText(obj.text, maxWidth);
+        fontSize = minFontSize;
+
+        // Try to find a larger font size that fits
+        const maxFontSize = Math.max(minFontSize, Math.min(200, maxHeight * 0.8));
+
+        for (let trySize = maxFontSize; trySize >= minFontSize; trySize -= 1) {
+          ctx.font = `${fontWeight} ${trySize}px 'Plus Jakarta Sans', sans-serif`;
+          const tryLines = wrapText(obj.text, maxWidth);
+          const lineHeight = trySize * 1.3;
+          const neededHeight = tryLines.length * lineHeight;
+
+          if (neededHeight <= maxHeight) {
+            fontSize = trySize;
+            lines = tryLines;
+            break;
+          }
+        }
+      }
+      ctx.font = `${fontWeight} ${fontSize}px 'Plus Jakarta Sans', sans-serif`;
+
+      const rotation = obj.rotation || 0;
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
 
       // Draw shadow
       ctx.shadowColor = 'rgba(0,0,0,0.2)';
@@ -2998,23 +4663,24 @@
       ctx.roundRect(obj.x, obj.y, obj.width, obj.height, radius);
       ctx.stroke();
 
-      // Draw text
-      if (obj.text) {
+      // Draw text with clipping to prevent overflow
+      if (obj.text && lines.length > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(obj.x, obj.y, obj.width, obj.height);
+        ctx.clip();
+
         ctx.fillStyle = obj.textColor || '#1d1d1f';
-        const fontWeight = obj.bold ? 'bold' : 'normal';
-        ctx.font = `${fontWeight} ${obj.fontSize || 16}px 'Plus Jakarta Sans', sans-serif`;
+        ctx.font = `${fontWeight} ${fontSize}px 'Plus Jakarta Sans', sans-serif`;
         ctx.textBaseline = 'top';
 
-        const padding = 14;
-        const maxWidth = obj.width - padding * 2;
-        const lineHeight = (obj.fontSize || 16) * 1.4;
-        const lines = wrapText(obj.text, maxWidth);
+        const lineHeight = fontSize * 1.3;
 
+        // Draw all text lines
         lines.forEach((line, i) => {
-          if (obj.y + padding + i * lineHeight < obj.y + obj.height - padding) {
-            ctx.fillText(line, obj.x + padding, obj.y + padding + i * lineHeight);
-          }
+          ctx.fillText(line, obj.x + padding, obj.y + padding + i * lineHeight);
         });
+        ctx.restore();
       }
 
       ctx.restore();
@@ -3027,42 +4693,77 @@
     function drawTextBox(obj, selected = false) {
       ctx.save();
 
+      const rotation = obj.rotation || 0;
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
+
       // Draw text
       if (obj.text) {
-        ctx.fillStyle = obj.color;
+        ctx.fillStyle = obj.textColor || obj.color || '#1d1d1f';
         const fontWeight = obj.bold ? 'bold' : 'normal';
         ctx.font = `${fontWeight} ${obj.fontSize || 18}px 'Plus Jakarta Sans', sans-serif`;
         ctx.textBaseline = 'top';
 
         const lineHeight = (obj.fontSize || 18) * 1.4;
         const lines = wrapText(obj.text, obj.width);
+        const align = obj.textAlign || 'left';
 
         lines.forEach((line, i) => {
-          ctx.fillText(line, obj.x, obj.y + i * lineHeight);
+          let drawX = obj.x;
+          if (align === 'center') {
+            const lineWidth = ctx.measureText(line).width;
+            drawX = obj.x + (obj.width - lineWidth) / 2;
+          } else if (align === 'right') {
+            const lineWidth = ctx.measureText(line).width;
+            drawX = obj.x + obj.width - lineWidth;
+          }
+          ctx.fillText(line, drawX, obj.y + i * lineHeight);
         });
       }
 
-      ctx.restore();
-
       if (selected) {
-        // Draw selection border
+        // Draw selection border (inside rotation transform)
         ctx.strokeStyle = '#30d158';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.strokeRect(obj.x - 4, obj.y - 4, obj.width + 8, obj.height + 8);
         ctx.setLineDash([]);
+      }
 
+      ctx.restore();
+
+      if (selected) {
         drawRectHandles(obj);
       }
     }
 
     function drawRectHandles(obj) {
+      const rotation = obj.rotation || 0;
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+
+      ctx.save();
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx, -cy);
+      }
+
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = '#30d158';
       ctx.lineWidth = 2;
 
+      // Draw 3 corner handles (not nw - that's the rotation handle)
       const corners = [
-        { x: obj.x, y: obj.y },
         { x: obj.x + obj.width, y: obj.y },
         { x: obj.x, y: obj.y + obj.height },
         { x: obj.x + obj.width, y: obj.y + obj.height }
@@ -3074,6 +4775,46 @@
         ctx.fill();
         ctx.stroke();
       });
+
+      // Draw rotation handle at top-left corner (replaces nw resize handle)
+      const handleX = obj.x;
+      const handleY = obj.y;
+      const handleRadius = 8;
+
+      // White circle background with rotation icon
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Draw rotation icon - opening toward bottom-right (toward the object)
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const r = 4;
+      // Arc: start at right (0°), go counterclockwise (through top, left) to bottom (π/2)
+      // This draws 270° arc, leaving 90° gap at bottom-right (toward the object)
+      const startAngle = -Math.PI * 0.05;  // slightly above right
+      const endAngle = Math.PI * 0.55;     // slightly past bottom
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, r, startAngle, endAngle, true);  // counterclockwise = long way
+      ctx.stroke();
+      // Arrow head at end (bottom), pointing clockwise (toward the gap/object)
+      const ax = handleX + r * Math.cos(endAngle);
+      const ay = handleY + r * Math.sin(endAngle);
+      // Tangent direction at endAngle going clockwise (increasing angle in canvas)
+      const tangentAngle = endAngle + Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(ax - 2.5 * Math.cos(tangentAngle - 0.5), ay - 2.5 * Math.sin(tangentAngle - 0.5));
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(ax - 2.5 * Math.cos(tangentAngle + 0.5), ay - 2.5 * Math.sin(tangentAngle + 0.5));
+      ctx.stroke();
+
+      ctx.restore();
     }
 
     function wrapText(text, maxWidth) {
@@ -3128,12 +4869,13 @@
     }
 
     function redraw() {
+      const zoomScale = canvasZoom / 100;
       // Reset transform and clear entire canvas to handle browser zoom
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // Restore DPI scaling
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Restore DPI and zoom scaling
+      ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
       // Layer 1: Brush strokes and eraser (can be erased)
       for (const obj of objects) {
@@ -3229,6 +4971,7 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
+          refreshPageGridIfOpen();
           saveToLocalStorage();
           emitUndoRedo('undo', history[historyIndex]);
         });
@@ -3240,6 +4983,7 @@
         saveCurrentPageState();
         redraw();
         updatePageUI();
+        refreshPageGridIfOpen();
         saveToLocalStorage();
         emitUndoRedo('undo', '[]');
       } else if (pageUndoStack.length > 0) {
@@ -3258,6 +5002,7 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
+          refreshPageGridIfOpen();
           saveToLocalStorage();
           emitUndoRedo('redo', history[historyIndex]);
         });
@@ -3272,8 +5017,10 @@
         return;
       }
 
-      // Don't handle shortcuts while editing text
-      if (editingObject) return;
+      // Don't handle shortcuts while typing in input/textarea
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+      if (editingObject || isTyping) return;
 
       if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
         e.preventDefault();
@@ -3295,6 +5042,14 @@
       } else if (e.ctrlKey && e.key === 'v') {
         e.preventDefault();
         pasteFromClipboard();
+      } else if (e.ctrlKey && e.key === 'a') {
+        // Select all objects on current page
+        e.preventDefault();
+        if (objects.length > 0) {
+          selectedObjects = [...objects];
+          updateSelectedControls();
+          redraw();
+        }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         if (selectedObjects.length > 0) {
@@ -3305,6 +5060,7 @@
             if (idx > -1) objects.splice(idx, 1);
           });
           selectedObjects = [];
+          hideObjectMenu();
           updateSelectedControls();
           saveState();
           redraw();
@@ -3340,6 +5096,7 @@
           updateSelectedControls();
           redraw();
           updatePageUI();
+          refreshPageGridIfOpen();
           saveToLocalStorage();
 
           // Sync to other users
@@ -3612,8 +5369,7 @@
       });
     });
 
-    // Local storage
-    const STORAGE_KEY = 'xin-whiteboard-state';
+    // Local storage (STORAGE_KEY declared earlier)
 
     function saveToLocalStorage() {
       saveIndicator.textContent = I18n.t('whiteboard.status.saving');
@@ -3718,13 +5474,10 @@
       newBoardNameInput.value = lastBoard;
     }
 
-    // Handle window resize - update position and ensure scroll is valid
+    // Handle window resize - update canvas centering
     window.addEventListener('resize', () => {
-      updateCanvasPosition();
-      // Ensure scroll position is valid after resize
-      const wrapper = document.getElementById('canvasWrapper');
-      if (wrapper.scrollTop < 0) wrapper.scrollTop = 0;
-      if (wrapper.scrollLeft < 0) wrapper.scrollLeft = 0;
+      setupCanvas();
+      redraw();
     });
   </script>
 </body>

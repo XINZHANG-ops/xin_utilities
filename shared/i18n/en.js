@@ -334,7 +334,10 @@ I18n.register('en', {
     },
     actions: {
       download: 'Download PDF',
-      clear: 'Clear Canvas'
+      clear: 'Clear Canvas',
+      clearFrame: 'Clear frame',
+      undo: 'Undo',
+      redo: 'Redo'
     },
     tools: {
       select: 'Select',
@@ -347,7 +350,9 @@ I18n.register('en', {
       stickyNote: 'Sticky Note',
       sticky: 'Sticky Note',
       textBox: 'Text Box',
-      text: 'Text Box'
+      text: 'Text Box',
+      image: 'Image',
+      shapes: 'Shapes'
     },
     colors: {
       black: 'Black',
@@ -401,6 +406,13 @@ I18n.register('en', {
       },
       clickToCopy: 'Click to copy',
       copied: 'Copied'
+    },
+    menu: {
+      edit: 'Edit',
+      duplicate: 'Duplicate',
+      delete: 'Delete',
+      bringToFront: 'Bring to Front',
+      sendToBack: 'Send to Back'
     }
   },
 
