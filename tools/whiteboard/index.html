@@ -2524,6 +2524,7 @@
     let currentTool = 'select';
     let currentColor = '#1d1d1f';
     let strokeSize = 3;
+    let eraserSize = 20;  // Separate size for eraser
     let opacity = 1;
     let isDrawing = false;
     let startX, startY;
@@ -2951,8 +2952,7 @@
     document.querySelectorAll('#eraserPanel [data-size]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        strokeSize = parseInt(btn.dataset.size);
-        strokeSizeSlider.value = strokeSize;
+        eraserSize = parseInt(btn.dataset.size);
         document.querySelectorAll('#eraserPanel [data-size]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
       });
@@ -3290,6 +3290,14 @@
 
     stickyModal.addEventListener('click', (e) => {
       if (e.target === stickyModal) closeStickyModal();
+    });
+
+    // Enter to save, Shift+Enter for newline
+    stickyTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        stickySaveBtn.click();
+      }
     });
 
     // ===== Object Context Menu =====
@@ -3789,6 +3797,10 @@
       textarea.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           stopEditing();
+        } else if (e.key === 'Enter' && !e.shiftKey) {
+          // Enter to confirm, Shift+Enter for newline
+          e.preventDefault();
+          stopEditing();
         }
       });
 
@@ -3937,7 +3949,7 @@
           id: currentDrawingId,
           type: currentTool,
           color: currentTool === 'eraser' ? '#ffffff' : currentColor,
-          size: strokeSize,
+          size: currentTool === 'eraser' ? eraserSize : strokeSize,
           opacity: currentTool === 'eraser' ? 1 : opacity,
           points: [{ x: startX, y: startY }]
         });
