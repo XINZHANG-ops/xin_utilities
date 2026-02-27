@@ -1862,11 +1862,13 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
+          refreshPageGridIfOpen();
         } else {
           pages[pageIndex].objects = [];
           pages[pageIndex].history = [];
           pages[pageIndex].historyIndex = -1;
           updatePageUI();
+          refreshPageGridIfOpen();
         }
       });
 
@@ -2339,10 +2341,14 @@
       } else if (data.action === 'delete') {
         if (pages.length > 1 && data.page_index < pages.length) {
           pages.splice(data.page_index, 1);
+          // Adjust current page index if needed
           if (currentPageIndex >= pages.length) {
             currentPageIndex = pages.length - 1;
-            loadPageState(currentPageIndex);
           }
+          // Always reload current page state (content at this index may have changed)
+          loadPageState(currentPageIndex);
+          selectedObjects = [];
+          updateSelectedControls();
           updatePageUI();
           redraw();
         }
@@ -5317,6 +5323,7 @@
       saveCurrentPageState();
       redraw();
       updatePageUI();
+      refreshPageGridIfOpen();
       saveToLocalStorage();
       emitClear();
     });
