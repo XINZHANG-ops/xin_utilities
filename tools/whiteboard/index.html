@@ -1958,8 +1958,9 @@
 
       cursor.style.display = 'block';
       const rect = canvas.getBoundingClientRect();
-      cursor.style.left = (rect.left + x) + 'px';
-      cursor.style.top = (rect.top + y) + 'px';
+      const zoomScale = canvasZoom / 100;
+      cursor.style.left = (rect.left + x * zoomScale) + 'px';
+      cursor.style.top = (rect.top + y * zoomScale) + 'px';
 
       // If following this user, debounce scroll to cursor
       if (isFollowingUser && followingUserId === uid) {
