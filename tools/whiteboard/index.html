@@ -2233,7 +2233,10 @@
         } else if ((data.action === 'update' || data.action === 'move') && localObj) {
           const idx = pages[pageIndex].objects.findIndex(o => o.id === localObj.id);
           if (idx >= 0) {
+            // Preserve local img object (not sent over network)
+            const existingImg = pages[pageIndex].objects[idx].img;
             Object.assign(pages[pageIndex].objects[idx], localObj);
+            if (existingImg) pages[pageIndex].objects[idx].img = existingImg;
             needsPageUIUpdate = true;
           }
         }
@@ -2248,8 +2251,10 @@
         // Check if object already exists (e.g., from real-time drawing)
         const existingIdx = objects.findIndex(o => o.id === localObj.id);
         if (existingIdx >= 0) {
-          // Update existing object with complete data
+          // Preserve local img object (not sent over network)
+          const existingImg = objects[existingIdx].img;
           Object.assign(objects[existingIdx], localObj);
+          if (existingImg) objects[existingIdx].img = existingImg;
           // Clean up remoteDrawingObjects cache
           delete remoteDrawingObjects[localObj.id];
           redraw();
@@ -2279,8 +2284,10 @@
       } else if (data.action === 'update' && localObj) {
         const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
-          // Update object immediately
+          // Preserve local img object (not sent over network)
+          const existingImg = objects[idx].img;
           Object.assign(objects[idx], localObj);
+          if (existingImg) objects[idx].img = existingImg;
           // Load image if needed
           if (localObj.type === 'image' && localObj.imgSrc && !objects[idx].img) {
             const img = new Image();
@@ -2308,7 +2315,10 @@
       } else if (data.action === 'move' && localObj) {
         const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
+          // Preserve local img object (not sent over network)
+          const existingImg = objects[idx].img;
           Object.assign(objects[idx], localObj);
+          if (existingImg) objects[idx].img = existingImg;
           redraw();
           updatePageUI();
         }
@@ -2545,6 +2555,8 @@
     // Coordinate conversion for cross-device sync (use fixed reference size)
     function toRatio(obj) {
       const copy = JSON.parse(JSON.stringify(obj));
+      // Remove local Image object (it can't be serialized properly and becomes {})
+      delete copy.img;
       if (copy.x !== undefined) copy.x = copy.x / REF_WIDTH;
       if (copy.y !== undefined) copy.y = copy.y / REF_HEIGHT;
       if (copy.x1 !== undefined) copy.x1 = copy.x1 / REF_WIDTH;
@@ -5523,9 +5535,9 @@
           pdf.addPage([pdfWidth, pdfHeight], pdfWidth > pdfHeight ? 'landscape' : 'portrait');
         }
 
-        // Switch to page and render
+        // Switch to page and render synchronously
         await switchToPageForExport(i);
-        redraw();
+        redrawNow();
 
         // Add canvas as image
         const imgData = canvas.toDataURL('image/png');
@@ -5535,7 +5547,7 @@
       // Restore original state
       await switchToPageForExport(originalPageIndex);
       selectedObjects = originalSelected;
-      redraw();
+      redrawNow();
 
       // Download PDF
       const boardName = currentBoard ? currentBoard.name : 'whiteboard';
