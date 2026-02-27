@@ -2170,6 +2170,19 @@
       });
     }
 
+    // Emit page reorder
+    function emitPageReorder(fromIndex, toIndex) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      saveBoardToServer();
+      socket.emit('wb_page', {
+        board_id: currentBoard.id,
+        sid: userId,
+        action: 'reorder',
+        from_index: fromIndex,
+        to_index: toIndex
+      });
+    }
+
     // Handle remote object update (convert from ratio to local coordinates)
     function handleRemoteObjectUpdate(data) {
       let needsPageUIUpdate = false;
@@ -2265,6 +2278,8 @@
           updatePageUI();
         }
       }
+      // Update thumbnails for any object change
+      refreshPageGridIfOpen();
     }
 
     // Handle remote drawing (real-time brush) - convert points from ratio
@@ -2316,6 +2331,7 @@
           loadState(data.state).then(state => {
             pages[pageIndex].objects = state;
             updatePageUI();
+            refreshPageGridIfOpen();
           });
         }
         return;
@@ -2329,6 +2345,7 @@
           saveCurrentPageState();
           redraw();
           updatePageUI();
+          refreshPageGridIfOpen();
         });
       }
     }
@@ -2338,6 +2355,7 @@
       if (data.action === 'add') {
         pages.push({ objects: [], history: [], historyIndex: -1 });
         updatePageUI();
+        refreshPageGridIfOpen();
       } else if (data.action === 'delete') {
         if (pages.length > 1 && data.page_index < pages.length) {
           pages.splice(data.page_index, 1);
@@ -2350,6 +2368,32 @@
           selectedObjects = [];
           updateSelectedControls();
           updatePageUI();
+          refreshPageGridIfOpen();
+          redraw();
+        }
+      } else if (data.action === 'reorder') {
+        const fromIndex = data.from_index;
+        const toIndex = data.to_index;
+        if (fromIndex >= 0 && fromIndex < pages.length && toIndex >= 0 && toIndex < pages.length) {
+          // Reorder pages array
+          const [movedPage] = pages.splice(fromIndex, 1);
+          pages.splice(toIndex, 0, movedPage);
+
+          // Adjust currentPageIndex
+          if (currentPageIndex === fromIndex) {
+            currentPageIndex = toIndex;
+          } else if (fromIndex < currentPageIndex && toIndex >= currentPageIndex) {
+            currentPageIndex--;
+          } else if (fromIndex > currentPageIndex && toIndex <= currentPageIndex) {
+            currentPageIndex++;
+          }
+
+          // Reload current page to ensure correct content
+          loadPageState(currentPageIndex);
+          selectedObjects = [];
+          updateSelectedControls();
+          updatePageUI();
+          refreshPageGridIfOpen();
           redraw();
         }
       } else if (data.action === 'restore') {
@@ -2431,6 +2475,7 @@
       loadPageState(currentPageIndex);
       redraw();
       updatePageUI();
+      refreshPageGridIfOpen();
     }
 
     const canvas = document.getElementById('canvas');
@@ -3135,22 +3180,26 @@
           e.preventDefault();
           thumb.classList.remove('drag-over');
           if (draggedPageIndex !== null && draggedPageIndex !== index) {
+            const fromIndex = draggedPageIndex;
+            const toIndex = index;
+
             // Reorder pages array
-            const [movedPage] = pages.splice(draggedPageIndex, 1);
-            pages.splice(index, 0, movedPage);
+            const [movedPage] = pages.splice(fromIndex, 1);
+            pages.splice(toIndex, 0, movedPage);
 
             // Adjust currentPageIndex
-            if (currentPageIndex === draggedPageIndex) {
-              currentPageIndex = index;
-            } else if (draggedPageIndex < currentPageIndex && index >= currentPageIndex) {
+            if (currentPageIndex === fromIndex) {
+              currentPageIndex = toIndex;
+            } else if (fromIndex < currentPageIndex && toIndex >= currentPageIndex) {
               currentPageIndex--;
-            } else if (draggedPageIndex > currentPageIndex && index <= currentPageIndex) {
+            } else if (fromIndex > currentPageIndex && toIndex <= currentPageIndex) {
               currentPageIndex++;
             }
 
             updatePageUI();
             renderPageGrid();
             saveToLocalStorage();
+            emitPageReorder(fromIndex, toIndex);
           }
           draggedPageIndex = null;
         });
