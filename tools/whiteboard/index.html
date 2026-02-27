@@ -2217,6 +2217,9 @@
               localObj.img = img;
               refreshPageGridIfOpen();
             };
+            img.onerror = () => {
+              console.error('[WB] Failed to load remote image for different page');
+            };
             img.src = localObj.imgSrc;
           }
           pages[pageIndex].objects.push(localObj);
@@ -2252,14 +2255,22 @@
           redraw();
           updatePageUI();
         } else if (localObj.type === 'image' && localObj.imgSrc) {
+          // Add object immediately so it's visible while loading
+          objects.push(localObj);
           const img = new Image();
           img.onload = () => {
             localObj.img = img;
-            objects.push(localObj);
             redraw();
             updatePageUI();
+            refreshPageGridIfOpen();
+          };
+          img.onerror = () => {
+            console.error('[WB] Failed to load remote image');
+            redraw(); // Still redraw to show placeholder/handles
           };
           img.src = localObj.imgSrc;
+          redraw();
+          updatePageUI();
         } else {
           objects.push(localObj);
           redraw();
@@ -2268,20 +2279,24 @@
       } else if (data.action === 'update' && localObj) {
         const idx = objects.findIndex(o => o.id === localObj.id);
         if (idx >= 0) {
+          // Update object immediately
+          Object.assign(objects[idx], localObj);
+          // Load image if needed
           if (localObj.type === 'image' && localObj.imgSrc && !objects[idx].img) {
             const img = new Image();
             img.onload = () => {
-              localObj.img = img;
-              objects[idx] = localObj;
+              objects[idx].img = img;
               redraw();
               updatePageUI();
             };
+            img.onerror = () => {
+              console.error('[WB] Failed to load remote image on update');
+              redraw();
+            };
             img.src = localObj.imgSrc;
-          } else {
-            Object.assign(objects[idx], localObj);
-            redraw();
-            updatePageUI();
           }
+          redraw();
+          updatePageUI();
         }
       } else if (data.action === 'delete' && localObj) {
         const idx = objects.findIndex(o => o.id === localObj.id);
@@ -2682,6 +2697,10 @@
             obj.img = img;
             redraw();
           };
+          img.onerror = () => {
+            console.error('[WB] Failed to load image on page switch');
+            redraw(); // Show placeholder
+          };
           img.src = obj.imgSrc;
         }
       });
@@ -2945,6 +2964,8 @@
       if (btnEl) btnEl.classList.add('active');
 
       currentTool = toolName;
+      isDrawing = false;
+      shapePreview = null; // Clear any pending shape preview
 
       // Clear selection when switching to drawing tools
       if (currentTool !== 'select') {
@@ -4144,12 +4165,42 @@
             if (dragHandle.includes('s')) dragStartY += (obj.y + obj.height) - (oldY + oldH);
             if (dragHandle.includes('n')) dragStartY += obj.y - oldY;
             skipDragStartUpdate = true;
-          } else if (dragHandle === 'start') {
-            obj.x1 += dx;
-            obj.y1 += dy;
-          } else if (dragHandle === 'end') {
-            obj.x2 += dx;
-            obj.y2 += dy;
+          } else {
+            // rect/circle use x1,y1,x2,y2 format with ne, sw, se handles
+            const minX = Math.min(obj.x1, obj.x2);
+            const minY = Math.min(obj.y1, obj.y2);
+            const maxX = Math.max(obj.x1, obj.x2);
+            const maxY = Math.max(obj.y1, obj.y2);
+
+            let newMinX = minX, newMinY = minY, newMaxX = maxX, newMaxY = maxY;
+
+            if (dragHandle === 'ne') {
+              newMaxX += dx;
+              newMinY += dy;
+            } else if (dragHandle === 'sw') {
+              newMinX += dx;
+              newMaxY += dy;
+            } else if (dragHandle === 'se') {
+              newMaxX += dx;
+              newMaxY += dy;
+            }
+
+            // Minimum size
+            const minSize = 20;
+            if (newMaxX - newMinX < minSize) {
+              if (dragHandle.includes('e')) newMaxX = newMinX + minSize;
+              if (dragHandle.includes('w')) newMinX = newMaxX - minSize;
+            }
+            if (newMaxY - newMinY < minSize) {
+              if (dragHandle.includes('s')) newMaxY = newMinY + minSize;
+              if (dragHandle.includes('n')) newMinY = newMaxY - minSize;
+            }
+
+            // Update coordinates
+            obj.x1 = newMinX;
+            obj.y1 = newMinY;
+            obj.x2 = newMaxX;
+            obj.y2 = newMaxY;
           }
         }
 
@@ -4201,8 +4252,9 @@
           type: obj.type
         });
       } else {
+        // Store shape preview state for drawing after redraw
+        shapePreview = { type: currentTool, x1: startX, y1: startY, x2: pos.x, y2: pos.y };
         redraw();
-        drawShapePreview(currentTool, startX, startY, pos.x, pos.y);
       }
     }
 
@@ -4248,6 +4300,7 @@
 
       if (!isDrawing) return;
       isDrawing = false;
+      shapePreview = null; // Clear shape preview
 
       const pos = getMousePos(e);
 
@@ -4481,17 +4534,29 @@
         ctx.translate(-cx, -cy);
       }
 
-      // Draw corner handle at bottom-right only (top-left is rotation handle)
+      // Draw 3 corner handles (not top-left - that's the rotation handle)
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = '#30d158';
       ctx.lineWidth = 2;
 
+      const minX = Math.min(x1, x2);
+      const minY = Math.min(y1, y2);
       const maxX = Math.max(x1, x2);
       const maxY = Math.max(y1, y2);
-      ctx.beginPath();
-      ctx.arc(maxX, maxY, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+
+      // NE, SW, SE corners (like drawRectHandles)
+      const corners = [
+        { x: maxX, y: minY },  // top-right (NE)
+        { x: minX, y: maxY },  // bottom-left (SW)
+        { x: maxX, y: maxY }   // bottom-right (SE)
+      ];
+
+      corners.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
 
       // Draw rotation handle at top-left corner
       const minX = Math.min(x1, x2);
@@ -4550,9 +4615,6 @@
     }
 
     function drawImage(obj, selected = false) {
-      // Skip if image not loaded
-      if (!obj.img) return;
-
       ctx.save();
       ctx.globalAlpha = obj.opacity || 1;
 
@@ -4567,7 +4629,22 @@
         ctx.translate(-cx, -cy);
       }
 
-      ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height);
+      if (obj.img) {
+        ctx.drawImage(obj.img, obj.x, obj.y, obj.width, obj.height);
+      } else {
+        // Draw placeholder for loading/failed image
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+        // Draw loading icon
+        ctx.fillStyle = '#999';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Loading...', cx, cy);
+      }
 
       if (selected) {
         ctx.strokeStyle = '#30d158';
@@ -4706,13 +4783,22 @@
             }
           }
 
-          // Check corner handles (in local space)
-          if (Math.hypot(localX - obj.x2, localY - obj.y2) < handleRadius) {
-            return { obj, handle: 'end' };
-          }
+          // Check corner handles (in local space) - same as arrow: NE, SW, SE
+          const minX = Math.min(obj.x1, obj.x2);
+          const minY = Math.min(obj.y1, obj.y2);
+          const maxX = Math.max(obj.x1, obj.x2);
+          const maxY = Math.max(obj.y1, obj.y2);
 
-          if (Math.hypot(localX - obj.x1, localY - obj.y1) < handleRadius) {
-            return { obj, handle: 'start' };
+          const corners = [
+            { x: maxX, y: minY, h: 'ne' },  // top-right
+            { x: minX, y: maxY, h: 'sw' },  // bottom-left
+            { x: maxX, y: maxY, h: 'se' }   // bottom-right
+          ];
+
+          for (const c of corners) {
+            if (Math.hypot(localX - c.x, localY - c.y) < handleRadius) {
+              return { obj, handle: c.h };
+            }
           }
 
           const halfW = Math.abs(obj.x2 - obj.x1) / 2 + 10;
@@ -5018,12 +5104,18 @@
     }
 
     let redrawScheduled = false;
+    let shapePreview = null; // Store shape preview to draw after redraw
+
     function redraw() {
       if (redrawScheduled) return;
       redrawScheduled = true;
       requestAnimationFrame(() => {
         redrawScheduled = false;
         redrawNow();
+        // Draw shape preview after canvas is redrawn
+        if (shapePreview) {
+          drawShapePreview(shapePreview.type, shapePreview.x1, shapePreview.y1, shapePreview.x2, shapePreview.y2);
+        }
       });
     }
 
