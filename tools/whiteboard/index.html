@@ -1753,6 +1753,7 @@
         upgrade: true
       });
 
+      let hasConnectedBefore = false;
       socket.on('connect', () => {
         console.log('[WB] Connected to server');
         updateConnectionStatus('connected');
@@ -1762,6 +1763,13 @@
           user: currentUser,
           sid: userId
         });
+
+        // On reconnect, reload board data to sync any changes made while disconnected
+        if (hasConnectedBefore) {
+          console.log('[WB] Reconnected, reloading board data');
+          loadBoardFromServer();
+        }
+        hasConnectedBefore = true;
       });
 
       socket.on('disconnect', () => {
@@ -2202,6 +2210,15 @@
       if (pageIndex !== currentPageIndex) {
         // Update other page
         if (data.action === 'add' && localObj) {
+          // Load image if needed (for thumbnail display)
+          if (localObj.type === 'image' && localObj.imgSrc && !localObj.img) {
+            const img = new Image();
+            img.onload = () => {
+              localObj.img = img;
+              refreshPageGridIfOpen();
+            };
+            img.src = localObj.imgSrc;
+          }
           pages[pageIndex].objects.push(localObj);
           needsPageUIUpdate = true;
         } else if (data.action === 'delete' && localObj) {
@@ -2217,7 +2234,10 @@
             needsPageUIUpdate = true;
           }
         }
-        if (needsPageUIUpdate) updatePageUI();
+        if (needsPageUIUpdate) {
+          updatePageUI();
+          refreshPageGridIfOpen();
+        }
         return;
       }
 
@@ -2653,6 +2673,18 @@
       objects = pages[pageIndex].objects;
       history = pages[pageIndex].history;
       historyIndex = pages[pageIndex].historyIndex;
+
+      // Load images that don't have img object yet
+      objects.forEach(obj => {
+        if (obj.type === 'image' && obj.imgSrc && !obj.img) {
+          const img = new Image();
+          img.onload = () => {
+            obj.img = img;
+            redraw();
+          };
+          img.src = obj.imgSrc;
+        }
+      });
     }
 
     function switchToPage(pageIndex, isAutoFollow = false) {

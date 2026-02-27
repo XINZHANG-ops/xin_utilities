@@ -115,3 +115,89 @@ npx serve
 - **QR Code Generator**: Uses qr-code-styling library, optional backend for short links and click statistics
 - **Kanban**: Drag-and-drop cards between columns, file attachments. Real-time collaboration via Socket.IO with user presence and board sharing
 - **Index Page**: Sidebar navigation with hover-to-scroll (200ms delay), category icons centered when collapsed
+
+## Common Pitfalls (Real-time Collaboration)
+
+When working on real-time collaborative features, use **combinatorial analysis** to check all operation × state combinations. Common mistakes:
+
+### 1. Early Return Skipping UI Updates
+```javascript
+// BUG: refreshPageGridIfOpen() never called for different page
+if (pageIndex !== currentPageIndex) {
+  pages[pageIndex].objects.push(obj);
+  updatePageUI();
+  return;  // ← Skips thumbnail refresh!
+}
+// ... more code ...
+refreshPageGridIfOpen();  // Only reached for same page
+```
+**Fix**: Add UI updates before every `return` statement.
+
+### 2. Coordinate Transform with Zoom
+```javascript
+// BUG: Remote cursor position wrong at different zoom levels
+cursor.style.left = (rect.left + x) + 'px';  // x is in canvas coords
+
+// FIX: Scale by receiver's zoom
+const zoomScale = canvasZoom / 100;
+cursor.style.left = (rect.left + x * zoomScale) + 'px';
+```
+
+### 3. Page Content Not Reloading After Delete
+```javascript
+// BUG: Only adjusts index, doesn't reload content
+if (currentPageIndex >= pages.length) {
+  currentPageIndex = pages.length - 1;
+}
+// Missing: loadPageState(currentPageIndex);
+```
+After page deletion, ALWAYS reload current page state - the content at current index has changed.
+
+### 4. Async Resources (Images) on Different Pages
+```javascript
+// BUG: Image added to different page without loading img object
+pages[pageIndex].objects.push(localObj);  // localObj.img is undefined
+
+// FIX: Load image async, refresh thumbnail after load
+if (localObj.type === 'image' && localObj.imgSrc && !localObj.img) {
+  const img = new Image();
+  img.onload = () => {
+    localObj.img = img;
+    refreshPageGridIfOpen();
+  };
+  img.src = localObj.imgSrc;
+}
+```
+
+### 5. Missing Sync for New Operations
+When adding new operations (e.g., page reorder), check:
+- [ ] Local operation emits event
+- [ ] Remote handler exists
+- [ ] Handler updates: content, UI, thumbnails
+- [ ] Different page case handled
+- [ ] Reconnect syncs latest state
+
+### 6. Reconnection Not Syncing Data
+```javascript
+// BUG: Reconnect only rejoins, doesn't sync data changes
+socket.on('connect', () => {
+  socket.emit('wb_join', { ... });
+  // Missing: loadBoardFromServer() on reconnect
+});
+
+// FIX: Track if reconnecting
+let hasConnectedBefore = false;
+socket.on('connect', () => {
+  socket.emit('wb_join', { ... });
+  if (hasConnectedBefore) loadBoardFromServer();
+  hasConnectedBefore = true;
+});
+```
+
+### Checklist for Remote Event Handlers
+For each remote event handler, verify:
+- [ ] Same page: updates `objects`, calls `redraw()`, `refreshPageGridIfOpen()`
+- [ ] Different page: updates `pages[pageIndex].objects`, calls `refreshPageGridIfOpen()`
+- [ ] Async resources (images): loads and refreshes after load
+- [ ] Page structure changes: reloads current page state
+- [ ] All branches before `return` have necessary UI updates
