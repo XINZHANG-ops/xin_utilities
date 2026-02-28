@@ -413,6 +413,9 @@ I18n.register('en', {
       delete: 'Delete',
       bringToFront: 'Bring to Front',
       sendToBack: 'Send to Back'
+    },
+    background: {
+      title: 'Background'
     }
   },
 

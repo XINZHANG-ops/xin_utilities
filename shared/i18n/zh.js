@@ -413,6 +413,9 @@ I18n.register('zh', {
       delete: '删除',
       bringToFront: '置于顶层',
       sendToBack: '置于底层'
+    },
+    background: {
+      title: '背景'
     }
   },
 

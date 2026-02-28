@@ -384,6 +384,60 @@
     }
     .clear-btn:hover { background: rgba(0,0,0,0.08); }
 
+    /* Background button & dropdown */
+    .bg-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--fg);
+      transition: all 0.2s;
+    }
+    .bg-btn:hover { background: rgba(0,0,0,0.08); }
+    .bg-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 100;
+    }
+    .bg-dropdown.open { display: block; }
+    .bg-pattern-row, .bg-color-row {
+      display: flex;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    .bg-pattern-option {
+      width: 32px;
+      height: 32px;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      padding: 4px;
+      transition: all 0.15s;
+    }
+    .bg-pattern-option:hover { border-color: #ccc; }
+    .bg-pattern-option.active { border-color: var(--accent); }
+    .bg-color-option {
+      width: 28px;
+      height: 28px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .bg-color-option:hover { transform: scale(1.1); }
+    .bg-color-option.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(48,209,88,0.3); }
+
     /* ===== Left Sidebar Toolbar (Jamboard style) ===== */
     .left-toolbar {
       position: fixed;
@@ -1288,8 +1342,33 @@
 
     <div class="toolbar-divider"></div>
 
-    <!-- Default: Clear button -->
+    <!-- Default: Background & Clear button -->
     <div class="secondary-toolbar-section active" id="defaultToolbarSection">
+      <div style="position:relative;">
+        <button class="bg-btn" id="bgBtn" data-i18n="whiteboard.background.title">Background</button>
+        <div class="bg-dropdown" id="bgDropdown">
+          <div class="bg-pattern-row">
+            <button class="bg-pattern-option active" data-pattern="none" title="Plain">
+              <svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="#fff" stroke="#ddd"/><polyline points="2,18 18,2" stroke="#30d158" stroke-width="2"/></svg>
+            </button>
+            <button class="bg-pattern-option" data-pattern="grid" title="Grid">
+              <svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="#fff" stroke="#ddd"/><path d="M5,0 V20 M10,0 V20 M15,0 V20 M0,5 H20 M0,10 H20 M0,15 H20" stroke="#ccc" stroke-width="0.5"/></svg>
+            </button>
+            <button class="bg-pattern-option" data-pattern="dots" title="Dots">
+              <svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="#fff" stroke="#ddd"/><circle cx="5" cy="5" r="1" fill="#ccc"/><circle cx="10" cy="5" r="1" fill="#ccc"/><circle cx="15" cy="5" r="1" fill="#ccc"/><circle cx="5" cy="10" r="1" fill="#ccc"/><circle cx="10" cy="10" r="1" fill="#ccc"/><circle cx="15" cy="10" r="1" fill="#ccc"/><circle cx="5" cy="15" r="1" fill="#ccc"/><circle cx="10" cy="15" r="1" fill="#ccc"/><circle cx="15" cy="15" r="1" fill="#ccc"/></svg>
+            </button>
+            <button class="bg-pattern-option" data-pattern="lines" title="Lines">
+              <svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="#fff" stroke="#ddd"/><path d="M0,5 H20 M0,10 H20 M0,15 H20" stroke="#ccc" stroke-width="0.5"/></svg>
+            </button>
+          </div>
+          <div class="bg-color-row">
+            <button class="bg-color-option active" data-color="#ffffff" style="background:#ffffff;"></button>
+            <button class="bg-color-option" data-color="#f5f5f7" style="background:#f5f5f7;"></button>
+            <button class="bg-color-option" data-color="#e8f4fd" style="background:#e8f4fd;"></button>
+            <button class="bg-color-option" data-color="#1d1d1f" style="background:#1d1d1f;"></button>
+          </div>
+        </div>
+      </div>
       <button class="clear-btn" id="clearBtn" data-i18n="whiteboard.actions.clearFrame">清空画布</button>
     </div>
 
@@ -2398,7 +2477,7 @@
     // Handle remote page update
     function handleRemotePageUpdate(data) {
       if (data.action === 'add') {
-        pages.push({ objects: [], history: [], historyIndex: -1 });
+        pages.push({ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1 });
         updatePageUI();
         refreshPageGridIfOpen();
       } else if (data.action === 'delete') {
@@ -2460,6 +2539,7 @@
           }
           return ratioObj;
         }),
+        background: page.background || { pattern: 'none', color: '#ffffff' },
         history: [],
         historyIndex: -1
       }));
@@ -2509,6 +2589,7 @@
         const loadedObjects = await loadState(JSON.stringify(localObjects));
         pages.push({
           objects: loadedObjects,
+          background: pageData.background || { pattern: 'none', color: '#ffffff' },
           history: [],
           historyIndex: -1
         });
@@ -2645,7 +2726,7 @@
 
     // Multi-page support
     const MAX_PAGES = 5;
-    let pages = [{ objects: [], history: [], historyIndex: -1 }];
+    let pages = [{ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1 }];
     let currentPageIndex = 0;
     let pageThumbnailFocused = false;
 
@@ -2739,6 +2820,8 @@
       updatePageUI();
       saveToLocalStorage();
       emitPageChange();
+      // Update background dropdown UI
+      if (typeof updateBgDropdownUI === 'function') updateBgDropdownUI();
     }
 
     function addNewPage() {
@@ -2748,7 +2831,7 @@
       saveCurrentPageState();
 
       // Create new page
-      const newPage = { objects: [], history: [], historyIndex: -1 };
+      const newPage = { objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1 };
       pages.push(newPage);
 
       // Switch to new page
@@ -5133,8 +5216,53 @@
       const zoomScale = canvasZoom / 100;
       // Reset transform and clear entire canvas to handle browser zoom
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#ffffff';
+
+      // Draw background color
+      const bg = pages[currentPageIndex]?.background || { pattern: 'none', color: '#ffffff' };
+      ctx.fillStyle = bg.color || '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background pattern
+      if (bg.pattern && bg.pattern !== 'none') {
+        ctx.save();
+        const patternColor = bg.color === '#1d1d1f' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
+        ctx.strokeStyle = patternColor;
+        ctx.fillStyle = patternColor;
+        const step = 25 * dpr;
+
+        if (bg.pattern === 'grid') {
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let x = 0; x <= canvas.width; x += step) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+          }
+          for (let y = 0; y <= canvas.height; y += step) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+          }
+          ctx.stroke();
+        } else if (bg.pattern === 'dots') {
+          const dotRadius = 1.5 * dpr;
+          for (let x = step; x < canvas.width; x += step) {
+            for (let y = step; y < canvas.height; y += step) {
+              ctx.beginPath();
+              ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        } else if (bg.pattern === 'lines') {
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let y = step; y < canvas.height; y += step) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       // Restore DPI and zoom scaling
       ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
@@ -5498,6 +5626,69 @@
       }
     }
 
+    // ===== Background Button =====
+    const bgBtn = document.getElementById('bgBtn');
+    const bgDropdown = document.getElementById('bgDropdown');
+
+    bgBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bgDropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#bgBtn') && !e.target.closest('#bgDropdown')) {
+        bgDropdown.classList.remove('open');
+      }
+    });
+
+    // Get current page background
+    function getPageBackground() {
+      return pages[currentPageIndex].background || { pattern: 'none', color: '#ffffff' };
+    }
+
+    // Set current page background
+    function setPageBackground(pattern, color) {
+      if (!pages[currentPageIndex].background) {
+        pages[currentPageIndex].background = { pattern: 'none', color: '#ffffff' };
+      }
+      if (pattern !== undefined) pages[currentPageIndex].background.pattern = pattern;
+      if (color !== undefined) pages[currentPageIndex].background.color = color;
+      redraw();
+      saveCurrentPageState();
+      saveToLocalStorage();
+      saveBoardToServer();
+      refreshPageGridIfOpen();
+    }
+
+    // Update background dropdown UI
+    function updateBgDropdownUI() {
+      const bg = getPageBackground();
+      bgDropdown.querySelectorAll('.bg-pattern-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.pattern === bg.pattern);
+      });
+      bgDropdown.querySelectorAll('.bg-color-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.color === bg.color);
+      });
+    }
+
+    // Pattern options
+    bgDropdown.querySelectorAll('.bg-pattern-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPageBackground(opt.dataset.pattern, undefined);
+        updateBgDropdownUI();
+      });
+    });
+
+    // Color options
+    bgDropdown.querySelectorAll('.bg-color-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPageBackground(undefined, opt.dataset.color);
+        updateBgDropdownUI();
+      });
+    });
+
     // Clear (supports undo)
     document.getElementById('clearBtn').addEventListener('click', () => {
       if (objects.length === 0) return;
@@ -5652,6 +5843,7 @@
           }
           return { ...obj };
         }),
+        background: page.background || { pattern: 'none', color: '#ffffff' },
         history: page.history,
         historyIndex: page.historyIndex
       }));
@@ -5687,6 +5879,7 @@
               const loadedObjects = await loadState(JSON.stringify(pageData.objects));
               pages.push({
                 objects: loadedObjects,
+                background: pageData.background || { pattern: 'none', color: '#ffffff' },
                 history: pageData.history || [],
                 historyIndex: pageData.historyIndex !== undefined ? pageData.historyIndex : -1
               });
@@ -5698,6 +5891,7 @@
             const loadedObjects = await loadState(JSON.stringify(data.objects));
             pages = [{
               objects: loadedObjects,
+              background: { pattern: 'none', color: '#ffffff' },
               history: [JSON.stringify(data.objects)],
               historyIndex: 0
             }];
