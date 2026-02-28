@@ -3493,6 +3493,13 @@
       objectMenuDropdown.classList.remove('open');
     }
 
+    // Update menu position on scroll
+    canvasWrapper.addEventListener('scroll', () => {
+      if (selectedObjects.length === 1 && objectMenuBtn.style.display !== 'none') {
+        showObjectMenu(selectedObjects[0]);
+      }
+    });
+
     objectMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       objectMenuDropdown.classList.toggle('open');
