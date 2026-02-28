@@ -5314,16 +5314,20 @@
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         if (selectedObjects.length > 0) {
-          // Delete selected objects
+          // Delete selected objects - splice first, then emit (so saveBoardToServer saves correct state)
+          const deletedObjects = [];
           selectedObjects.forEach(obj => {
-            emitObjectChange('delete', obj);
             const idx = objects.indexOf(obj);
-            if (idx > -1) objects.splice(idx, 1);
+            if (idx > -1) {
+              objects.splice(idx, 1);
+              deletedObjects.push(obj);
+            }
           });
           selectedObjects = [];
           hideObjectMenu();
           updateSelectedControls();
           saveState();
+          deletedObjects.forEach(obj => emitObjectChange('delete', obj));
           redraw();
         } else if (pageThumbnailFocused && pages.length > 1) {
           // Thumbnail focused - delete current page
