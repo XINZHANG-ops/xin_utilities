@@ -4339,7 +4339,12 @@
         if (!obj) return;
         const newPoint = { x: pos.x, y: pos.y };
         obj.points.push(newPoint);
-        drawBrushStroke(obj);
+        // Eraser needs full redraw to only affect brush layer; brush can use fast incremental draw
+        if (currentTool === 'eraser') {
+          redraw();
+        } else {
+          drawBrushStroke(obj);
+        }
         // Emit real-time drawing for collaboration (include brush properties)
         emitDrawing(obj.id, [newPoint], {
           color: obj.color,
@@ -5267,7 +5272,14 @@
       // Restore DPI and zoom scaling
       ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
-      // Layer 1: Brush strokes and eraser (use offscreen canvas for true erasing)
+      // Layer 1: Images (bottom layer)
+      for (const obj of objects) {
+        if (obj.type === 'image') {
+          drawImage(obj, selectedObjects.includes(obj));
+        }
+      }
+
+      // Layer 2: Brush strokes and eraser (use offscreen canvas for true erasing)
       const offCanvas = document.createElement('canvas');
       offCanvas.width = canvas.width;
       offCanvas.height = canvas.height;
@@ -5319,16 +5331,14 @@
       ctx.restore();
       ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
-      // Layer 2: Shapes and images
+      // Layer 3: Shapes (rect, circle, arrow)
       for (const obj of objects) {
-        if (obj.type === 'image') {
-          drawImage(obj, selectedObjects.includes(obj));
-        } else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
+        if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
           drawShape(obj, selectedObjects.includes(obj));
         }
       }
 
-      // Layer 3: Sticky notes and text boxes (always on top, not erasable)
+      // Layer 4: Sticky notes and text boxes (always on top)
       for (const obj of objects) {
         if (obj.type === 'sticky') {
           drawSticky(obj, selectedObjects.includes(obj));
