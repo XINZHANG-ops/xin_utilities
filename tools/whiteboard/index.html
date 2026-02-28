@@ -1966,6 +1966,12 @@
         handleRemotePageUpdate(data);
       });
 
+      // Background events
+      socket.on('wb_background_update', (data) => {
+        console.log('[WB] Background update:', data);
+        handleRemoteBackgroundChange(data);
+      });
+
       // Full sync
       socket.on('wb_synced', (data) => {
         console.log('[WB] Board synced:', data);
@@ -2269,6 +2275,30 @@
         from_index: fromIndex,
         to_index: toIndex
       });
+    }
+
+    // Emit background change
+    function emitBackgroundChange(pageIndex, background) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      socket.emit('wb_background', {
+        board_id: currentBoard.id,
+        sid: userId,
+        page_index: pageIndex,
+        background: background
+      });
+    }
+
+    // Handle remote background change
+    function handleRemoteBackgroundChange(data) {
+      const pageIndex = data.page_index;
+      if (pageIndex >= 0 && pageIndex < pages.length) {
+        pages[pageIndex].background = data.background || { pattern: 'none', color: '#ffffff' };
+        if (pageIndex === currentPageIndex) {
+          redraw();
+          if (typeof updateBgDropdownUI === 'function') updateBgDropdownUI();
+        }
+        refreshPageGridIfOpen();
+      }
     }
 
     // Handle remote object update (convert from ratio to local coordinates)
@@ -5708,6 +5738,8 @@
       saveToLocalStorage();
       saveBoardToServer();
       refreshPageGridIfOpen();
+      // Emit to other users
+      emitBackgroundChange(currentPageIndex, pages[currentPageIndex].background);
     }
 
     // Update background dropdown UI
