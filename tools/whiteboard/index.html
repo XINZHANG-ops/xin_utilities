@@ -1193,32 +1193,6 @@
     </div>
   </div>
 
-  <!-- Object Context Menu (floating, positioned via JS) -->
-  <div class="object-menu-btn" id="objectMenuBtn">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
-    </svg>
-    <div class="object-menu-dropdown" id="objectMenuDropdown">
-      <div class="object-menu-item" data-action="duplicate">
-        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        <span data-i18n="whiteboard.menu.duplicate">Duplicate</span>
-      </div>
-      <div class="object-menu-divider"></div>
-      <div class="object-menu-item" data-action="bringToFront">
-        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1" fill="currentColor"/><path d="M14 10V8a2 2 0 0 0-2-2h-2m-4 8h2a2 2 0 0 0 2-2v-2"/></svg>
-        <span data-i18n="whiteboard.menu.bringToFront">Bring to Front</span>
-      </div>
-      <div class="object-menu-item" data-action="sendToBack">
-        <svg viewBox="0 0 24 24"><rect x="14" y="14" width="8" height="8" rx="1"/><rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor"/><path d="M10 14v2a2 2 0 0 0 2 2h2m4-8h-2a2 2 0 0 0-2 2v2"/></svg>
-        <span data-i18n="whiteboard.menu.sendToBack">Send to Back</span>
-      </div>
-      <div class="object-menu-divider"></div>
-      <div class="object-menu-item" data-action="delete">
-        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        <span data-i18n="whiteboard.menu.delete">Delete</span>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== Top Bar (Jamboard style) ===== -->
   <div class="top-bar" id="topBar">
@@ -1534,6 +1508,32 @@
   <div class="canvas-wrapper" id="canvasWrapper">
     <div class="canvas-container" id="canvasContainer">
       <canvas id="canvas"></canvas>
+      <!-- Object Context Menu (inside container to scroll with canvas) -->
+      <div class="object-menu-btn" id="objectMenuBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+        </svg>
+        <div class="object-menu-dropdown" id="objectMenuDropdown">
+          <div class="object-menu-item" data-action="duplicate">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span data-i18n="whiteboard.menu.duplicate">Duplicate</span>
+          </div>
+          <div class="object-menu-divider"></div>
+          <div class="object-menu-item" data-action="bringToFront">
+            <svg viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1" fill="currentColor"/><path d="M14 10V8a2 2 0 0 0-2-2h-2m-4 8h2a2 2 0 0 0 2-2v-2"/></svg>
+            <span data-i18n="whiteboard.menu.bringToFront">Bring to Front</span>
+          </div>
+          <div class="object-menu-item" data-action="sendToBack">
+            <svg viewBox="0 0 24 24"><rect x="14" y="14" width="8" height="8" rx="1"/><rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor"/><path d="M10 14v2a2 2 0 0 0 2 2h2m4-8h-2a2 2 0 0 0-2 2v2"/></svg>
+            <span data-i18n="whiteboard.menu.sendToBack">Send to Back</span>
+          </div>
+          <div class="object-menu-divider"></div>
+          <div class="object-menu-item" data-action="delete">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span data-i18n="whiteboard.menu.delete">Delete</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3443,7 +3443,6 @@
     function showObjectMenu(obj) {
       if (!obj) return;
 
-      const rect = canvas.getBoundingClientRect();
       const scale = canvasZoom / 100;
       const rotation = obj.rotation || 0;
       let cornerX, cornerY, cx, cy;
@@ -3474,8 +3473,9 @@
         rotatedY = cy + dx * sin + dy * cos;
       }
 
-      const menuX = rect.left + rotatedX * scale - 14;
-      const menuY = rect.top + rotatedY * scale - 14;
+      // Position relative to canvas (menu is inside canvasContainer)
+      const menuX = rotatedX * scale - 14;
+      const menuY = rotatedY * scale - 14;
 
       objectMenuBtn.style.left = menuX + 'px';
       objectMenuBtn.style.top = menuY + 'px';
@@ -3492,13 +3492,6 @@
       objectMenuBtn.style.display = 'none';
       objectMenuDropdown.classList.remove('open');
     }
-
-    // Update menu position on scroll
-    canvasWrapper.addEventListener('scroll', () => {
-      if (selectedObjects.length === 1 && objectMenuBtn.style.display !== 'none') {
-        showObjectMenu(selectedObjects[0]);
-      }
-    });
 
     objectMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
