@@ -2760,7 +2760,8 @@
 
     // Clipboard for copy/paste
     let clipboard = null;
-    let clipboardType = null; // 'object' or 'page'
+    let clipboardType = null; // 'objects' or 'page'
+    let clipboardBackground = null;
 
     // Global undo stack for page operations
     let pageUndoStack = [];
@@ -5266,26 +5267,57 @@
       // Restore DPI and zoom scaling
       ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
-      // Layer 1: Brush strokes and eraser (can be erased)
+      // Layer 1: Brush strokes and eraser (use offscreen canvas for true erasing)
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = canvas.width;
+      offCanvas.height = canvas.height;
+      const offCtx = offCanvas.getContext('2d');
+      offCtx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
+
+      // Process brush and eraser in order (eraser only affects strokes drawn before it)
       for (const obj of objects) {
-        if (obj.type === 'brush' || obj.type === 'eraser') {
-          ctx.save();
-          ctx.globalAlpha = obj.opacity;
-          ctx.strokeStyle = obj.color;
-          ctx.lineWidth = obj.size;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.beginPath();
+        if (obj.type === 'brush') {
+          offCtx.save();
+          offCtx.globalCompositeOperation = 'source-over';
+          offCtx.globalAlpha = obj.opacity;
+          offCtx.strokeStyle = obj.color;
+          offCtx.lineWidth = obj.size;
+          offCtx.lineCap = 'round';
+          offCtx.lineJoin = 'round';
+          offCtx.beginPath();
           if (obj.points.length > 0) {
-            ctx.moveTo(obj.points[0].x, obj.points[0].y);
+            offCtx.moveTo(obj.points[0].x, obj.points[0].y);
             for (let i = 1; i < obj.points.length; i++) {
-              ctx.lineTo(obj.points[i].x, obj.points[i].y);
+              offCtx.lineTo(obj.points[i].x, obj.points[i].y);
             }
           }
-          ctx.stroke();
-          ctx.restore();
+          offCtx.stroke();
+          offCtx.restore();
+        } else if (obj.type === 'eraser') {
+          offCtx.save();
+          offCtx.globalCompositeOperation = 'destination-out';
+          offCtx.strokeStyle = 'rgba(0,0,0,1)';
+          offCtx.lineWidth = obj.size;
+          offCtx.lineCap = 'round';
+          offCtx.lineJoin = 'round';
+          offCtx.beginPath();
+          if (obj.points.length > 0) {
+            offCtx.moveTo(obj.points[0].x, obj.points[0].y);
+            for (let i = 1; i < obj.points.length; i++) {
+              offCtx.lineTo(obj.points[i].x, obj.points[i].y);
+            }
+          }
+          offCtx.stroke();
+          offCtx.restore();
         }
       }
+
+      // Composite brush layer onto main canvas
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(offCanvas, 0, 0);
+      ctx.restore();
+      ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
 
       // Layer 2: Shapes and images
       for (const obj of objects) {
@@ -5523,6 +5555,7 @@
         });
         clipboard = pageCopy;
         clipboardType = 'page';
+        clipboardBackground = pages[currentPageIndex].background ? { ...pages[currentPageIndex].background } : { pattern: 'none', color: '#ffffff' };
       }
     }
 
@@ -5612,7 +5645,12 @@
             newObjects.push(obj);
           }
 
-          const newPage = { objects: newObjects, history: [], historyIndex: -1 };
+          const newPage = {
+            objects: newObjects,
+            background: clipboardBackground ? { ...clipboardBackground } : { pattern: 'none', color: '#ffffff' },
+            history: [],
+            historyIndex: -1
+          };
           pages.push(newPage);
           currentPageIndex = pages.length - 1;
           loadPageState(currentPageIndex);
@@ -5622,6 +5660,7 @@
           saveState();
           redraw();
           updatePageUI();
+          if (typeof updateBgDropdownUI === 'function') updateBgDropdownUI();
         }
       }
     }
