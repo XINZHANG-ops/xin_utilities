@@ -1220,11 +1220,13 @@
             shape.height = Math.max(1, snap(orig.height + dy));
           }
         } else if (shape.type === 'circle') {
-          if (h === 'se' || h === 'ne' || h === 'sw' || h === 'nw') {
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const sign = (dx + dy) > 0 ? 1 : -1;
-            shape.r = Math.max(1, snap(orig.r + sign * dist / 1.5));
-          }
+          // Each corner has different "outward" direction
+          let delta = 0;
+          if (h === 'se') delta = (dx + dy) / 2;      // right+down = bigger
+          else if (h === 'nw') delta = (-dx - dy) / 2; // left+up = bigger
+          else if (h === 'ne') delta = (dx - dy) / 2;  // right+up = bigger
+          else if (h === 'sw') delta = (-dx + dy) / 2; // left+down = bigger
+          shape.r = Math.max(0.5, snap(orig.r + delta));
         } else if (shape.type === 'line') {
           if (h === 'p1') {
             shape.x1 = snap(orig.x1 + dx);
@@ -1258,6 +1260,12 @@
             } else if (h === 'nw') {
               scaleX = (bounds.w - dx) / bounds.w;
               scaleY = (bounds.h - dy) / bounds.h;
+            } else if (h === 'ne') {
+              scaleX = (bounds.w + dx) / bounds.w;
+              scaleY = (bounds.h - dy) / bounds.h;
+            } else if (h === 'sw') {
+              scaleX = (bounds.w - dx) / bounds.w;
+              scaleY = (bounds.h + dy) / bounds.h;
             }
             scaleX = Math.max(0.1, scaleX);
             scaleY = Math.max(0.1, scaleY);
@@ -1281,6 +1289,12 @@
           } else if (h === 'nw') {
             scaleX = (bounds.w - dx) / bounds.w;
             scaleY = (bounds.h - dy) / bounds.h;
+          } else if (h === 'ne') {
+            scaleX = (bounds.w + dx) / bounds.w;
+            scaleY = (bounds.h - dy) / bounds.h;
+          } else if (h === 'sw') {
+            scaleX = (bounds.w - dx) / bounds.w;
+            scaleY = (bounds.h + dy) / bounds.h;
           }
           scaleX = Math.max(0.1, scaleX);
           scaleY = Math.max(0.1, scaleY);
@@ -1428,9 +1442,15 @@
             break;
           case 'A':
             for (let i = 0; i < args.length; i += 7) {
-              curX = args[i+5]; curY = args[i+6];
-              minX = Math.min(minX, curX); maxX = Math.max(maxX, curX);
-              minY = Math.min(minY, curY); maxY = Math.max(maxY, curY);
+              const rx = args[i], ry = args[i + 1];
+              const endX = args[i + 5], endY = args[i + 6];
+              // Include start point, end point, and arc extent
+              minX = Math.min(minX, curX, endX);
+              maxX = Math.max(maxX, curX, endX);
+              // Arc can extend by radius in y direction
+              minY = Math.min(minY, curY - ry, endY - ry);
+              maxY = Math.max(maxY, curY + ry, endY + ry);
+              curX = endX; curY = endY;
             }
             break;
         }
