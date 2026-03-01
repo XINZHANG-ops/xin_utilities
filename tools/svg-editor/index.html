@@ -194,7 +194,8 @@
     }
 
     .handle-move { cursor: move; }
-    .handle-nw { cursor: nw-resize; }
+    .handle-nw { cursor: grab; }
+    .handle-rotate { fill: #30d158; cursor: grab; }
     .handle-ne { cursor: ne-resize; }
     .handle-sw { cursor: sw-resize; }
     .handle-se { cursor: se-resize; }
@@ -374,13 +375,12 @@
     </div>
 
     <div class="help-text">
-      <strong>Shortcuts:</strong><br>
-      框选 - 拖拽空白区域多选<br>
-      Ctrl+Click - 添加/取消选中<br>
-      Ctrl+A - 全选<br>
-      Delete - 删除选中<br>
-      Ctrl+D - 复制<br>
-      Arrow - 移动0.1 / Shift+Arrow 1
+      <strong>操作:</strong><br>
+      🟢绿点 - 旋转 (Shift吸附15°)<br>
+      🔴红点 - 缩放<br>
+      框选 - 拖拽空白多选<br>
+      Ctrl+A 全选 / Delete 删除<br>
+      Arrow 移动0.1 / Shift 1
     </div>
   </div>
 
@@ -796,9 +796,21 @@
         const bounds = getShapeBounds(shape);
         if (bounds) {
           const { x, y, w, h } = bounds;
-          // Selection rectangle
-          handles += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
-            fill="none" stroke="#0066ff" stroke-width="0.1" stroke-dasharray="0.3"/>`;
+          const rotation = parseRotation(shape.transform);
+
+          if (rotation) {
+            // Rotated selection box
+            const nw = rotatePoint(x, y, rotation.cx, rotation.cy, rotation.angle);
+            const ne = rotatePoint(x + w, y, rotation.cx, rotation.cy, rotation.angle);
+            const sw = rotatePoint(x, y + h, rotation.cx, rotation.cy, rotation.angle);
+            const se = rotatePoint(x + w, y + h, rotation.cx, rotation.cy, rotation.angle);
+            handles += `<polygon points="${nw.x},${nw.y} ${ne.x},${ne.y} ${se.x},${se.y} ${sw.x},${sw.y}"
+              fill="none" stroke="#0066ff" stroke-width="0.1" stroke-dasharray="0.3"/>`;
+          } else {
+            // Normal selection rectangle
+            handles += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
+              fill="none" stroke="#0066ff" stroke-width="0.1" stroke-dasharray="0.3"/>`;
+          }
         }
       });
 
@@ -809,11 +821,27 @@
           const bounds = getShapeBounds(shape);
           if (bounds) {
             const { x, y, w, h } = bounds;
-            // Corner handles (small circles)
-            handles += `<circle class="handle handle-nw" data-handle="nw" cx="${x}" cy="${y}" r="${hs}"/>`;
-            handles += `<circle class="handle handle-ne" data-handle="ne" cx="${x + w}" cy="${y}" r="${hs}"/>`;
-            handles += `<circle class="handle handle-sw" data-handle="sw" cx="${x}" cy="${y + h}" r="${hs}"/>`;
-            handles += `<circle class="handle handle-se" data-handle="se" cx="${x + w}" cy="${y + h}" r="${hs}"/>`;
+            const rotation = parseRotation(shape.transform);
+
+            // Helper to get rotated position
+            const getPos = (px, py) => {
+              if (rotation) {
+                const rotated = rotatePoint(px, py, rotation.cx, rotation.cy, rotation.angle);
+                return { x: rotated.x, y: rotated.y };
+              }
+              return { x: px, y: py };
+            };
+
+            const nw = getPos(x, y);
+            const ne = getPos(x + w, y);
+            const sw = getPos(x, y + h);
+            const se = getPos(x + w, y + h);
+
+            // Corner handles (small circles) - NW is rotate handle (green)
+            handles += `<circle class="handle handle-rotate" data-handle="rotate" cx="${nw.x}" cy="${nw.y}" r="${hs * 1.2}" title="Rotate"/>`;
+            handles += `<circle class="handle handle-ne" data-handle="ne" cx="${ne.x}" cy="${ne.y}" r="${hs}"/>`;
+            handles += `<circle class="handle handle-sw" data-handle="sw" cx="${sw.x}" cy="${sw.y}" r="${hs}"/>`;
+            handles += `<circle class="handle handle-se" data-handle="se" cx="${se.x}" cy="${se.y}" r="${hs}"/>`;
           }
 
           // Line endpoints
@@ -945,7 +973,13 @@
               </div>
             </div>
             <div class="input-group">
-              <label>Corner Radius (rx)</label>
+              <label>Corner Radius 圆角</label>
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <button class="btn" style="padding:4px 8px;font-size:11px;${(shape.rx || 0) === 0 ? 'background:#0066ff;' : ''}" onclick="updateProp('rx',0)">0</button>
+                <button class="btn" style="padding:4px 8px;font-size:11px;${shape.rx === 2 ? 'background:#0066ff;' : ''}" onclick="updateProp('rx',2)">2</button>
+                <button class="btn" style="padding:4px 8px;font-size:11px;${shape.rx === 4 ? 'background:#0066ff;' : ''}" onclick="updateProp('rx',4)">4</button>
+                <button class="btn" style="padding:4px 8px;font-size:11px;${shape.rx === 8 ? 'background:#0066ff;' : ''}" onclick="updateProp('rx',8)">8</button>
+              </div>
               <input type="number" step="0.5" value="${shape.rx || 0}" onchange="updateProp('rx', parseFloat(this.value))">
             </div>
           `;
@@ -1044,7 +1078,13 @@
           <input type="number" step="0.1" value="${shape.strokeWidth || 1}" onchange="updateProp('strokeWidth', parseFloat(this.value))">
         </div>
         <div class="input-group">
-          <label>Transform</label>
+          <label>Rotation 旋转</label>
+          <div style="display:flex;gap:4px;margin-bottom:4px;">
+            <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="rotateShape(0)">0°</button>
+            <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="rotateShape(45)">45°</button>
+            <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="rotateShape(90)">90°</button>
+            <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="rotateShape(180)">180°</button>
+          </div>
           <input type="text" placeholder="e.g. rotate(45 12 12)" value="${shape.transform || ''}" onchange="updateProp('transform', this.value)">
         </div>
       `;
@@ -1058,6 +1098,22 @@
         shape[prop] = value;
         render();
       }
+    }
+
+    function rotateShape(angle) {
+      const shape = getSelectedShape();
+      if (!shape) return;
+
+      const bounds = getShapeBounds(shape);
+      const cx = snap(bounds.x + bounds.w / 2);
+      const cy = snap(bounds.y + bounds.h / 2);
+
+      if (angle === 0) {
+        shape.transform = '';
+      } else {
+        shape.transform = `rotate(${angle} ${cx} ${cy})`;
+      }
+      render();
     }
 
     function bindShapeEvents() {
@@ -1150,6 +1206,7 @@
         shape,
         startX: startPoint.x,
         startY: startPoint.y,
+        shiftKey: e.shiftKey,
         origProps: JSON.parse(JSON.stringify(shape))
       };
 
@@ -1204,51 +1261,94 @@
             shape.points = newPts.join(' ');
             break;
         }
+        // Also update rotation center in transform
+        if (orig.transform) {
+          const rotation = parseRotation(orig.transform);
+          if (rotation) {
+            shape.transform = `rotate(${rotation.angle} ${snap(rotation.cx + dx)} ${snap(rotation.cy + dy)})`;
+          }
+        }
       } else if (dragState.type === 'resize') {
         const h = dragState.handle;
 
+        // Handle rotation
+        if (h === 'rotate') {
+          const bounds = getShapeBounds(orig);
+          const cx = bounds.x + bounds.w / 2;
+          const cy = bounds.y + bounds.h / 2;
+
+          // Calculate angle from center to current mouse position
+          const startAngle = Math.atan2(dragState.startY - cy, dragState.startX - cx);
+          const currentAngle = Math.atan2(point.y - cy, point.x - cx);
+          let deltaAngle = (currentAngle - startAngle) * (180 / Math.PI);
+
+          // Get original rotation
+          let origRotation = 0;
+          if (orig.transform) {
+            const match = orig.transform.match(/rotate\(([-\d.]+)/);
+            if (match) origRotation = parseFloat(match[1]);
+          }
+
+          // Snap to 15 degree increments when holding Shift
+          let newRotation = origRotation + deltaAngle;
+          if (dragState.shiftKey) {
+            newRotation = Math.round(newRotation / 15) * 15;
+          }
+          newRotation = Math.round(newRotation * 10) / 10; // Round to 0.1
+
+          shape.transform = `rotate(${newRotation} ${snap(cx)} ${snap(cy)})`;
+          render();
+          return;
+        }
+
+        // Transform dx/dy to local coordinates if shape is rotated
+        let localDx = dx, localDy = dy;
+        const rotation = parseRotation(orig.transform);
+        if (rotation) {
+          // Apply inverse rotation to the delta
+          const rad = -rotation.angle * Math.PI / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          localDx = dx * cos - dy * sin;
+          localDy = dx * sin + dy * cos;
+        }
+
         if (shape.type === 'rect') {
           if (h === 'se') {
-            shape.width = Math.max(1, snap(orig.width + dx));
-            shape.height = Math.max(1, snap(orig.height + dy));
-          } else if (h === 'nw') {
-            shape.x = snap(orig.x + dx);
-            shape.y = snap(orig.y + dy);
-            shape.width = Math.max(1, snap(orig.width - dx));
-            shape.height = Math.max(1, snap(orig.height - dy));
+            shape.width = Math.max(1, snap(orig.width + localDx));
+            shape.height = Math.max(1, snap(orig.height + localDy));
           } else if (h === 'ne') {
-            shape.y = snap(orig.y + dy);
-            shape.width = Math.max(1, snap(orig.width + dx));
-            shape.height = Math.max(1, snap(orig.height - dy));
+            shape.y = snap(orig.y + localDy);
+            shape.width = Math.max(1, snap(orig.width + localDx));
+            shape.height = Math.max(1, snap(orig.height - localDy));
           } else if (h === 'sw') {
-            shape.x = snap(orig.x + dx);
-            shape.width = Math.max(1, snap(orig.width - dx));
-            shape.height = Math.max(1, snap(orig.height + dy));
+            shape.x = snap(orig.x + localDx);
+            shape.width = Math.max(1, snap(orig.width - localDx));
+            shape.height = Math.max(1, snap(orig.height + localDy));
           }
         } else if (shape.type === 'ellipse') {
           // Ellipse: resize rx and ry independently
           let deltaX = 0, deltaY = 0;
-          if (h === 'se') { deltaX = dx; deltaY = dy; }
-          else if (h === 'nw') { deltaX = -dx; deltaY = -dy; }
-          else if (h === 'ne') { deltaX = dx; deltaY = -dy; }
-          else if (h === 'sw') { deltaX = -dx; deltaY = dy; }
+          if (h === 'se') { deltaX = localDx; deltaY = localDy; }
+          else if (h === 'ne') { deltaX = localDx; deltaY = -localDy; }
+          else if (h === 'sw') { deltaX = -localDx; deltaY = localDy; }
           shape.rx = Math.max(0.5, snap(orig.rx + deltaX / 2));
           shape.ry = Math.max(0.5, snap(orig.ry + deltaY / 2));
         } else if (shape.type === 'line') {
           if (h === 'p1') {
-            shape.x1 = snap(orig.x1 + dx);
-            shape.y1 = snap(orig.y1 + dy);
+            shape.x1 = snap(orig.x1 + localDx);
+            shape.y1 = snap(orig.y1 + localDy);
           } else if (h === 'p2') {
-            shape.x2 = snap(orig.x2 + dx);
-            shape.y2 = snap(orig.y2 + dy);
+            shape.x2 = snap(orig.x2 + localDx);
+            shape.y2 = snap(orig.y2 + localDy);
           }
         } else if (shape.type === 'polygon') {
           if (h === 'vertex' && dragState.vertexIndex !== null) {
             // Drag individual vertex
             const pts = orig.points.split(/[\s,]+/).map(Number);
             const vi = dragState.vertexIndex;
-            pts[vi * 2] = snap(pts[vi * 2] + dx);
-            pts[vi * 2 + 1] = snap(pts[vi * 2 + 1] + dy);
+            pts[vi * 2] = snap(pts[vi * 2] + localDx);
+            pts[vi * 2 + 1] = snap(pts[vi * 2 + 1] + localDy);
             const newPts = [];
             for (let i = 0; i < pts.length; i += 2) {
               newPts.push(pts[i] + ',' + pts[i + 1]);
@@ -1262,17 +1362,14 @@
             const cy = bounds.y + bounds.h / 2;
             let scaleX = 1, scaleY = 1;
             if (h === 'se') {
-              scaleX = (bounds.w + dx) / bounds.w;
-              scaleY = (bounds.h + dy) / bounds.h;
-            } else if (h === 'nw') {
-              scaleX = (bounds.w - dx) / bounds.w;
-              scaleY = (bounds.h - dy) / bounds.h;
+              scaleX = (bounds.w + localDx) / bounds.w;
+              scaleY = (bounds.h + localDy) / bounds.h;
             } else if (h === 'ne') {
-              scaleX = (bounds.w + dx) / bounds.w;
-              scaleY = (bounds.h - dy) / bounds.h;
+              scaleX = (bounds.w + localDx) / bounds.w;
+              scaleY = (bounds.h - localDy) / bounds.h;
             } else if (h === 'sw') {
-              scaleX = (bounds.w - dx) / bounds.w;
-              scaleY = (bounds.h + dy) / bounds.h;
+              scaleX = (bounds.w - localDx) / bounds.w;
+              scaleY = (bounds.h + localDy) / bounds.h;
             }
             scaleX = Math.max(0.1, scaleX);
             scaleY = Math.max(0.1, scaleY);
@@ -1291,17 +1388,14 @@
           const cy = bounds.y + bounds.h / 2;
           let scaleX = 1, scaleY = 1;
           if (h === 'se') {
-            scaleX = (bounds.w + dx) / bounds.w;
-            scaleY = (bounds.h + dy) / bounds.h;
-          } else if (h === 'nw') {
-            scaleX = (bounds.w - dx) / bounds.w;
-            scaleY = (bounds.h - dy) / bounds.h;
+            scaleX = (bounds.w + localDx) / bounds.w;
+            scaleY = (bounds.h + localDy) / bounds.h;
           } else if (h === 'ne') {
-            scaleX = (bounds.w + dx) / bounds.w;
-            scaleY = (bounds.h - dy) / bounds.h;
+            scaleX = (bounds.w + localDx) / bounds.w;
+            scaleY = (bounds.h - localDy) / bounds.h;
           } else if (h === 'sw') {
-            scaleX = (bounds.w - dx) / bounds.w;
-            scaleY = (bounds.h + dy) / bounds.h;
+            scaleX = (bounds.w - localDx) / bounds.w;
+            scaleY = (bounds.h + localDy) / bounds.h;
           }
           scaleX = Math.max(0.1, scaleX);
           scaleY = Math.max(0.1, scaleY);
@@ -1320,6 +1414,29 @@
 
     function snap(value) {
       return Math.round(value * 10) / 10; // Snap to 0.1
+    }
+
+    // Parse rotation from transform string
+    function parseRotation(transform) {
+      if (!transform) return null;
+      const match = transform.match(/rotate\(([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\)/);
+      if (match) {
+        return { angle: parseFloat(match[1]), cx: parseFloat(match[2]), cy: parseFloat(match[3]) };
+      }
+      return null;
+    }
+
+    // Rotate a point around a center
+    function rotatePoint(px, py, cx, cy, angleDeg) {
+      const rad = angleDeg * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const dx = px - cx;
+      const dy = py - cy;
+      return {
+        x: cx + dx * cos - dy * sin,
+        y: cy + dx * sin + dy * cos
+      };
     }
 
     // Scale path coordinates around a center point
@@ -1569,6 +1686,14 @@
           shape.d = shiftPathCoords(orig.d, dx, dy);
           break;
       }
+
+      // Also update rotation center in transform if exists
+      if (orig.transform) {
+        const rotation = parseRotation(orig.transform);
+        if (rotation) {
+          shape.transform = `rotate(${rotation.angle} ${snap(rotation.cx + dx)} ${snap(rotation.cy + dy)})`;
+        }
+      }
     }
 
     // Marquee selection on canvas background
@@ -1728,6 +1853,14 @@
             case 'path':
               shape.d = shiftPathCoords(shape.d, dx, dy);
               break;
+          }
+
+          // Also update rotation center in transform
+          if (shape.transform) {
+            const rotation = parseRotation(shape.transform);
+            if (rotation) {
+              shape.transform = `rotate(${rotation.angle} ${snap(rotation.cx + dx)} ${snap(rotation.cy + dy)})`;
+            }
           }
         });
         render();
