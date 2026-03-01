@@ -2655,15 +2655,26 @@
       shapes = [];
       selectedIds = [];
 
+      // Get default styles from root SVG element (for inheritance)
+      const svgFill = svg.getAttribute('fill');
+      const svgStroke = svg.getAttribute('stroke');
+      const svgStrokeWidth = svg.getAttribute('stroke-width');
+
       // Parse each shape element
       svg.querySelectorAll('rect, circle, line, path, polygon, ellipse').forEach(el => {
         const tag = el.tagName.toLowerCase();
+
+        // Get element's own attributes, or inherit from SVG root
+        const elFill = el.getAttribute('fill');
+        const elStroke = el.getAttribute('stroke');
+        const elStrokeWidth = el.getAttribute('stroke-width');
+
         const shape = {
           id: generateId(),
           type: tag,
-          fill: el.getAttribute('fill') || 'none',
-          stroke: el.getAttribute('stroke') || '',
-          strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 0,
+          fill: elFill || svgFill || 'none',
+          stroke: elStroke || svgStroke || '',
+          strokeWidth: parseFloat(elStrokeWidth || svgStrokeWidth) || 0,
           strokeLinecap: el.getAttribute('stroke-linecap') || '',
           strokeLinejoin: el.getAttribute('stroke-linejoin') || '',
           transform: el.getAttribute('transform') || ''
