@@ -352,9 +352,19 @@ function setupToolButtons() {
   document.querySelectorAll('.tool-panel .color-btn[data-color]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      setColor(btn.dataset.color, true);
-      // Update active state in same panel
       const panel = btn.closest('.tool-panel');
+      const color = btn.dataset.color;
+
+      // Different panels set different color variables
+      if (panel.id === 'shapePanel') {
+        shapeStrokeColor = color;
+        strokeColor = color;
+      } else if (panel.id === 'brushPanel') {
+        currentColor = color;
+        if (colorPicker) colorPicker.value = color;
+      }
+
+      // Update active state in same panel
       panel.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });

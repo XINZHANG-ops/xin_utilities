@@ -155,11 +155,11 @@ let currentShape = 'rect';
 let currentBackground = { pattern: 'none', color: '#ffffff' };
 
 // ========== Shape Icons ==========
-// Inner SVG elements only - the parent SVG element is already in HTML
+// Inner SVG elements only - the parent SVG element is already in HTML (viewBox 0 0 24 24)
 const shapeIcons = {
   rect: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
   circle: '<circle cx="12" cy="12" r="9"/>',
-  arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'
+  arrow: '<path d="M 3 5 H 12 V 3 L 21 12 L 12 21 V 19 H 3 Z"/>'
 };
 
 // ========== Text Editing State ==========
