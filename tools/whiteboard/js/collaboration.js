@@ -493,7 +493,11 @@ function emitClear() {
 
 // Emit page operation
 function emitPageOperation(action, pageIndex) {
-  if (!socket || !socket.connected || !currentBoard) return;
+  if (!socket || !socket.connected || !currentBoard) {
+    console.log('[WB] emitPageOperation skipped:', { socket: !!socket, connected: socket?.connected, currentBoard: !!currentBoard });
+    return;
+  }
+  console.log('[WB] Emitting wb_page:', { action, page_index: pageIndex });
   saveBoardToServer();
   socket.emit('wb_page', {
     board_id: currentBoard.id,
@@ -505,7 +509,11 @@ function emitPageOperation(action, pageIndex) {
 
 // Emit page reorder
 function emitPageReorder(fromIndex, toIndex) {
-  if (!socket || !socket.connected || !currentBoard) return;
+  if (!socket || !socket.connected || !currentBoard) {
+    console.log('[WB] emitPageReorder skipped:', { socket: !!socket, connected: socket?.connected, currentBoard: !!currentBoard });
+    return;
+  }
+  console.log('[WB] Emitting wb_page reorder:', { from_index: fromIndex, to_index: toIndex });
   saveBoardToServer();
   socket.emit('wb_page', {
     board_id: currentBoard.id,
