@@ -5644,7 +5644,23 @@
         }
       }
 
-      // Layer 2: Brush strokes and eraser (use offscreen canvas for true erasing)
+      // Layer 2: Shapes (rect, circle, arrow)
+      for (const obj of objects) {
+        if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
+          drawShape(obj, selectedObjects.includes(obj));
+        }
+      }
+
+      // Layer 3: Sticky notes and text boxes
+      for (const obj of objects) {
+        if (obj.type === 'sticky') {
+          drawSticky(obj, selectedObjects.includes(obj));
+        } else if (obj.type === 'textbox') {
+          drawTextBox(obj, selectedObjects.includes(obj));
+        }
+      }
+
+      // Layer 4: Brush strokes and eraser (on top, use offscreen canvas for true erasing)
       const offCanvas = document.createElement('canvas');
       offCanvas.width = canvas.width;
       offCanvas.height = canvas.height;
@@ -5695,22 +5711,6 @@
       ctx.drawImage(offCanvas, 0, 0);
       ctx.restore();
       ctx.setTransform(dpr * zoomScale, 0, 0, dpr * zoomScale, 0, 0);
-
-      // Layer 3: Shapes (rect, circle, arrow)
-      for (const obj of objects) {
-        if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'arrow') {
-          drawShape(obj, selectedObjects.includes(obj));
-        }
-      }
-
-      // Layer 4: Sticky notes and text boxes (always on top)
-      for (const obj of objects) {
-        if (obj.type === 'sticky') {
-          drawSticky(obj, selectedObjects.includes(obj));
-        } else if (obj.type === 'textbox') {
-          drawTextBox(obj, selectedObjects.includes(obj));
-        }
-      }
 
       // Layer 5: Laser pointer strokes (temporary, always on top)
       drawLaserStrokes();
@@ -5851,12 +5851,15 @@
     }
 
     function undo() {
+      // Clear selection and hide menu immediately
+      selectedObjects = [];
+      updateSelectedControls();
+      hideObjectMenu();
+
       if (historyIndex > 0) {
         historyIndex--;
         loadState(history[historyIndex]).then(state => {
           objects = state;
-          selectedObjects = [];
-          updateSelectedControls();
           saveCurrentPageState();
           redraw();
           updatePageUI();
@@ -5866,9 +5869,7 @@
         });
       } else if (historyIndex === 0) {
         objects = [];
-        selectedObjects = [];
         historyIndex = -1;
-        updateSelectedControls();
         saveCurrentPageState();
         redraw();
         updatePageUI();
@@ -5882,12 +5883,15 @@
     }
 
     function redo() {
+      // Clear selection and hide menu immediately
+      selectedObjects = [];
+      updateSelectedControls();
+      hideObjectMenu();
+
       if (historyIndex < history.length - 1) {
         historyIndex++;
         loadState(history[historyIndex]).then(state => {
           objects = state;
-          selectedObjects = [];
-          updateSelectedControls();
           saveCurrentPageState();
           redraw();
           updatePageUI();
