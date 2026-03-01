@@ -1530,6 +1530,17 @@
         <path d="M12 4v16"/>
       </svg>
     </button>
+
+    <!-- Laser Pointer -->
+    <button class="tool-btn" id="laserTool" data-tool="laser" data-i18n-title="whiteboard.tools.laser" title="激光笔">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 17l-5.5 5.5"/>
+        <path d="M14.5 4L12 6.5"/>
+        <path d="M5 15l7-7 2 2-7 7-2-2z"/>
+        <circle cx="17" cy="7" r="2" fill="currentColor"/>
+        <path d="M17 3v1M21 7h-1M17 11v-1M13 7h1" stroke-width="1.5"/>
+      </svg>
+    </button>
   </div>
 
   <!-- ===== Tool Property Panels ===== -->
@@ -1972,6 +1983,11 @@
         handleRemoteBackgroundChange(data);
       });
 
+      // Laser pointer events (temporary, not saved)
+      socket.on('wb_laser_update', (data) => {
+        handleRemoteLaser(data);
+      });
+
       // Full sync
       socket.on('wb_synced', (data) => {
         console.log('[WB] Board synced:', data);
@@ -2286,6 +2302,26 @@
         page_index: pageIndex,
         background: background
       });
+    }
+
+    // Emit laser pointer stroke
+    function emitLaser(strokeId, point) {
+      if (!socket || !socket.connected || !currentBoard) return;
+      socket.emit('wb_laser', {
+        board_id: currentBoard.id,
+        sid: userId,
+        stroke_id: strokeId,
+        point: { x: point.x / REF_WIDTH, y: point.y / REF_HEIGHT },
+        page_index: currentPageIndex
+      });
+    }
+
+    // Handle remote laser pointer
+    function handleRemoteLaser(data) {
+      if (data.page_index !== currentPageIndex) return;
+      const x = data.point.x * REF_WIDTH;
+      const y = data.point.y * REF_HEIGHT;
+      addLaserPoint(data.stroke_id, x, y, true);
     }
 
     // Handle remote background change
@@ -2776,6 +2812,12 @@
     let isSelectingBox = false;
     let selectBoxStart = null;
     let selectBoxEnd = null;
+
+    // Laser pointer state (temporary strokes that fade out)
+    let laserStrokes = []; // Array of { id, points: [{x, y, time}], userId }
+    let laserAnimationId = null;
+    const LASER_FADE_DURATION = 2000; // ms for full fade
+    const LASER_STROKE_SIZE = 3;
 
     // Generate unique object ID (includes userId to prevent collisions across users)
     function generateObjectId() {
@@ -4194,6 +4236,13 @@
       isDrawing = true;
       currentDrawingId = generateObjectId();
 
+      if (currentTool === 'laser') {
+        // Start a new laser stroke (temporary, not saved to objects)
+        addLaserPoint(currentDrawingId, startX, startY);
+        emitLaser(currentDrawingId, { x: startX, y: startY });
+        return;
+      }
+
       if (currentTool === 'brush' || currentTool === 'eraser') {
         objects.push({
           id: currentDrawingId,
@@ -4364,6 +4413,13 @@
         return;
       }
 
+      if (currentTool === 'laser') {
+        // Add point to laser stroke (temporary, not saved)
+        addLaserPoint(currentDrawingId, pos.x, pos.y);
+        emitLaser(currentDrawingId, { x: pos.x, y: pos.y });
+        return;
+      }
+
       if (currentTool === 'brush' || currentTool === 'eraser') {
         // Find the object by currentDrawingId (not last in array - remote objects may have been added)
         const obj = objects.find(o => o.id === currentDrawingId);
@@ -4433,6 +4489,12 @@
       if (!isDrawing) return;
       isDrawing = false;
       shapePreview = null; // Clear shape preview
+
+      // Laser strokes are temporary - no save needed
+      if (currentTool === 'laser') {
+        currentDrawingId = null;
+        return;
+      }
 
       const pos = getMousePos(e);
 
@@ -5377,6 +5439,99 @@
           drawTextBox(obj, selectedObjects.includes(obj));
         }
       }
+
+      // Layer 5: Laser pointer strokes (temporary, always on top)
+      drawLaserStrokes();
+    }
+
+    // Draw laser strokes with fade effect (smooth curves with gradient tail)
+    function drawLaserStrokes() {
+      const now = Date.now();
+      const bg = pages[currentPageIndex]?.background || { pattern: 'none', color: '#ffffff' };
+      const laserColor = bg.color === '#1d1d1f' ? '#ffffff' : '#1d1d1f';
+
+      for (const stroke of laserStrokes) {
+        const points = stroke.points;
+        if (points.length < 2) continue;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = laserColor;
+
+        // Draw smooth curve using catmull-rom style interpolation with per-segment opacity
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i];
+          const p2 = points[i + 1];
+
+          // Use midpoint time for smoother fade transition
+          const midTime = (p1.time + p2.time) / 2;
+          const age = now - midTime;
+
+          if (age >= LASER_FADE_DURATION) continue;
+
+          const alpha = 1 - (age / LASER_FADE_DURATION);
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.lineWidth = LASER_STROKE_SIZE + (1 - alpha) * 1; // Slightly thinner as it fades
+
+          ctx.beginPath();
+
+          // Get control points for smooth curve
+          const p0 = i > 0 ? points[i - 1] : p1;
+          const p3 = i < points.length - 2 ? points[i + 2] : p2;
+
+          // Calculate bezier control points from catmull-rom
+          const cp1x = p1.x + (p2.x - p0.x) / 6;
+          const cp1y = p1.y + (p2.y - p0.y) / 6;
+          const cp2x = p2.x - (p3.x - p1.x) / 6;
+          const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+          ctx.moveTo(p1.x, p1.y);
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // Start laser animation loop
+    function startLaserAnimation() {
+      if (laserAnimationId) return;
+
+      function animate() {
+        const now = Date.now();
+
+        // Clean up old points from each stroke
+        for (const stroke of laserStrokes) {
+          stroke.points = stroke.points.filter(p => now - p.time < LASER_FADE_DURATION);
+        }
+
+        // Remove empty strokes
+        laserStrokes = laserStrokes.filter(s => s.points.length > 0);
+
+        // If no strokes left, stop animation
+        if (laserStrokes.length === 0) {
+          laserAnimationId = null;
+          return;
+        }
+
+        redraw();
+        laserAnimationId = requestAnimationFrame(animate);
+      }
+
+      laserAnimationId = requestAnimationFrame(animate);
+    }
+
+    // Add laser point to current stroke
+    function addLaserPoint(strokeId, x, y, isRemote = false) {
+      let stroke = laserStrokes.find(s => s.id === strokeId);
+      if (!stroke) {
+        stroke = { id: strokeId, points: [], userId: isRemote ? null : userId };
+        laserStrokes.push(stroke);
+      }
+      stroke.points.push({ x, y, time: Date.now() });
+      startLaserAnimation();
     }
 
     // History management

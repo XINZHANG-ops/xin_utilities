@@ -352,7 +352,8 @@ I18n.register('zh', {
       textBox: '文本框',
       text: '文本框',
       image: '图片',
-      shapes: '形状'
+      shapes: '形状',
+      laser: '激光笔'
     },
     colors: {
       black: '黑色',

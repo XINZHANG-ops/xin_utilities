@@ -352,7 +352,8 @@ I18n.register('en', {
       textBox: 'Text Box',
       text: 'Text Box',
       image: 'Image',
-      shapes: 'Shapes'
+      shapes: 'Shapes',
+      laser: 'Laser Pointer'
     },
     colors: {
       black: 'Black',
