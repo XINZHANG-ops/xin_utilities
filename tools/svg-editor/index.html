@@ -632,14 +632,21 @@
     // Hole management functions
     function startHoleMode() {
       const shape = getSelectedShape();
-      if (!shape || shape.type !== 'polygon') {
-        showMessage('请先选中一个多边形');
+      if (!shape) {
+        showMessage('请先选中一个形状');
         return;
       }
 
-      // Warn if polygon has no fill
+      // Only filled shapes can have holes
+      const supportedTypes = ['polygon', 'rect', 'ellipse', 'path'];
+      if (!supportedTypes.includes(shape.type)) {
+        showMessage('线条不支持挖洞，请选择填充形状');
+        return;
+      }
+
+      // Warn if shape has no fill
       if (!shape.fill || shape.fill === 'none') {
-        showMessage('提示：空心多边形的洞不可见，建议先设置fill');
+        showMessage('提示：空心形状的洞不可见，建议先设置fill');
       }
 
       holeMode = true;
@@ -656,7 +663,11 @@
 
     function finishHole() {
       const shape = getSelectedShape();
-      if (!shape || shape.type !== 'polygon') return;
+      const supportedTypes = ['polygon', 'rect', 'ellipse', 'path'];
+      if (!shape || !supportedTypes.includes(shape.type)) {
+        showMessage('请先选中支持挖洞的形状');
+        return;
+      }
 
       if (currentHolePoints.length < 3) {
         showMessage('洞至少需要3个顶点');
@@ -952,6 +963,13 @@
       addAttr('opacity', shape.opacity);
       addAttr('transform', shape.transform);
 
+      // If shape has holes, render as path with fill-rule="evenodd"
+      if (shape.holes && shape.holes.length > 0 && shape.type !== 'line') {
+        const outerPath = shapeToPath(shape);
+        const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
+        return `<path ${attrs} d="${outerPath} ${holePaths}" fill-rule="evenodd"/>`;
+      }
+
       switch (shape.type) {
         case 'rect':
           return `<rect ${attrs} x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${shape.rx || 0}"/>`;
@@ -962,12 +980,6 @@
         case 'path':
           return `<path ${attrs} d="${shape.d}"/>`;
         case 'polygon':
-          // If polygon has holes, render as path with fill-rule="evenodd"
-          if (shape.holes && shape.holes.length > 0) {
-            const outerPath = polygonPointsToPath(shape.points);
-            const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
-            return `<path ${attrs} d="${outerPath} ${holePaths}" fill-rule="evenodd"/>`;
-          }
           return `<polygon ${attrs} points="${shape.points}"/>`;
         default:
           return '';
@@ -995,6 +1007,37 @@
       }
       d += ' Z';
       return d;
+    }
+
+    // Convert rect to path d string
+    function rectToPath(shape) {
+      const { x, y, width, height, rx = 0 } = shape;
+      if (rx > 0) {
+        // Rounded rect
+        const r = Math.min(rx, width / 2, height / 2);
+        return `M ${x + r} ${y} L ${x + width - r} ${y} A ${r} ${r} 0 0 1 ${x + width} ${y + r} L ${x + width} ${y + height - r} A ${r} ${r} 0 0 1 ${x + width - r} ${y + height} L ${x + r} ${y + height} A ${r} ${r} 0 0 1 ${x} ${y + height - r} L ${x} ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+      }
+      return `M ${x} ${y} L ${x + width} ${y} L ${x + width} ${y + height} L ${x} ${y + height} Z`;
+    }
+
+    // Convert ellipse to path d string (using bezier approximation)
+    function ellipseToPath(shape) {
+      const { cx, cy, rx, ry } = shape;
+      // Approximate ellipse with 4 cubic bezier curves
+      const k = 0.5522847498; // magic number for bezier circle approximation
+      const kx = rx * k, ky = ry * k;
+      return `M ${cx - rx} ${cy} C ${cx - rx} ${cy - ky} ${cx - kx} ${cy - ry} ${cx} ${cy - ry} C ${cx + kx} ${cy - ry} ${cx + rx} ${cy - ky} ${cx + rx} ${cy} C ${cx + rx} ${cy + ky} ${cx + kx} ${cy + ry} ${cx} ${cy + ry} C ${cx - kx} ${cy + ry} ${cx - rx} ${cy + ky} ${cx - rx} ${cy} Z`;
+    }
+
+    // Get outer path for any shape type
+    function shapeToPath(shape) {
+      switch (shape.type) {
+        case 'rect': return rectToPath(shape);
+        case 'ellipse': return ellipseToPath(shape);
+        case 'polygon': return polygonPointsToPath(shape.points);
+        case 'path': return shape.d;
+        default: return '';
+      }
     }
 
     function renderSelectionHandles() {
@@ -1086,7 +1129,7 @@
               handles += `<circle class="handle handle-vertex${isActive ? ' handle-active' : ''}" data-handle="vertex" data-vertex="${vertexIndex}" cx="${vx}" cy="${vy}" r="${hs}"/>`;
             }
 
-            // Hole vertex handles (also apply rotation)
+            // Hole vertex handles for polygon (also apply rotation)
             if (shape.holes) {
               shape.holes.forEach((hole, holeIdx) => {
                 const isHoleSelected = holeIdx === selectedHoleIndex;
@@ -1102,6 +1145,24 @@
                 });
               });
             }
+          }
+
+          // Hole vertex handles for other shape types (rect, ellipse, path)
+          if (shape.type !== 'polygon' && shape.holes && shape.holes.length > 0) {
+            const shapeRotation = parseRotation(shape.transform);
+            shape.holes.forEach((hole, holeIdx) => {
+              const isHoleSelected = holeIdx === selectedHoleIndex;
+              hole.forEach((pt, vi) => {
+                let hx = pt[0], hy = pt[1];
+                if (shapeRotation) {
+                  const rotated = rotatePoint(hx, hy, shapeRotation.cx, shapeRotation.cy, shapeRotation.angle);
+                  hx = rotated.x;
+                  hy = rotated.y;
+                }
+                const isActive = isHoleSelected && vi === lastTouchedHoleVertex;
+                handles += `<circle class="handle handle-hole${isActive ? ' handle-active' : ''}" data-handle="hole-vertex" data-hole="${holeIdx}" data-vertex="${vi}" cx="${hx}" cy="${hy}" r="${hs}" style="fill:${isHoleSelected ? '#00bcd4' : '#888'}"/>`;
+              });
+            });
           }
         }
       }
@@ -1341,6 +1402,44 @@
             <p style="color:#666;font-size:11px;">🔴红点=外轮廓顶点 🔵青点=洞顶点</p>
           `;
           break;
+      }
+
+      // Holes section for supported shapes (not polygon which has its own)
+      const supportsHoles = ['rect', 'ellipse', 'path'].includes(shape.type);
+      if (supportsHoles) {
+        const holeCount = shape.holes ? shape.holes.length : 0;
+        html += `
+          <div class="input-group">
+            <label>Holes 挖洞 (${holeCount}个)</label>
+            ${holeMode ? `
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <button class="btn primary" style="padding:4px 8px;font-size:11px;" onclick="finishHole()">✓ 完成 (${currentHolePoints.length}点)</button>
+                <button class="btn danger" style="padding:4px 8px;font-size:11px;" onclick="cancelHoleMode()">✕ 取消</button>
+              </div>
+              <p style="color:#ff9f0a;font-size:11px;">点击画布添加洞的顶点，Enter完成</p>
+            ` : `
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="startHoleMode()">+ 新建洞</button>
+              </div>
+            `}
+            ${holeCount > 0 ? `
+              <div style="max-height:100px;overflow-y:auto;background:#222;border-radius:4px;padding:4px;">
+                ${shape.holes.map((hole, i) => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;${selectedHoleIndex === i ? 'background:#0066ff;border-radius:3px;' : ''}cursor:pointer;" onclick="selectHole(${i})">
+                    <span style="font-size:11px;">洞 #${i + 1} (${hole.length}点)</span>
+                    <div style="display:flex;gap:2px;">
+                      ${selectedHoleIndex === i ? `
+                        <button class="btn" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();addHoleVertex()">+</button>
+                        <button class="btn" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();removeHoleVertex()">-</button>
+                      ` : ''}
+                      <button class="btn danger" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();deleteHole(${i})">×</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
       }
 
       // Common properties
@@ -1615,6 +1714,22 @@
           return;
         }
 
+        // Handle hole vertex dragging for ALL shape types
+        if (h === 'hole-vertex' && dragState.holeIndex !== null && dragState.vertexIndex !== null) {
+          const hi = dragState.holeIndex;
+          const vi = dragState.vertexIndex;
+          if (orig.holes && orig.holes[hi] && orig.holes[hi][vi]) {
+            // Make sure shape.holes exists and copy structure from orig
+            if (!shape.holes) shape.holes = JSON.parse(JSON.stringify(orig.holes));
+            shape.holes[hi][vi] = [
+              snap(orig.holes[hi][vi][0] + dx),
+              snap(orig.holes[hi][vi][1] + dy)
+            ];
+          }
+          render();
+          return;
+        }
+
         // Transform dx/dy to local coordinates if shape is rotated
         let localDx = dx, localDy = dy;
         const rotation = parseRotation(orig.transform);
@@ -1628,6 +1743,9 @@
         }
 
         if (shape.type === 'rect') {
+          const origCx = orig.x + orig.width / 2;
+          const origCy = orig.y + orig.height / 2;
+
           if (h === 'se') {
             shape.width = Math.max(1, snap(orig.width + localDx));
             shape.height = Math.max(1, snap(orig.height + localDy));
@@ -1640,6 +1758,20 @@
             shape.width = Math.max(1, snap(orig.width - localDx));
             shape.height = Math.max(1, snap(orig.height + localDy));
           }
+
+          // Scale holes for rect
+          if (orig.holes) {
+            const scaleX = shape.width / orig.width;
+            const scaleY = shape.height / orig.height;
+            const newCx = shape.x + shape.width / 2;
+            const newCy = shape.y + shape.height / 2;
+            shape.holes = orig.holes.map(hole =>
+              hole.map(pt => [
+                snap(newCx + (pt[0] - origCx) * scaleX),
+                snap(newCy + (pt[1] - origCy) * scaleY)
+              ])
+            );
+          }
         } else if (shape.type === 'ellipse') {
           // Ellipse: resize rx and ry independently
           let deltaX = 0, deltaY = 0;
@@ -1648,6 +1780,18 @@
           else if (h === 'sw') { deltaX = -localDx; deltaY = localDy; }
           shape.rx = Math.max(0.5, snap(orig.rx + deltaX / 2));
           shape.ry = Math.max(0.5, snap(orig.ry + deltaY / 2));
+
+          // Scale holes for ellipse
+          if (orig.holes) {
+            const scaleX = shape.rx / orig.rx;
+            const scaleY = shape.ry / orig.ry;
+            shape.holes = orig.holes.map(hole =>
+              hole.map(pt => [
+                snap(shape.cx + (pt[0] - orig.cx) * scaleX),
+                snap(shape.cy + (pt[1] - orig.cy) * scaleY)
+              ])
+            );
+          }
         } else if (shape.type === 'line') {
           if (h === 'p1') {
             shape.x1 = snap(orig.x1 + localDx);
@@ -1657,19 +1801,7 @@
             shape.y2 = snap(orig.y2 + localDy);
           }
         } else if (shape.type === 'polygon') {
-          if (h === 'hole-vertex' && dragState.holeIndex !== null && dragState.vertexIndex !== null) {
-            // Drag individual hole vertex
-            const hi = dragState.holeIndex;
-            const vi = dragState.vertexIndex;
-            if (orig.holes && orig.holes[hi] && orig.holes[hi][vi]) {
-              // Make sure shape.holes exists and copy structure from orig
-              if (!shape.holes) shape.holes = JSON.parse(JSON.stringify(orig.holes));
-              shape.holes[hi][vi] = [
-                snap(orig.holes[hi][vi][0] + localDx),
-                snap(orig.holes[hi][vi][1] + localDy)
-              ];
-            }
-          } else if (h === 'vertex' && dragState.vertexIndex !== null) {
+          if (h === 'vertex' && dragState.vertexIndex !== null) {
             // Drag individual vertex
             const pts = orig.points.split(/[\s,]+/).map(Number);
             const vi = dragState.vertexIndex;
@@ -1736,6 +1868,16 @@
           scaleX = Math.max(0.1, scaleX);
           scaleY = Math.max(0.1, scaleY);
           shape.d = scalePathCoords(orig.d, cx, cy, scaleX, scaleY);
+
+          // Scale holes for path
+          if (orig.holes) {
+            shape.holes = orig.holes.map(hole =>
+              hole.map(pt => [
+                snap(cx + (pt[0] - cx) * scaleX),
+                snap(cy + (pt[1] - cy) * scaleY)
+              ])
+            );
+          }
         }
       }
 
@@ -2016,17 +2158,18 @@
             newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
           }
           shape.points = newPts.join(' ');
-          // Also move holes
-          if (orig.holes) {
-            shape.holes = orig.holes.map(hole =>
-              hole.map(pt => [snap(pt[0] + dx), snap(pt[1] + dy)])
-            );
-          }
           break;
         case 'path':
           // Move path by shifting all coordinates in d attribute
           shape.d = shiftPathCoords(orig.d, dx, dy);
           break;
+      }
+
+      // Move holes for all shape types
+      if (orig.holes) {
+        shape.holes = orig.holes.map(hole =>
+          hole.map(pt => [snap(pt[0] + dx), snap(pt[1] + dy)])
+        );
       }
 
       // Also update rotation center in transform if exists
@@ -2291,6 +2434,13 @@
       if (shape.opacity) addAttr('opacity', shape.opacity);
       if (shape.transform) addAttr('transform', shape.transform);
 
+      // If shape has holes, output as path with fill-rule="evenodd"
+      if (shape.holes && shape.holes.length > 0 && shape.type !== 'line') {
+        const outerPath = shapeToPath(shape);
+        const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
+        return `<path d="${outerPath} ${holePaths}" fill-rule="evenodd"${attrs}/>`;
+      }
+
       switch (shape.type) {
         case 'rect':
           return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"${shape.rx ? ` rx="${shape.rx}"` : ''}${attrs}/>`;
@@ -2301,12 +2451,6 @@
         case 'path':
           return `<path d="${shape.d}"${attrs}/>`;
         case 'polygon':
-          // If polygon has holes, output as path with fill-rule="evenodd"
-          if (shape.holes && shape.holes.length > 0) {
-            const outerPath = polygonPointsToPath(shape.points);
-            const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
-            return `<path d="${outerPath} ${holePaths}" fill-rule="evenodd"${attrs}/>`;
-          }
           return `<polygon points="${shape.points}"${attrs}/>`;
         default:
           return '';
