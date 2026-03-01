@@ -979,8 +979,30 @@ function handleRemotePageInsert(data) {
 
 // ========== Server Sync ==========
 
-// Save board to server (convert to ratio for cross-device compatibility)
-async function saveBoardToServer() {
+// Debounce timer for server saves
+let saveDebounceTimer = null;
+const SAVE_DEBOUNCE_MS = 2000; // Wait 2 seconds after last change before saving
+
+// Save board to server (debounced to avoid excessive requests)
+// Use immediate=true for critical saves (e.g., board creation)
+function saveBoardToServer(immediate = false) {
+  if (!currentBoard || isLocalMode) return;
+
+  if (immediate) {
+    // Cancel pending debounced save and save immediately
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    return _doSaveBoardToServer();
+  }
+
+  // Clear existing timer and set a new one
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    _doSaveBoardToServer();
+  }, SAVE_DEBOUNCE_MS);
+}
+
+// Internal function that actually saves to server
+async function _doSaveBoardToServer() {
   if (!currentBoard || isLocalMode) return;
 
   saveCurrentPageState();

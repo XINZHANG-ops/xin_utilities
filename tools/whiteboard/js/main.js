@@ -214,8 +214,8 @@ function setupBoardModal() {
 
     resetCanvasView();
 
-    // Save empty board immediately
-    await saveBoardToServer();
+    // Save empty board immediately (bypass debounce)
+    await saveBoardToServer(true);
 
     connectWebSocket();
   });
@@ -1175,3 +1175,10 @@ if (document.readyState === 'loading') {
 
 // Redraw after fonts load to fix text layout (Google Fonts may load async)
 document.fonts.ready.then(() => redraw());
+
+// Save before user leaves the page (flush any pending debounced saves)
+window.addEventListener('beforeunload', () => {
+  if (!isLocalMode && currentBoard) {
+    saveBoardToServer(true);
+  }
+});
