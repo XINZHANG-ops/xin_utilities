@@ -2779,6 +2779,10 @@
     async function loadBoardData(data) {
       if (!data || !data.pages) return;
 
+      // Clear local undo/redo stacks when loading new board data
+      localUndoStack = [];
+      localRedoStack = [];
+
       pages = [];
       for (const pageData of data.pages) {
         // Convert ratio coordinates to local coordinates
@@ -2935,8 +2939,46 @@
     let selectedObjects = [];
     let dragHandle = null;
     let dragStartX, dragStartY;
+    let dragPrevStates = {}; // Object ID -> previous state for undo tracking
     let editingObject = null;
+    let editingObjectPrevState = null; // For undo tracking
     let currentDrawingId = null;
+
+    // Local operation log for user-specific undo/redo (only tracks current user's operations)
+    let localUndoStack = []; // Array of { action, objId, objState, pageIndex }
+    let localRedoStack = [];
+    const MAX_LOCAL_UNDO = 50;
+
+    // Save operation to local undo stack (for per-user undo in collaboration mode)
+    // action: 'add' | 'delete' | 'update' | 'move'
+    // objState: the object state BEFORE the operation (for undo) or null for 'add'
+    function saveLocalOperation(action, obj, previousState = null) {
+      if (!currentBoard) return; // Only track in collaboration mode
+
+      const operation = {
+        action,
+        objId: obj.id,
+        objState: previousState ? JSON.parse(JSON.stringify(previousState)) : null,
+        newState: JSON.parse(JSON.stringify(obj)),
+        pageIndex: currentPageIndex
+      };
+
+      localUndoStack.push(operation);
+      if (localUndoStack.length > MAX_LOCAL_UNDO) {
+        localUndoStack.shift();
+      }
+      // Clear redo stack when new operation is performed
+      localRedoStack = [];
+    }
+
+    // Deep clone object for state saving (handles image objects)
+    function cloneObjectState(obj) {
+      if (!obj) return null;
+      const clone = { ...obj };
+      // Don't clone the img element, just keep imgSrc
+      if (clone.img) delete clone.img;
+      return JSON.parse(JSON.stringify(clone));
+    }
 
     // Selection box for marquee selection
     let isSelectingBox = false;
@@ -3765,6 +3807,7 @@
             };
             objects.push(imgObj);
 
+            saveLocalOperation('add', imgObj, null);
             saveState();
             emitObjectChange('add', imgObj);
             redraw();
@@ -3843,6 +3886,7 @@
           bold: false
         };
         objects.push(sticky);
+        saveLocalOperation('add', sticky, null);
         saveState();
         emitObjectChange('add', sticky);
         redraw();
@@ -3945,14 +3989,17 @@
               copy.img = obj.img;
             }
             objects.push(copy);
+            saveLocalOperation('add', copy, null);
             saveState();
             emitObjectChange('add', copy);
             redraw();
           } else if (action === 'bringToFront') {
             const idx = objects.indexOf(obj);
             if (idx >= 0 && idx < objects.length - 1) {
+              const prevState = cloneObjectState(obj);
               objects.splice(idx, 1);
               objects.push(obj);
+              saveLocalOperation('move', obj, prevState);
               saveState();
               emitObjectChange('move', obj);
               redraw();
@@ -3960,8 +4007,10 @@
           } else if (action === 'sendToBack') {
             const idx = objects.indexOf(obj);
             if (idx > 0) {
+              const prevState = cloneObjectState(obj);
               objects.splice(idx, 1);
               objects.unshift(obj);
+              saveLocalOperation('move', obj, prevState);
               saveState();
               emitObjectChange('move', obj);
               redraw();
@@ -3969,7 +4018,9 @@
           } else if (action === 'delete') {
             const idx = objects.indexOf(obj);
             if (idx >= 0) {
+              const prevState = cloneObjectState(obj);
               objects.splice(idx, 1);
+              saveLocalOperation('delete', obj, prevState);
               saveState();
               emitObjectChange('delete', obj);
               selectedObjects = [];
@@ -4320,6 +4371,7 @@
       }
 
       editingObject = obj;
+      editingObjectPrevState = cloneObjectState(obj);
 
       const rect = canvas.getBoundingClientRect();
       const scale = canvasZoom / 100;
@@ -4389,11 +4441,13 @@
         }
 
         textarea.remove();
+        saveLocalOperation('update', editingObject, editingObjectPrevState);
         saveState();
         emitObjectChange('update', editingObject);
         redraw();
       }
       editingObject = null;
+      editingObjectPrevState = null;
     }
 
     function getMousePos(e) {
@@ -4431,6 +4485,11 @@
           dragStartX = pos.x;
           dragStartY = pos.y;
           isDrawing = false;
+          // Save previous states for undo
+          dragPrevStates = {};
+          selectedObjects.forEach(obj => {
+            dragPrevStates[obj.id] = cloneObjectState(obj);
+          });
         } else {
           // Select new object (Shift for multi-select)
           if (e.shiftKey) {
@@ -4442,6 +4501,11 @@
           dragStartX = pos.x;
           dragStartY = pos.y;
           isDrawing = false;
+          // Save previous states for undo
+          dragPrevStates = {};
+          selectedObjects.forEach(obj => {
+            dragPrevStates[obj.id] = cloneObjectState(obj);
+          });
         }
         updateSelectedControls();
         redraw();
@@ -4496,6 +4560,7 @@
         };
         objects.push(newText);
         selectedObjects = [newText];
+        saveLocalOperation('add', newText, null);
         saveState();
         emitObjectChange('add', newText);
         switchToSelectTool();
@@ -4750,6 +4815,12 @@
       }
 
       if (dragHandle) {
+        // Save local operations with previous states
+        selectedObjects.forEach(obj => {
+          const prevState = dragPrevStates[obj.id];
+          saveLocalOperation('move', obj, prevState);
+        });
+        dragPrevStates = {};
         saveState();
         // Emit move for all selected objects
         selectedObjects.forEach(obj => emitObjectChange('move', obj));
@@ -4808,11 +4879,13 @@
           };
         }
         objects.push(newShape);
+        saveLocalOperation('add', newShape, null);
         emitObjectChange('add', newShape);
       } else {
         // Emit the completed brush/eraser stroke
         const brushObj = objects[objects.length - 1];
         if (brushObj) {
+          saveLocalOperation('add', brushObj, null);
           emitObjectChange('add', brushObj);
         }
       }
@@ -5856,6 +5929,87 @@
       updateSelectedControls();
       hideObjectMenu();
 
+      // In collaboration mode, use local operation-based undo
+      if (currentBoard && localUndoStack.length > 0) {
+        const op = localUndoStack.pop();
+
+        // Check if page still exists
+        if (op.pageIndex >= pages.length) {
+          // Page was deleted - skip this operation
+          localRedoStack.push(op);
+          return undo(); // Try next operation
+        }
+
+        // Switch to the page where the operation happened
+        if (op.pageIndex !== currentPageIndex) {
+          switchToPage(op.pageIndex, true); // true = isAutoFollow, don't exit follow mode
+        }
+
+        if (op.action === 'add') {
+          // Undo add = delete the object
+          const idx = objects.findIndex(o => o.id === op.objId);
+          if (idx !== -1) {
+            objects.splice(idx, 1);
+            emitObjectChange('delete', op.newState);
+          }
+        } else if (op.action === 'delete') {
+          // Undo delete = re-add the object (only if not already present)
+          if (op.objState) {
+            const existingIdx = objects.findIndex(o => o.id === op.objId);
+            if (existingIdx === -1) {
+              const restored = { ...op.objState };
+              // Reload image if needed
+              if (restored.type === 'image' && restored.imgSrc) {
+                const img = new Image();
+                img.onload = () => {
+                  restored.img = img;
+                  redraw();
+                };
+                img.src = restored.imgSrc;
+              }
+              objects.push(restored);
+              emitObjectChange('add', restored);
+            }
+          }
+        } else if (op.action === 'update' || op.action === 'move') {
+          // Undo update/move = restore previous state
+          const obj = objects.find(o => o.id === op.objId);
+          if (obj && op.objState) {
+            Object.assign(obj, op.objState);
+            // Reload image if needed
+            if (obj.type === 'image' && obj.imgSrc && !obj.img) {
+              const img = new Image();
+              img.onload = () => {
+                obj.img = img;
+                redraw();
+              };
+              img.src = obj.imgSrc;
+            }
+            emitObjectChange('update', obj);
+          }
+        }
+
+        // Push to redo stack
+        localRedoStack.push(op);
+        if (localRedoStack.length > MAX_LOCAL_UNDO) {
+          localRedoStack.shift();
+        }
+
+        saveCurrentPageState();
+        redraw();
+        updatePageUI();
+        refreshPageGridIfOpen();
+        saveToLocalStorage();
+        saveBoardToServer();
+        return;
+      }
+
+      // In collaboration mode, don't fall through to state-based undo
+      if (currentBoard) {
+        return;
+      }
+
+      // Local mode: use state-based undo
       if (historyIndex > 0) {
         historyIndex--;
         loadState(history[historyIndex]).then(state => {
@@ -5865,7 +6019,6 @@
           updatePageUI();
           refreshPageGridIfOpen();
           saveToLocalStorage();
-          emitUndoRedo('undo', history[historyIndex]);
         });
       } else if (historyIndex === 0) {
         objects = [];
@@ -5875,7 +6028,6 @@
         updatePageUI();
         refreshPageGridIfOpen();
         saveToLocalStorage();
-        emitUndoRedo('undo', '[]');
       } else if (pageUndoStack.length > 0) {
         // Try to undo page operations
         undoPageOperation();
@@ -5888,6 +6040,85 @@
       updateSelectedControls();
       hideObjectMenu();
 
+      // In collaboration mode, use local operation-based redo
+      if (currentBoard && localRedoStack.length > 0) {
+        const op = localRedoStack.pop();
+
+        // Check if page still exists
+        if (op.pageIndex >= pages.length) {
+          // Page was deleted - skip this operation
+          localUndoStack.push(op);
+          return redo(); // Try next operation
+        }
+
+        // Switch to the page where the operation happened
+        if (op.pageIndex !== currentPageIndex) {
+          switchToPage(op.pageIndex, true);
+        }
+
+        if (op.action === 'add') {
+          // Redo add = re-add the object (only if not already present)
+          if (op.newState) {
+            const existingIdx = objects.findIndex(o => o.id === op.objId);
+            if (existingIdx === -1) {
+              const restored = { ...op.newState };
+              if (restored.type === 'image' && restored.imgSrc) {
+                const img = new Image();
+                img.onload = () => {
+                  restored.img = img;
+                  redraw();
+                };
+                img.src = restored.imgSrc;
+              }
+              objects.push(restored);
+              emitObjectChange('add', restored);
+            }
+          }
+        } else if (op.action === 'delete') {
+          // Redo delete = delete the object again
+          const idx = objects.findIndex(o => o.id === op.objId);
+          if (idx !== -1) {
+            objects.splice(idx, 1);
+            emitObjectChange('delete', op.objState);
+          }
+        } else if (op.action === 'update' || op.action === 'move') {
+          // Redo update/move = apply new state
+          const obj = objects.find(o => o.id === op.objId);
+          if (obj && op.newState) {
+            Object.assign(obj, op.newState);
+            if (obj.type === 'image' && obj.imgSrc && !obj.img) {
+              const img = new Image();
+              img.onload = () => {
+                obj.img = img;
+                redraw();
+              };
+              img.src = obj.imgSrc;
+            }
+            emitObjectChange('update', obj);
+          }
+        }
+
+        // Push back to undo stack
+        localUndoStack.push(op);
+        if (localUndoStack.length > MAX_LOCAL_UNDO) {
+          localUndoStack.shift();
+        }
+
+        saveCurrentPageState();
+        redraw();
+        updatePageUI();
+        refreshPageGridIfOpen();
+        saveToLocalStorage();
+        saveBoardToServer();
+        return;
+      }
+
+      // In collaboration mode, don't fall through to state-based redo
+      if (currentBoard) {
+        return;
+      }
+
+      // Local mode: use state-based redo
       if (historyIndex < history.length - 1) {
         historyIndex++;
         loadState(history[historyIndex]).then(state => {
@@ -5897,7 +6128,6 @@
           updatePageUI();
           refreshPageGridIfOpen();
           saveToLocalStorage();
-          emitUndoRedo('redo', history[historyIndex]);
         });
       }
     }
@@ -5951,15 +6181,17 @@
           selectedObjects.forEach(obj => {
             const idx = objects.indexOf(obj);
             if (idx > -1) {
+              const prevState = cloneObjectState(obj);
               objects.splice(idx, 1);
-              deletedObjects.push(obj);
+              deletedObjects.push({ obj, prevState });
             }
           });
           selectedObjects = [];
           hideObjectMenu();
           updateSelectedControls();
+          deletedObjects.forEach(({ obj, prevState }) => saveLocalOperation('delete', obj, prevState));
           saveState();
-          deletedObjects.forEach(obj => emitObjectChange('delete', obj));
+          deletedObjects.forEach(({ obj }) => emitObjectChange('delete', obj));
           redraw();
         } else if (pageThumbnailFocused && pages.length > 1) {
           // Thumbnail focused - delete current page
@@ -6056,6 +6288,7 @@
           }
           objects.push(obj);
           pastedObjects.push(obj);
+          saveLocalOperation('add', obj, null);
           emitObjectChange('add', obj);
         }
         selectedObjects = pastedObjects;
@@ -6091,6 +6324,7 @@
               });
             }
             objects.push(obj);
+            saveLocalOperation('add', obj, null);
             emitObjectChange('add', obj);
           }
           saveState();
@@ -6332,6 +6566,7 @@
             };
             objects.push(imgObj);
 
+            saveLocalOperation('add', imgObj, null);
             saveState();
             emitObjectChange('add', imgObj);
             redraw();
