@@ -4142,7 +4142,9 @@
       // Check if clicking on existing object
       const hit = hitTestObjects(pos.x, pos.y);
 
-      if (hit && currentTool !== 'eraser') {
+      // Drawing tools (brush, eraser, laser) should not select objects - they should draw
+      const isDrawingTool = ['brush', 'eraser', 'laser'].includes(currentTool);
+      if (hit && !isDrawingTool) {
         // Exit follow mode when dragging/editing objects
         if (isFollowingUser && hit.handle !== 'move') {
           // Resizing - exit follow mode
