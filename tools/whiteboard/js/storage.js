@@ -22,7 +22,8 @@ function saveToLocalStorage() {
     }),
     background: page.background || { pattern: 'none', color: '#ffffff' },
     history: page.history,
-    historyIndex: page.historyIndex
+    historyIndex: page.historyIndex,
+    historySeq: page.historySeq || []
   }));
 
   try {
@@ -61,7 +62,8 @@ async function loadFromLocalStorage() {
             objects: loadedObjects,
             background: pageData.background || { pattern: 'none', color: '#ffffff' },
             history: pageData.history || [],
-            historyIndex: pageData.historyIndex !== undefined ? pageData.historyIndex : -1
+            historyIndex: pageData.historyIndex !== undefined ? pageData.historyIndex : -1,
+            historySeq: pageData.historySeq || []
           });
         }
         currentPageIndex = data.currentPageIndex || 0;
@@ -73,7 +75,8 @@ async function loadFromLocalStorage() {
           objects: loadedObjects,
           background: { pattern: 'none', color: '#ffffff' },
           history: [JSON.stringify(data.objects)],
-          historyIndex: 0
+          historyIndex: 0,
+          historySeq: [1]
         }];
         currentPageIndex = 0;
       }

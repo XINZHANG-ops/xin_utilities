@@ -156,7 +156,7 @@ function connectWebSocket() {
 
     // Create missing pages if needed
     while (pages.length <= pageIndex) {
-      pages.push({ objects: [], history: [], historyIndex: -1, historySeq: [] });
+      pages.push({ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1, historySeq: [] });
     }
 
     if (pageIndex === currentPageIndex) {
@@ -646,7 +646,7 @@ function handleRemoteObjectUpdate(data) {
 
   // Create missing pages if needed (for sync)
   while (pages.length <= pageIndex) {
-    pages.push({ objects: [], history: [], historyIndex: -1, historySeq: [] });
+    pages.push({ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1, historySeq: [] });
     needsPageUIUpdate = true;
   }
 
@@ -816,7 +816,7 @@ function handleRemoteStateUpdate(data) {
 
   // Create missing pages if needed
   while (pages.length <= pageIndex) {
-    pages.push({ objects: [], history: [], historyIndex: -1, historySeq: [] });
+    pages.push({ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1, historySeq: [] });
   }
 
   if (pageIndex !== currentPageIndex) {
