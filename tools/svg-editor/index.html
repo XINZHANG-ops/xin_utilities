@@ -13,6 +13,41 @@
       color: #fff;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
+    }
+
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: #252525;
+      border-bottom: 1px solid #333;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #888;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #fff;
+    }
+
+    .nav-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .content-wrapper {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
     }
 
     .sidebar {
@@ -275,6 +310,17 @@
   </style>
 </head>
 <body>
+  <nav class="top-nav">
+    <a href="../../index.html" class="back-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>返回</span>
+    </a>
+    <h1 class="nav-title">SVG 编辑器</h1>
+  </nav>
+
+  <div class="content-wrapper">
   <div class="sidebar">
     <div class="tool-group">
       <h2>Shapes</h2>
@@ -357,6 +403,7 @@
       </div>
       <div class="preview-row" id="previewRow"></div>
     </div>
+  </div>
   </div>
 
   <script>
@@ -694,7 +741,7 @@
     }
 
     function renderShapeElement(shape) {
-      const isSelected = shape.id === selectedId;
+      const shapeIsSelected = isSelected(shape.id);
       let attrs = `class="shape" data-id="${shape.id}"`;
 
       const addAttr = (name, value, allowNone = false) => {
@@ -816,8 +863,8 @@
           const maxY = Math.max(shape.y1, shape.y2);
           return { x: minX, y: minY, w: maxX - minX || 0.5, h: maxY - minY || 0.5 };
         case 'path':
-          // Rough bounds estimation for path
-          return { x: 2, y: 2, w: 20, h: 20 };
+          // Parse path d attribute to estimate bounds
+          return getPathBounds(shape.d);
         case 'polygon':
           // Parse points and get bounds
           const pts = shape.points.split(/[\s,]+/).map(Number);
@@ -1222,6 +1269,22 @@
             }
             shape.points = newPts.join(' ');
           }
+        } else if (shape.type === 'path') {
+          // Scale path from center
+          const bounds = getPathBounds(orig.d);
+          const cx = bounds.x + bounds.w / 2;
+          const cy = bounds.y + bounds.h / 2;
+          let scaleX = 1, scaleY = 1;
+          if (h === 'se') {
+            scaleX = (bounds.w + dx) / bounds.w;
+            scaleY = (bounds.h + dy) / bounds.h;
+          } else if (h === 'nw') {
+            scaleX = (bounds.w - dx) / bounds.w;
+            scaleY = (bounds.h - dy) / bounds.h;
+          }
+          scaleX = Math.max(0.1, scaleX);
+          scaleY = Math.max(0.1, scaleY);
+          shape.d = scalePathCoords(orig.d, cx, cy, scaleX, scaleY);
         }
       }
 
@@ -1236,6 +1299,218 @@
 
     function snap(value) {
       return Math.round(value * 10) / 10; // Snap to 0.1
+    }
+
+    // Scale path coordinates around a center point
+    function scalePathCoords(d, cx, cy, scaleX, scaleY) {
+      const result = [];
+      const regex = /([MLHVACSQTZmlhvacsqtz])([^MLHVACSQTZmlhvacsqtz]*)/g;
+      let match;
+
+      const scalePoint = (x, y) => [snap(cx + (x - cx) * scaleX), snap(cy + (y - cy) * scaleY)];
+
+      while ((match = regex.exec(d)) !== null) {
+        const cmd = match[1];
+        const argsStr = match[2].trim();
+        const args = argsStr ? argsStr.split(/[\s,]+/).map(Number) : [];
+        const newArgs = [];
+
+        switch (cmd) {
+          case 'M':
+          case 'L':
+          case 'T':
+            for (let i = 0; i < args.length; i += 2) {
+              const [nx, ny] = scalePoint(args[i], args[i + 1]);
+              newArgs.push(nx, ny);
+            }
+            break;
+          case 'H':
+            for (let i = 0; i < args.length; i++) {
+              newArgs.push(snap(cx + (args[i] - cx) * scaleX));
+            }
+            break;
+          case 'V':
+            for (let i = 0; i < args.length; i++) {
+              newArgs.push(snap(cy + (args[i] - cy) * scaleY));
+            }
+            break;
+          case 'C':
+            for (let i = 0; i < args.length; i += 6) {
+              const [x1, y1] = scalePoint(args[i], args[i + 1]);
+              const [x2, y2] = scalePoint(args[i + 2], args[i + 3]);
+              const [x, y] = scalePoint(args[i + 4], args[i + 5]);
+              newArgs.push(x1, y1, x2, y2, x, y);
+            }
+            break;
+          case 'S':
+          case 'Q':
+            for (let i = 0; i < args.length; i += 4) {
+              const [x1, y1] = scalePoint(args[i], args[i + 1]);
+              const [x, y] = scalePoint(args[i + 2], args[i + 3]);
+              newArgs.push(x1, y1, x, y);
+            }
+            break;
+          case 'A':
+            for (let i = 0; i < args.length; i += 7) {
+              // Scale radii and end point
+              const rx = snap(args[i] * scaleX);
+              const ry = snap(args[i + 1] * scaleY);
+              const [ex, ey] = scalePoint(args[i + 5], args[i + 6]);
+              newArgs.push(rx, ry, args[i + 2], args[i + 3], args[i + 4], ex, ey);
+            }
+            break;
+          case 'Z':
+          case 'z':
+            break;
+          default:
+            // For relative commands, just copy
+            newArgs.push(...args);
+        }
+
+        result.push(cmd + (newArgs.length ? ' ' + newArgs.join(' ') : ''));
+      }
+
+      return result.join(' ');
+    }
+
+    // Get bounds of a path from its d attribute
+    function getPathBounds(d) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const regex = /([MLHVACSQTZmlhvacsqtz])([^MLHVACSQTZmlhvacsqtz]*)/g;
+      let match;
+      let curX = 0, curY = 0;
+
+      while ((match = regex.exec(d)) !== null) {
+        const cmd = match[1];
+        const argsStr = match[2].trim();
+        const args = argsStr ? argsStr.split(/[\s,]+/).map(Number) : [];
+
+        switch (cmd) {
+          case 'M':
+          case 'L':
+          case 'T':
+            for (let i = 0; i < args.length; i += 2) {
+              curX = args[i]; curY = args[i + 1];
+              minX = Math.min(minX, curX); maxX = Math.max(maxX, curX);
+              minY = Math.min(minY, curY); maxY = Math.max(maxY, curY);
+            }
+            break;
+          case 'H':
+            for (let i = 0; i < args.length; i++) {
+              curX = args[i];
+              minX = Math.min(minX, curX); maxX = Math.max(maxX, curX);
+            }
+            break;
+          case 'V':
+            for (let i = 0; i < args.length; i++) {
+              curY = args[i];
+              minY = Math.min(minY, curY); maxY = Math.max(maxY, curY);
+            }
+            break;
+          case 'C':
+            for (let i = 0; i < args.length; i += 6) {
+              minX = Math.min(minX, args[i], args[i+2], args[i+4]);
+              maxX = Math.max(maxX, args[i], args[i+2], args[i+4]);
+              minY = Math.min(minY, args[i+1], args[i+3], args[i+5]);
+              maxY = Math.max(maxY, args[i+1], args[i+3], args[i+5]);
+              curX = args[i+4]; curY = args[i+5];
+            }
+            break;
+          case 'S':
+          case 'Q':
+            for (let i = 0; i < args.length; i += 4) {
+              minX = Math.min(minX, args[i], args[i+2]);
+              maxX = Math.max(maxX, args[i], args[i+2]);
+              minY = Math.min(minY, args[i+1], args[i+3]);
+              maxY = Math.max(maxY, args[i+1], args[i+3]);
+              curX = args[i+2]; curY = args[i+3];
+            }
+            break;
+          case 'A':
+            for (let i = 0; i < args.length; i += 7) {
+              curX = args[i+5]; curY = args[i+6];
+              minX = Math.min(minX, curX); maxX = Math.max(maxX, curX);
+              minY = Math.min(minY, curY); maxY = Math.max(maxY, curY);
+            }
+            break;
+        }
+      }
+
+      if (minX === Infinity) return { x: 2, y: 2, w: 20, h: 20 }; // fallback
+      return { x: minX, y: minY, w: Math.max(0.5, maxX - minX), h: Math.max(0.5, maxY - minY) };
+    }
+
+    // Shift all coordinates in a path d attribute by dx, dy
+    function shiftPathCoords(d, dx, dy) {
+      // Parse path commands and shift coordinates
+      // Supports: M, L, H, V, A, C, S, Q, T, Z (uppercase = absolute)
+      const result = [];
+      const regex = /([MLHVACSQTZmlhvacsqtz])([^MLHVACSQTZmlhvacsqtz]*)/g;
+      let match;
+
+      while ((match = regex.exec(d)) !== null) {
+        const cmd = match[1];
+        const argsStr = match[2].trim();
+        const args = argsStr ? argsStr.split(/[\s,]+/).map(Number) : [];
+
+        // Only handle absolute commands (uppercase)
+        switch (cmd) {
+          case 'M':
+          case 'L':
+          case 'T':
+            // x, y pairs
+            for (let i = 0; i < args.length; i += 2) {
+              args[i] = snap(args[i] + dx);
+              args[i + 1] = snap(args[i + 1] + dy);
+            }
+            break;
+          case 'H':
+            // x only
+            for (let i = 0; i < args.length; i++) {
+              args[i] = snap(args[i] + dx);
+            }
+            break;
+          case 'V':
+            // y only
+            for (let i = 0; i < args.length; i++) {
+              args[i] = snap(args[i] + dy);
+            }
+            break;
+          case 'C':
+            // x1,y1 x2,y2 x,y (6 args per curve)
+            for (let i = 0; i < args.length; i += 6) {
+              args[i] = snap(args[i] + dx);
+              args[i + 1] = snap(args[i + 1] + dy);
+              args[i + 2] = snap(args[i + 2] + dx);
+              args[i + 3] = snap(args[i + 3] + dy);
+              args[i + 4] = snap(args[i + 4] + dx);
+              args[i + 5] = snap(args[i + 5] + dy);
+            }
+            break;
+          case 'S':
+          case 'Q':
+            // x1,y1 x,y (4 args)
+            for (let i = 0; i < args.length; i += 4) {
+              args[i] = snap(args[i] + dx);
+              args[i + 1] = snap(args[i + 1] + dy);
+              args[i + 2] = snap(args[i + 2] + dx);
+              args[i + 3] = snap(args[i + 3] + dy);
+            }
+            break;
+          case 'A':
+            // rx ry x-rot large-arc sweep x y (7 args per arc)
+            for (let i = 0; i < args.length; i += 7) {
+              args[i + 5] = snap(args[i + 5] + dx); // end x
+              args[i + 6] = snap(args[i + 6] + dy); // end y
+            }
+            break;
+          // Relative commands (lowercase) and Z don't need coordinate shifting
+        }
+
+        result.push(cmd + (args.length ? ' ' + args.join(' ') : ''));
+      }
+
+      return result.join(' ');
     }
 
     function moveShapeBy(shape, orig, dx, dy) {
@@ -1263,7 +1538,8 @@
           shape.points = newPts.join(' ');
           break;
         case 'path':
-          // Path移动比较复杂，暂时跳过
+          // Move path by shifting all coordinates in d attribute
+          shape.d = shiftPathCoords(orig.d, dx, dy);
           break;
       }
     }
@@ -1422,6 +1698,9 @@
               }
               shape.points = newPts.join(' ');
               break;
+            case 'path':
+              shape.d = shiftPathCoords(shape.d, dx, dy);
+              break;
           }
         });
         render();
@@ -1529,7 +1808,7 @@
 
       // Clear existing shapes
       shapes = [];
-      selectedId = null;
+      selectedIds = [];
 
       // Parse each shape element
       svg.querySelectorAll('rect, circle, line, path, polygon, ellipse').forEach(el => {
