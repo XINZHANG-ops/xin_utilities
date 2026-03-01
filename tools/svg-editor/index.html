@@ -327,7 +327,7 @@
       <div class="shape-list" id="shapeList"></div>
       <div style="display:flex;flex-wrap:wrap;">
         <button class="btn" onclick="addRect()">+ Rect</button>
-        <button class="btn" onclick="addCircle()">+ Circle</button>
+        <button class="btn" onclick="addEllipse()">+ Ellipse</button>
         <button class="btn" onclick="addLine()">+ Line</button>
         <button class="btn" onclick="addArc()">+ Arc</button>
         <button class="btn" onclick="addPolygon()">+ Polygon</button>
@@ -458,11 +458,11 @@
       render();
     }
 
-    function addCircle() {
+    function addEllipse() {
       shapes.push({
         id: generateId(),
-        type: 'circle',
-        cx: 12, cy: 12, r: 8,
+        type: 'ellipse',
+        cx: 12, cy: 12, rx: 8, ry: 8,
         fill: 'none', stroke: 'currentColor', strokeWidth: 2
       });
       selectedIds = [shapes[shapes.length - 1].id];
@@ -766,8 +766,8 @@
       switch (shape.type) {
         case 'rect':
           return `<rect ${attrs} x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${shape.rx || 0}"/>`;
-        case 'circle':
-          return `<circle ${attrs} cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}"/>`;
+        case 'ellipse':
+          return `<ellipse ${attrs} cx="${shape.cx}" cy="${shape.cy}" rx="${shape.rx}" ry="${shape.ry}"/>`;
         case 'line':
           return `<line ${attrs} x1="${shape.x1}" y1="${shape.y1}" x2="${shape.x2}" y2="${shape.y2}"/>`;
         case 'path':
@@ -854,8 +854,8 @@
       switch (shape.type) {
         case 'rect':
           return { x: shape.x, y: shape.y, w: shape.width, h: shape.height };
-        case 'circle':
-          return { x: shape.cx - shape.r, y: shape.cy - shape.r, w: shape.r * 2, h: shape.r * 2 };
+        case 'ellipse':
+          return { x: shape.cx - shape.rx, y: shape.cy - shape.ry, w: shape.rx * 2, h: shape.ry * 2 };
         case 'line':
           const minX = Math.min(shape.x1, shape.x2);
           const minY = Math.min(shape.y1, shape.y2);
@@ -950,7 +950,7 @@
             </div>
           `;
           break;
-        case 'circle':
+        case 'ellipse':
           html += `
             <div class="input-row">
               <div class="input-group">
@@ -962,9 +962,15 @@
                 <input type="number" step="0.5" value="${shape.cy}" onchange="updateProp('cy', parseFloat(this.value))">
               </div>
             </div>
-            <div class="input-group">
-              <label>Radius</label>
-              <input type="number" step="0.5" value="${shape.r}" onchange="updateProp('r', parseFloat(this.value))">
+            <div class="input-row">
+              <div class="input-group">
+                <label>Radius X</label>
+                <input type="number" step="0.5" value="${shape.rx}" onchange="updateProp('rx', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Radius Y</label>
+                <input type="number" step="0.5" value="${shape.ry}" onchange="updateProp('ry', parseFloat(this.value))">
+              </div>
             </div>
           `;
           break;
@@ -1178,7 +1184,7 @@
             shape.x = snap(orig.x + dx);
             shape.y = snap(orig.y + dy);
             break;
-          case 'circle':
+          case 'ellipse':
             shape.cx = snap(orig.cx + dx);
             shape.cy = snap(orig.cy + dy);
             break;
@@ -1219,14 +1225,15 @@
             shape.width = Math.max(1, snap(orig.width - dx));
             shape.height = Math.max(1, snap(orig.height + dy));
           }
-        } else if (shape.type === 'circle') {
-          // Each corner has different "outward" direction
-          let delta = 0;
-          if (h === 'se') delta = (dx + dy) / 2;      // right+down = bigger
-          else if (h === 'nw') delta = (-dx - dy) / 2; // left+up = bigger
-          else if (h === 'ne') delta = (dx - dy) / 2;  // right+up = bigger
-          else if (h === 'sw') delta = (-dx + dy) / 2; // left+down = bigger
-          shape.r = Math.max(0.5, snap(orig.r + delta));
+        } else if (shape.type === 'ellipse') {
+          // Ellipse: resize rx and ry independently
+          let deltaX = 0, deltaY = 0;
+          if (h === 'se') { deltaX = dx; deltaY = dy; }
+          else if (h === 'nw') { deltaX = -dx; deltaY = -dy; }
+          else if (h === 'ne') { deltaX = dx; deltaY = -dy; }
+          else if (h === 'sw') { deltaX = -dx; deltaY = dy; }
+          shape.rx = Math.max(0.5, snap(orig.rx + deltaX / 2));
+          shape.ry = Math.max(0.5, snap(orig.ry + deltaY / 2));
         } else if (shape.type === 'line') {
           if (h === 'p1') {
             shape.x1 = snap(orig.x1 + dx);
@@ -1539,7 +1546,7 @@
           shape.x = snap(orig.x + dx);
           shape.y = snap(orig.y + dy);
           break;
-        case 'circle':
+        case 'ellipse':
           shape.cx = snap(orig.cx + dx);
           shape.cy = snap(orig.cy + dy);
           break;
@@ -1700,7 +1707,7 @@
               shape.x = snap(shape.x + dx);
               shape.y = snap(shape.y + dy);
               break;
-            case 'circle':
+            case 'ellipse':
               shape.cx = snap(shape.cx + dx);
               shape.cy = snap(shape.cy + dy);
               break;
@@ -1760,8 +1767,8 @@
       switch (shape.type) {
         case 'rect':
           return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"${shape.rx ? ` rx="${shape.rx}"` : ''}${attrs}/>`;
-        case 'circle':
-          return `<circle cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}"${attrs}/>`;
+        case 'ellipse':
+          return `<ellipse cx="${shape.cx}" cy="${shape.cy}" rx="${shape.rx}" ry="${shape.ry}"${attrs}/>`;
         case 'line':
           return `<line x1="${shape.x1}" y1="${shape.y1}" x2="${shape.x2}" y2="${shape.y2}"${attrs}/>`;
         case 'path':
@@ -1853,16 +1860,19 @@
             shape.rx = parseFloat(el.getAttribute('rx')) || 0;
             break;
           case 'circle':
+            // Convert circle to ellipse
+            shape.type = 'ellipse';
             shape.cx = parseFloat(el.getAttribute('cx')) || 12;
             shape.cy = parseFloat(el.getAttribute('cy')) || 12;
-            shape.r = parseFloat(el.getAttribute('r')) || 8;
+            const r = parseFloat(el.getAttribute('r')) || 8;
+            shape.rx = r;
+            shape.ry = r;
             break;
           case 'ellipse':
-            // Convert ellipse to circle (average radii) or keep as-is
-            shape.type = 'circle';
             shape.cx = parseFloat(el.getAttribute('cx')) || 12;
             shape.cy = parseFloat(el.getAttribute('cy')) || 12;
-            shape.r = (parseFloat(el.getAttribute('rx')) + parseFloat(el.getAttribute('ry'))) / 2 || 8;
+            shape.rx = parseFloat(el.getAttribute('rx')) || 8;
+            shape.ry = parseFloat(el.getAttribute('ry')) || 8;
             break;
           case 'line':
             shape.x1 = parseFloat(el.getAttribute('x1')) || 0;
