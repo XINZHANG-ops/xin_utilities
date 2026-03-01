@@ -184,11 +184,11 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-      padding: 20px 16px 8px;
+      padding: 8px 8px 8px;
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       z-index: 100;
       min-width: 300px;
     }
@@ -340,12 +340,8 @@
       color: var(--accent);
       transition: all 0.15s;
       flex-shrink: 0;
-      opacity: 0;
-      transform: scale(0.8);
     }
-    .page-thumb-wrapper:hover .page-insert-btn,
-    .page-grid:hover > .page-insert-btn { opacity: 1; transform: scale(1); }
-    .page-insert-btn:hover { background: var(--accent); color: #fff; }
+    .page-insert-btn:hover { background: var(--accent); color: #fff; transform: scale(1.1); }
 
     .page-add-btn {
       width: 140px;
@@ -3478,9 +3474,13 @@
       closeAllPageMenus();
     });
 
-    // Prevent clicks inside page-dropdown from closing it
+    // Prevent clicks inside page-dropdown from closing it, but close page menus
     pageDropdown.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Close three-dot menus when clicking anywhere in the dropdown
+      if (!e.target.closest('.page-thumb-menu-wrapper')) {
+        closeAllPageMenus();
+      }
     });
 
     let draggedPageIndex = null;
