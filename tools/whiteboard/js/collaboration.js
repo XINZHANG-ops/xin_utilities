@@ -772,6 +772,7 @@ function handleRemotePageUpdate(data) {
     pages.push({ objects: [], background: { pattern: 'none', color: '#ffffff' }, history: [], historyIndex: -1, historySeq: [] });
     updatePageUI();
     refreshPageGridIfOpen();
+    redraw();
   } else if (data.action === 'delete') {
     if (pages.length > 1 && data.page_index < pages.length) {
       pages.splice(data.page_index, 1);
@@ -821,25 +822,56 @@ function handleRemotePageUpdate(data) {
 // Handle remote page duplicate
 function handleRemotePageDuplicate(data) {
   const sourceIndex = data.sourceIndex;
-  if (sourceIndex < 0 || sourceIndex >= pages.length || pages.length >= MAX_PAGES) return;
+  if (sourceIndex < 0 || pages.length >= MAX_PAGES) return;
 
-  const sourcePage = pages[sourceIndex];
-  const newPage = {
-    objects: JSON.parse(JSON.stringify(sourcePage.objects)),
-    background: sourcePage.background ? { ...sourcePage.background } : { pattern: 'none', color: '#ffffff' }
-  };
+  let newPage;
+  if (data.pageData) {
+    // Use sent page data (preferred - ensures exact copy)
+    const localObjects = data.pageData.objects.map(obj => fromRatio(obj));
+    newPage = {
+      objects: localObjects,
+      background: data.pageData.background || { pattern: 'none', color: '#ffffff' },
+      history: [],
+      historyIndex: -1,
+      historySeq: []
+    };
+  } else if (sourceIndex < pages.length) {
+    // Fallback: use local page (may be out of sync)
+    const sourcePage = pages[sourceIndex];
+    newPage = {
+      objects: JSON.parse(JSON.stringify(sourcePage.objects)),
+      background: sourcePage.background ? { ...sourcePage.background } : { pattern: 'none', color: '#ffffff' },
+      history: [],
+      historyIndex: -1,
+      historySeq: []
+    };
+  } else {
+    // Source page doesn't exist locally
+    newPage = {
+      objects: [],
+      background: { pattern: 'none', color: '#ffffff' },
+      history: [],
+      historyIndex: -1,
+      historySeq: []
+    };
+  }
+
   // Reload images for duplicated page
   newPage.objects.forEach(obj => {
-    if (obj.type === 'image' && obj.imgSrc) {
+    if (obj.type === 'image' && obj.imgSrc && !obj.img) {
       const img = new Image();
+      img.onload = () => redraw();
       img.src = obj.imgSrc;
       obj.img = img;
     }
   });
-  pages.splice(sourceIndex + 1, 0, newPage);
+
+  const insertIndex = sourceIndex + 1;
+  pages.splice(insertIndex, 0, newPage);
   if (currentPageIndex > sourceIndex) currentPageIndex++;
   updatePageUI();
   refreshPageGridIfOpen();
+  redraw();
 }
 
 // Handle remote page insert
@@ -849,12 +881,16 @@ function handleRemotePageInsert(data) {
 
   const newPage = {
     objects: [],
-    background: { pattern: 'none', color: '#ffffff' }
+    background: { pattern: 'none', color: '#ffffff' },
+    history: [],
+    historyIndex: -1,
+    historySeq: []
   };
   pages.splice(insertIndex, 0, newPage);
   if (currentPageIndex >= insertIndex) currentPageIndex++;
   updatePageUI();
   refreshPageGridIfOpen();
+  redraw();
 }
 
 // ========== Server Sync ==========

@@ -205,8 +205,18 @@ function duplicatePage(index) {
   updatePageUI();
   renderPageGrid();
   saveToLocalStorage();
-  if (socket && socket.connected) {
-    socket.emit('wb_page_duplicate', { board_id: currentBoard.id, sourceIndex: index });
+  if (socket && socket.connected && currentBoard) {
+    // Send page content so receiver gets exact copy
+    const pageData = {
+      objects: newPage.objects.map(obj => toRatio(obj)),
+      background: newPage.background
+    };
+    socket.emit('wb_page_duplicate', {
+      board_id: currentBoard.id,
+      sourceIndex: index,
+      pageData: pageData
+    });
+    saveBoardToServer();
   }
 }
 
@@ -232,8 +242,9 @@ function insertPageAt(index) {
   updatePageUI();
   renderPageGrid();
   saveToLocalStorage();
-  if (socket && socket.connected) {
+  if (socket && socket.connected && currentBoard) {
     socket.emit('wb_page_insert', { board_id: currentBoard.id, insertIndex: index });
+    saveBoardToServer();
   }
 }
 
