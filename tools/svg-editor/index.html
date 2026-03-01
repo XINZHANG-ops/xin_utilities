@@ -584,8 +584,35 @@
       }
 
       shape.points = newPts.join(' ');
+
+      // Update cornerRadii array if it exists
+      if (shape.cornerRadii) {
+        shape.cornerRadii.splice(insertAfter + 1, 0, 0); // Insert 0 radius for new vertex
+      }
+
       // Update last touched to the new vertex
       lastTouchedVertex = insertAfter + 1;
+      render();
+    }
+
+    function setVertexRadius(radius) {
+      const shape = getSelectedShape();
+      if (!shape || shape.type !== 'polygon' || lastTouchedVertex === null) return;
+
+      const pts = shape.points.split(/[\s,]+/).map(Number);
+      const vertexCount = pts.length / 2;
+
+      // Initialize cornerRadii if needed
+      if (!shape.cornerRadii) {
+        shape.cornerRadii = new Array(vertexCount).fill(0);
+      }
+
+      // Ensure array is correct length
+      while (shape.cornerRadii.length < vertexCount) {
+        shape.cornerRadii.push(0);
+      }
+
+      shape.cornerRadii[lastTouchedVertex] = Math.max(0, radius);
       render();
     }
 
@@ -616,6 +643,11 @@
       }
 
       shape.points = newPts.join(' ');
+
+      // Update cornerRadii array if it exists
+      if (shape.cornerRadii) {
+        shape.cornerRadii.splice(deleteIndex, 1);
+      }
 
       // Adjust lastTouchedVertex
       if (lastTouchedVertex !== null) {
@@ -980,22 +1012,112 @@
         case 'path':
           return `<path ${attrs} d="${shape.d}"/>`;
         case 'polygon':
+          // If has corner radii, render as path
+          if (shape.cornerRadii && shape.cornerRadii.some(r => r > 0)) {
+            const pathD = polygonPointsToPath(shape.points, shape.cornerRadii);
+            return `<path ${attrs} d="${pathD}"/>`;
+          }
           return `<polygon ${attrs} points="${shape.points}"/>`;
         default:
           return '';
       }
     }
 
-    // Convert polygon points string to path d string
-    function polygonPointsToPath(pointsStr) {
+    // Convert polygon points string to path d string (with optional corner radii)
+    function polygonPointsToPath(pointsStr, cornerRadii = null) {
       const pts = pointsStr.split(/[\s,]+/).map(Number);
-      if (pts.length < 4) return '';
-      let d = `M ${pts[0]} ${pts[1]}`;
-      for (let i = 2; i < pts.length; i += 2) {
-        d += ` L ${pts[i]} ${pts[i + 1]}`;
+      if (pts.length < 6) return ''; // Need at least 3 points
+
+      const vertices = [];
+      for (let i = 0; i < pts.length; i += 2) {
+        vertices.push({ x: pts[i], y: pts[i + 1] });
       }
+
+      // If no corner radii or all zero, use simple path
+      if (!cornerRadii || cornerRadii.every(r => !r || r === 0)) {
+        let d = `M ${vertices[0].x} ${vertices[0].y}`;
+        for (let i = 1; i < vertices.length; i++) {
+          d += ` L ${vertices[i].x} ${vertices[i].y}`;
+        }
+        d += ' Z';
+        return d;
+      }
+
+      // Build path with rounded corners
+      return buildRoundedPolygonPath(vertices, cornerRadii);
+    }
+
+    // Build a path with rounded corners for polygon vertices
+    function buildRoundedPolygonPath(vertices, cornerRadii) {
+      const n = vertices.length;
+      let d = '';
+
+      for (let i = 0; i < n; i++) {
+        const prev = vertices[(i - 1 + n) % n];
+        const curr = vertices[i];
+        const next = vertices[(i + 1) % n];
+        const r = cornerRadii[i] || 0;
+
+        if (r === 0) {
+          // Sharp corner
+          if (i === 0) {
+            d = `M ${curr.x} ${curr.y}`;
+          } else {
+            d += ` L ${curr.x} ${curr.y}`;
+          }
+        } else {
+          // Rounded corner - calculate points offset from corner
+          const toPrev = normalize({ x: prev.x - curr.x, y: prev.y - curr.y });
+          const toNext = normalize({ x: next.x - curr.x, y: next.y - curr.y });
+
+          // Limit radius to half the shorter edge
+          const distPrev = distance(curr, prev);
+          const distNext = distance(curr, next);
+          const maxR = Math.min(distPrev, distNext) / 2;
+          const actualR = Math.min(r, maxR);
+
+          // Points where the arc starts and ends
+          const arcStart = { x: curr.x + toPrev.x * actualR, y: curr.y + toPrev.y * actualR };
+          const arcEnd = { x: curr.x + toNext.x * actualR, y: curr.y + toNext.y * actualR };
+
+          if (i === 0) {
+            d = `M ${arcStart.x} ${arcStart.y}`;
+          } else {
+            d += ` L ${arcStart.x} ${arcStart.y}`;
+          }
+
+          // Use quadratic bezier with control point at corner
+          d += ` Q ${curr.x} ${curr.y} ${arcEnd.x} ${arcEnd.y}`;
+        }
+      }
+
+      // Close path - handle first vertex if it has radius
+      const firstR = cornerRadii[0] || 0;
+      if (firstR > 0) {
+        const last = vertices[n - 1];
+        const first = vertices[0];
+        const second = vertices[1];
+        const toPrev = normalize({ x: last.x - first.x, y: last.y - first.y });
+        const distPrev = distance(first, last);
+        const distNext = distance(first, second);
+        const maxR = Math.min(distPrev, distNext) / 2;
+        const actualR = Math.min(firstR, maxR);
+        const arcStart = { x: first.x + toPrev.x * actualR, y: first.y + toPrev.y * actualR };
+        d += ` L ${arcStart.x} ${arcStart.y}`;
+      }
+
       d += ' Z';
       return d;
+    }
+
+    function normalize(v) {
+      const len = Math.sqrt(v.x * v.x + v.y * v.y);
+      if (len === 0) return { x: 0, y: 0 };
+      return { x: v.x / len, y: v.y / len };
+    }
+
+    function distance(a, b) {
+      return Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
     }
 
     // Convert hole array [[x,y], ...] to path d string
@@ -1034,7 +1156,7 @@
       switch (shape.type) {
         case 'rect': return rectToPath(shape);
         case 'ellipse': return ellipseToPath(shape);
-        case 'polygon': return polygonPointsToPath(shape.points);
+        case 'polygon': return polygonPointsToPath(shape.points, shape.cornerRadii);
         case 'path': return shape.d;
         default: return '';
       }
@@ -1360,6 +1482,8 @@
         case 'polygon':
           const vertexCount = shape.points.split(/[\s,]+/).length / 2;
           const holeCount = shape.holes ? shape.holes.length : 0;
+          const currentVertexRadius = (shape.cornerRadii && lastTouchedVertex !== null && lastTouchedVertex < vertexCount)
+            ? (shape.cornerRadii[lastTouchedVertex] || 0) : 0;
           html += `
             <div class="input-group">
               <label>Vertices 顶点 (${vertexCount}个)</label>
@@ -1368,6 +1492,18 @@
                 <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="removePolygonVertex()">- 删除顶点</button>
               </div>
               <textarea rows="2" onchange="updateProp('points', this.value)">${shape.points}</textarea>
+            </div>
+            <div class="input-group">
+              <label>顶点圆角 ${lastTouchedVertex !== null ? `(顶点 #${lastTouchedVertex + 1})` : '(点击选中顶点)'}</label>
+              ${lastTouchedVertex !== null ? `
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <button class="btn" style="padding:4px 8px;font-size:11px;${currentVertexRadius === 0 ? 'background:#0066ff;' : ''}" onclick="setVertexRadius(0)">0</button>
+                  <button class="btn" style="padding:4px 8px;font-size:11px;${currentVertexRadius === 1 ? 'background:#0066ff;' : ''}" onclick="setVertexRadius(1)">1</button>
+                  <button class="btn" style="padding:4px 8px;font-size:11px;${currentVertexRadius === 2 ? 'background:#0066ff;' : ''}" onclick="setVertexRadius(2)">2</button>
+                  <button class="btn" style="padding:4px 8px;font-size:11px;${currentVertexRadius === 4 ? 'background:#0066ff;' : ''}" onclick="setVertexRadius(4)">4</button>
+                </div>
+                <input type="number" step="0.5" min="0" value="${currentVertexRadius}" onchange="setVertexRadius(parseFloat(this.value))">
+              ` : `<p style="color:#666;font-size:11px;">点击红色顶点选中后可设置圆角</p>`}
             </div>
             <div class="input-group">
               <label>Holes 挖洞 (${holeCount}个)</label>
@@ -2451,6 +2587,11 @@
         case 'path':
           return `<path d="${shape.d}"${attrs}/>`;
         case 'polygon':
+          // If has corner radii, output as path
+          if (shape.cornerRadii && shape.cornerRadii.some(r => r > 0)) {
+            const pathD = polygonPointsToPath(shape.points, shape.cornerRadii);
+            return `<path d="${pathD}"${attrs}/>`;
+          }
           return `<polygon points="${shape.points}"${attrs}/>`;
         default:
           return '';
