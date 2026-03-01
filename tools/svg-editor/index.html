@@ -201,6 +201,8 @@
     .handle-se { cursor: se-resize; }
     .handle-vertex { cursor: grab; }
     .handle-vertex:hover { fill: #ff9f0a; }
+    .handle-hole { cursor: grab; }
+    .handle-hole:hover { fill: #00e5ff; }
     .handle-active { fill: #0066ff; }
 
     .shape-list {
@@ -300,6 +302,29 @@
       left: 12px;
       font-size: 12px;
       color: #666;
+    }
+
+    .hole-mode-indicator {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff3b30;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 100;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .canvas-wrapper.hole-mode {
+      box-shadow: 0 0 0 3px #ff3b30, 0 4px 20px rgba(0,0,0,0.3);
     }
 
     .help-text {
@@ -414,6 +439,10 @@
     let idCounter = 1;
     let lastTouchedVertex = null; // Track last touched polygon vertex index
     let marqueeState = null; // For marquee selection
+    let holeMode = false; // Drawing a new hole
+    let currentHolePoints = []; // Points for hole being drawn
+    let selectedHoleIndex = null; // Which hole is selected for vertex editing
+    let lastTouchedHoleVertex = null; // Track last touched hole vertex
 
     const svgCanvas = document.getElementById('svgCanvas');
     const gridOverlay = document.getElementById('gridOverlay');
@@ -600,6 +629,117 @@
       render();
     }
 
+    // Hole management functions
+    function startHoleMode() {
+      const shape = getSelectedShape();
+      if (!shape || shape.type !== 'polygon') {
+        showMessage('请先选中一个多边形');
+        return;
+      }
+
+      // Warn if polygon has no fill
+      if (!shape.fill || shape.fill === 'none') {
+        showMessage('提示：空心多边形的洞不可见，建议先设置fill');
+      }
+
+      holeMode = true;
+      currentHolePoints = [];
+      selectedHoleIndex = null;
+      render();
+    }
+
+    function cancelHoleMode() {
+      holeMode = false;
+      currentHolePoints = [];
+      render();
+    }
+
+    function finishHole() {
+      const shape = getSelectedShape();
+      if (!shape || shape.type !== 'polygon') return;
+
+      if (currentHolePoints.length < 3) {
+        showMessage('洞至少需要3个顶点');
+        return;
+      }
+
+      // Initialize holes array if needed
+      if (!shape.holes) shape.holes = [];
+
+      // Add the new hole
+      shape.holes.push([...currentHolePoints]);
+
+      holeMode = false;
+      currentHolePoints = [];
+      selectedHoleIndex = shape.holes.length - 1;
+      showMessage('洞已添加');
+      render();
+    }
+
+    function deleteHole(holeIndex) {
+      const shape = getSelectedShape();
+      if (!shape || !shape.holes || holeIndex >= shape.holes.length) return;
+
+      shape.holes.splice(holeIndex, 1);
+      if (shape.holes.length === 0) delete shape.holes;
+      selectedHoleIndex = null;
+      lastTouchedHoleVertex = null;
+      render();
+    }
+
+    function selectHole(holeIndex) {
+      selectedHoleIndex = holeIndex;
+      lastTouchedHoleVertex = null;
+      render();
+    }
+
+    function addHoleVertex() {
+      const shape = getSelectedShape();
+      if (!shape || !shape.holes || selectedHoleIndex === null) return;
+
+      const hole = shape.holes[selectedHoleIndex];
+      if (!hole) return;
+
+      let insertAfter = lastTouchedHoleVertex;
+      if (insertAfter === null || insertAfter >= hole.length) {
+        insertAfter = hole.length - 1;
+      }
+
+      const nextVertex = (insertAfter + 1) % hole.length;
+      const x1 = hole[insertAfter][0], y1 = hole[insertAfter][1];
+      const x2 = hole[nextVertex][0], y2 = hole[nextVertex][1];
+
+      const nx = snap((x1 + x2) / 2);
+      const ny = snap((y1 + y2) / 2);
+
+      hole.splice(insertAfter + 1, 0, [nx, ny]);
+      lastTouchedHoleVertex = insertAfter + 1;
+      render();
+    }
+
+    function removeHoleVertex() {
+      const shape = getSelectedShape();
+      if (!shape || !shape.holes || selectedHoleIndex === null) return;
+
+      const hole = shape.holes[selectedHoleIndex];
+      if (!hole || hole.length <= 3) {
+        showMessage('洞至少需要3个顶点');
+        return;
+      }
+
+      let deleteIndex = lastTouchedHoleVertex;
+      if (deleteIndex === null || deleteIndex >= hole.length) {
+        deleteIndex = hole.length - 1;
+      }
+
+      hole.splice(deleteIndex, 1);
+
+      if (lastTouchedHoleVertex !== null && lastTouchedHoleVertex >= hole.length) {
+        lastTouchedHoleVertex = hole.length - 1;
+      }
+      render();
+    }
+
     function selectShape(id, e, addToSelection = false) {
       if (e) e.stopPropagation();
 
@@ -610,9 +750,22 @@
         } else {
           selectedIds.push(id);
         }
+        // Reset hole state on multi-select
+        selectedHoleIndex = null;
+        lastTouchedHoleVertex = null;
+        if (holeMode) {
+          holeMode = false;
+          currentHolePoints = [];
+        }
       } else {
         if (!isSelected(id)) {
           lastTouchedVertex = null; // Reset when switching shapes
+          selectedHoleIndex = null;
+          lastTouchedHoleVertex = null;
+          if (holeMode) {
+            holeMode = false;
+            currentHolePoints = [];
+          }
         }
         selectedIds = [id];
       }
@@ -639,6 +792,24 @@
         if (newShape.cy !== undefined) newShape.cy += 2;
         if (newShape.x1 !== undefined) { newShape.x1 += 2; newShape.x2 += 2; }
         if (newShape.y1 !== undefined) { newShape.y1 += 2; newShape.y2 += 2; }
+        // Offset polygon points and holes
+        if (newShape.type === 'polygon' && newShape.points) {
+          const pts = newShape.points.split(/[\s,]+/).map(Number);
+          const newPts = [];
+          for (let i = 0; i < pts.length; i += 2) {
+            newPts.push((pts[i] + 2) + ',' + (pts[i + 1] + 2));
+          }
+          newShape.points = newPts.join(' ');
+          if (newShape.holes) {
+            newShape.holes = newShape.holes.map(hole =>
+              hole.map(pt => [pt[0] + 2, pt[1] + 2])
+            );
+          }
+        }
+        // Offset path
+        if (newShape.type === 'path' && newShape.d) {
+          newShape.d = shiftPathCoords(newShape.d, 2, 2);
+        }
         shapes.push(newShape);
         selectedIds = [newShape.id];
         render();
@@ -700,6 +871,24 @@
       wrapper.style.height = displayH + 'px';
 
       document.getElementById('zoomInfo').textContent = `${w} × ${h}`;
+
+      // Hole mode visual feedback
+      if (holeMode) {
+        wrapper.classList.add('hole-mode');
+        let indicator = document.getElementById('holeModeIndicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.id = 'holeModeIndicator';
+          indicator.className = 'hole-mode-indicator';
+          document.body.appendChild(indicator);
+        }
+        indicator.innerHTML = `🕳️ 挖洞模式 - 点击画布添加顶点 (${currentHolePoints.length}点) | Enter完成 | Esc取消`;
+        indicator.style.display = 'block';
+      } else {
+        wrapper.classList.remove('hole-mode');
+        const indicator = document.getElementById('holeModeIndicator');
+        if (indicator) indicator.style.display = 'none';
+      }
 
       // Render grid
       if (showGrid) {
@@ -773,10 +962,39 @@
         case 'path':
           return `<path ${attrs} d="${shape.d}"/>`;
         case 'polygon':
+          // If polygon has holes, render as path with fill-rule="evenodd"
+          if (shape.holes && shape.holes.length > 0) {
+            const outerPath = polygonPointsToPath(shape.points);
+            const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
+            return `<path ${attrs} d="${outerPath} ${holePaths}" fill-rule="evenodd"/>`;
+          }
           return `<polygon ${attrs} points="${shape.points}"/>`;
         default:
           return '';
       }
+    }
+
+    // Convert polygon points string to path d string
+    function polygonPointsToPath(pointsStr) {
+      const pts = pointsStr.split(/[\s,]+/).map(Number);
+      if (pts.length < 4) return '';
+      let d = `M ${pts[0]} ${pts[1]}`;
+      for (let i = 2; i < pts.length; i += 2) {
+        d += ` L ${pts[i]} ${pts[i + 1]}`;
+      }
+      d += ' Z';
+      return d;
+    }
+
+    // Convert hole array [[x,y], ...] to path d string
+    function holeToPath(hole) {
+      if (hole.length < 3) return '';
+      let d = `M ${hole[0][0]} ${hole[0][1]}`;
+      for (let i = 1; i < hole.length; i++) {
+        d += ` L ${hole[i][0]} ${hole[i][1]}`;
+      }
+      d += ' Z';
+      return d;
     }
 
     function renderSelectionHandles() {
@@ -850,15 +1068,39 @@
             handles += `<circle class="handle" data-handle="p2" cx="${shape.x2}" cy="${shape.y2}" r="${hs}"/>`;
           }
 
-          // Polygon vertex handles
+          // Polygon vertex handles (apply rotation if exists)
           if (shape.type === 'polygon' && shape.points) {
             const pts = shape.points.split(/[\s,]+/).map(Number);
+            const polyRotation = parseRotation(shape.transform);
             for (let i = 0; i < pts.length; i += 2) {
-              const vx = pts[i];
-              const vy = pts[i + 1];
+              let vx = pts[i];
+              let vy = pts[i + 1];
+              // Apply rotation to vertex position for display
+              if (polyRotation) {
+                const rotated = rotatePoint(vx, vy, polyRotation.cx, polyRotation.cy, polyRotation.angle);
+                vx = rotated.x;
+                vy = rotated.y;
+              }
               const vertexIndex = i / 2;
-              const isActive = vertexIndex === lastTouchedVertex;
+              const isActive = vertexIndex === lastTouchedVertex && selectedHoleIndex === null;
               handles += `<circle class="handle handle-vertex${isActive ? ' handle-active' : ''}" data-handle="vertex" data-vertex="${vertexIndex}" cx="${vx}" cy="${vy}" r="${hs}"/>`;
+            }
+
+            // Hole vertex handles (also apply rotation)
+            if (shape.holes) {
+              shape.holes.forEach((hole, holeIdx) => {
+                const isHoleSelected = holeIdx === selectedHoleIndex;
+                hole.forEach((pt, vi) => {
+                  let hx = pt[0], hy = pt[1];
+                  if (polyRotation) {
+                    const rotated = rotatePoint(hx, hy, polyRotation.cx, polyRotation.cy, polyRotation.angle);
+                    hx = rotated.x;
+                    hy = rotated.y;
+                  }
+                  const isActive = isHoleSelected && vi === lastTouchedHoleVertex;
+                  handles += `<circle class="handle handle-hole${isActive ? ' handle-active' : ''}" data-handle="hole-vertex" data-hole="${holeIdx}" data-vertex="${vi}" cx="${hx}" cy="${hy}" r="${hs}" style="fill:${isHoleSelected ? '#00bcd4' : '#888'}"/>`;
+                });
+              });
             }
           }
         }
@@ -872,6 +1114,17 @@
         const mh = Math.abs(marqueeState.currentY - marqueeState.startY);
         handles += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}"
           fill="rgba(0,102,255,0.1)" stroke="#0066ff" stroke-width="0.1"/>`;
+      }
+
+      // Current hole being drawn preview
+      if (holeMode && currentHolePoints.length > 0) {
+        // Draw polygon preview
+        const holePreview = currentHolePoints.map(p => `${p[0]},${p[1]}`).join(' ');
+        handles += `<polygon points="${holePreview}" fill="rgba(255,0,0,0.2)" stroke="#ff3b30" stroke-width="0.1" stroke-dasharray="0.2"/>`;
+        // Draw vertices
+        currentHolePoints.forEach((pt, i) => {
+          handles += `<circle cx="${pt[0]}" cy="${pt[1]}" r="${hs}" fill="#ff3b30"/>`;
+        });
       }
 
       selectionOverlay.innerHTML = handles;
@@ -1045,6 +1298,7 @@
           break;
         case 'polygon':
           const vertexCount = shape.points.split(/[\s,]+/).length / 2;
+          const holeCount = shape.holes ? shape.holes.length : 0;
           html += `
             <div class="input-group">
               <label>Vertices 顶点 (${vertexCount}个)</label>
@@ -1054,7 +1308,37 @@
               </div>
               <textarea rows="2" onchange="updateProp('points', this.value)">${shape.points}</textarea>
             </div>
-            <p style="color:#666;font-size:11px;">拖拽绿色圆点移动单个顶点</p>
+            <div class="input-group">
+              <label>Holes 挖洞 (${holeCount}个)</label>
+              ${holeMode ? `
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <button class="btn primary" style="padding:4px 8px;font-size:11px;" onclick="finishHole()">✓ 完成 (${currentHolePoints.length}点)</button>
+                  <button class="btn danger" style="padding:4px 8px;font-size:11px;" onclick="cancelHoleMode()">✕ 取消</button>
+                </div>
+                <p style="color:#ff9f0a;font-size:11px;">点击画布添加洞的顶点，Enter完成</p>
+              ` : `
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="startHoleMode()">+ 新建洞</button>
+                </div>
+              `}
+              ${holeCount > 0 ? `
+                <div style="max-height:100px;overflow-y:auto;background:#222;border-radius:4px;padding:4px;">
+                  ${shape.holes.map((hole, i) => `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;${selectedHoleIndex === i ? 'background:#0066ff;border-radius:3px;' : ''}cursor:pointer;" onclick="selectHole(${i})">
+                      <span style="font-size:11px;">洞 #${i + 1} (${hole.length}点)</span>
+                      <div style="display:flex;gap:2px;">
+                        ${selectedHoleIndex === i ? `
+                          <button class="btn" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();addHoleVertex()">+</button>
+                          <button class="btn" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();removeHoleVertex()">-</button>
+                        ` : ''}
+                        <button class="btn danger" style="padding:2px 4px;font-size:10px;" onclick="event.stopPropagation();deleteHole(${i})">×</button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+            <p style="color:#666;font-size:11px;">🔴红点=外轮廓顶点 🔵青点=洞顶点</p>
           `;
           break;
       }
@@ -1141,6 +1425,14 @@
       e.preventDefault();
       e.stopPropagation();
 
+      // If in hole mode, add point instead of selecting shape
+      if (holeMode) {
+        const startPoint = getSvgPoint(e);
+        currentHolePoints.push([snap(startPoint.x), snap(startPoint.y)]);
+        render();
+        return;
+      }
+
       const shapeId = e.target.dataset.id;
 
       // If Ctrl held, toggle selection
@@ -1158,6 +1450,13 @@
       if (!isSelected(shapeId)) {
         selectedIds = [shapeId];
         lastTouchedVertex = null;
+        selectedHoleIndex = null;
+        lastTouchedHoleVertex = null;
+        // Cancel hole mode if switching shapes
+        if (holeMode) {
+          holeMode = false;
+          currentHolePoints = [];
+        }
       }
 
       const startPoint = getSvgPoint(e);
@@ -1189,12 +1488,20 @@
 
       const handle = e.target.dataset.handle;
       const vertexIndex = e.target.dataset.vertex !== undefined ? parseInt(e.target.dataset.vertex) : null;
+      const holeIndex = e.target.dataset.hole !== undefined ? parseInt(e.target.dataset.hole) : null;
       const shape = getSelectedShape();
       if (!shape) return;
 
       // Track last touched vertex for polygon
       if (handle === 'vertex' && vertexIndex !== null) {
         lastTouchedVertex = vertexIndex;
+        selectedHoleIndex = null; // Deselect hole when touching outer vertex
+      }
+
+      // Track last touched hole vertex
+      if (handle === 'hole-vertex' && holeIndex !== null && vertexIndex !== null) {
+        selectedHoleIndex = holeIndex;
+        lastTouchedHoleVertex = vertexIndex;
       }
 
       const startPoint = getSvgPoint(e);
@@ -1203,6 +1510,7 @@
         type: 'resize',
         handle,
         vertexIndex,
+        holeIndex,
         shape,
         startX: startPoint.x,
         startY: startPoint.y,
@@ -1259,6 +1567,12 @@
               newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
             }
             shape.points = newPts.join(' ');
+            // Also move holes
+            if (orig.holes) {
+              shape.holes = orig.holes.map(hole =>
+                hole.map(pt => [snap(pt[0] + dx), snap(pt[1] + dy)])
+              );
+            }
             break;
         }
         // Also update rotation center in transform
@@ -1343,7 +1657,19 @@
             shape.y2 = snap(orig.y2 + localDy);
           }
         } else if (shape.type === 'polygon') {
-          if (h === 'vertex' && dragState.vertexIndex !== null) {
+          if (h === 'hole-vertex' && dragState.holeIndex !== null && dragState.vertexIndex !== null) {
+            // Drag individual hole vertex
+            const hi = dragState.holeIndex;
+            const vi = dragState.vertexIndex;
+            if (orig.holes && orig.holes[hi] && orig.holes[hi][vi]) {
+              // Make sure shape.holes exists and copy structure from orig
+              if (!shape.holes) shape.holes = JSON.parse(JSON.stringify(orig.holes));
+              shape.holes[hi][vi] = [
+                snap(orig.holes[hi][vi][0] + localDx),
+                snap(orig.holes[hi][vi][1] + localDy)
+              ];
+            }
+          } else if (h === 'vertex' && dragState.vertexIndex !== null) {
             // Drag individual vertex
             const pts = orig.points.split(/[\s,]+/).map(Number);
             const vi = dragState.vertexIndex;
@@ -1380,6 +1706,16 @@
               newPts.push(nx + ',' + ny);
             }
             shape.points = newPts.join(' ');
+
+            // Also scale holes
+            if (orig.holes) {
+              shape.holes = orig.holes.map(hole =>
+                hole.map(pt => [
+                  snap(cx + (pt[0] - cx) * scaleX),
+                  snap(cy + (pt[1] - cy) * scaleY)
+                ])
+              );
+            }
           }
         } else if (shape.type === 'path') {
           // Scale path from center
@@ -1680,6 +2016,12 @@
             newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
           }
           shape.points = newPts.join(' ');
+          // Also move holes
+          if (orig.holes) {
+            shape.holes = orig.holes.map(hole =>
+              hole.map(pt => [snap(pt[0] + dx), snap(pt[1] + dy)])
+            );
+          }
           break;
         case 'path':
           // Move path by shifting all coordinates in d attribute
@@ -1698,8 +2040,20 @@
 
     // Marquee selection on canvas background
     wrapper.addEventListener('mousedown', (e) => {
-      if (e.target === svgCanvas || e.target === wrapper || e.target === gridOverlay) {
+      // Check if clicking on canvas background (not on a shape)
+      const isCanvasClick = e.target === svgCanvas || e.target === wrapper ||
+                            e.target === gridOverlay || e.target === selectionOverlay ||
+                            e.target.closest('#canvasWrapper');
+
+      if (isCanvasClick && !e.target.classList.contains('shape') && !e.target.classList.contains('handle')) {
         const startPoint = getSvgPoint(e);
+
+        // If in hole mode, add point to current hole
+        if (holeMode) {
+          currentHolePoints.push([snap(startPoint.x), snap(startPoint.y)]);
+          render();
+          return;
+        }
 
         // Start marquee selection
         marqueeState = {
@@ -1767,6 +2121,20 @@
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+      // Enter to finish hole
+      if (e.key === 'Enter' && holeMode) {
+        e.preventDefault();
+        finishHole();
+        return;
+      }
+
+      // Escape to cancel hole mode
+      if (e.key === 'Escape' && holeMode) {
+        e.preventDefault();
+        cancelHoleMode();
+        return;
+      }
+
       const step = e.shiftKey ? 1 : 0.1;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1791,6 +2159,26 @@
               if (newShape.y !== undefined) newShape.y += 2;
               if (newShape.cx !== undefined) newShape.cx += 2;
               if (newShape.cy !== undefined) newShape.cy += 2;
+              if (newShape.x1 !== undefined) { newShape.x1 += 2; newShape.x2 += 2; }
+              if (newShape.y1 !== undefined) { newShape.y1 += 2; newShape.y2 += 2; }
+              // Offset polygon points and holes
+              if (newShape.type === 'polygon' && newShape.points) {
+                const pts = newShape.points.split(/[\s,]+/).map(Number);
+                const newPts = [];
+                for (let i = 0; i < pts.length; i += 2) {
+                  newPts.push((pts[i] + 2) + ',' + (pts[i + 1] + 2));
+                }
+                newShape.points = newPts.join(' ');
+                if (newShape.holes) {
+                  newShape.holes = newShape.holes.map(hole =>
+                    hole.map(pt => [pt[0] + 2, pt[1] + 2])
+                  );
+                }
+              }
+              // Offset path
+              if (newShape.type === 'path' && newShape.d) {
+                newShape.d = shiftPathCoords(newShape.d, 2, 2);
+              }
               shapes.push(newShape);
               newIds.push(newShape.id);
             }
@@ -1849,6 +2237,12 @@
                 newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
               }
               shape.points = newPts.join(' ');
+              // Also move holes
+              if (shape.holes) {
+                shape.holes = shape.holes.map(hole =>
+                  hole.map(pt => [snap(pt[0] + dx), snap(pt[1] + dy)])
+                );
+              }
               break;
             case 'path':
               shape.d = shiftPathCoords(shape.d, dx, dy);
@@ -1907,6 +2301,12 @@
         case 'path':
           return `<path d="${shape.d}"${attrs}/>`;
         case 'polygon':
+          // If polygon has holes, output as path with fill-rule="evenodd"
+          if (shape.holes && shape.holes.length > 0) {
+            const outerPath = polygonPointsToPath(shape.points);
+            const holePaths = shape.holes.map(hole => holeToPath(hole)).join(' ');
+            return `<path d="${outerPath} ${holePaths}" fill-rule="evenodd"${attrs}/>`;
+          }
           return `<polygon points="${shape.points}"${attrs}/>`;
         default:
           return '';
