@@ -58,7 +58,7 @@ I18n.register('zh', {
     shareToolsDesc: '二维码、链接分享',
 
     // Tool counts
-    imageToolsCount: '5 个工具',
+    imageToolsCount: '6 个工具',
     textToolsCount: '1 个工具',
     canvasToolsCount: '1 个工具',
     shareToolsCount: '2 个工具',
@@ -73,6 +73,7 @@ I18n.register('zh', {
     badgeCompare: '对比',
     badgeDoodle: '涂鸦',
     badgeGenerate: '生成',
+    badgeCreate: '创作',
 
     // Tool Cards
     cropperTitle: '图片修剪器',
@@ -85,6 +86,8 @@ I18n.register('zh', {
     annotateDesc: '画笔涂鸦，添加矩形、圆形、箭头。可调整形状大小和位置。Ctrl+Z 撤销。',
     bgRemoveTitle: '背景移除',
     bgRemoveDesc: '使用 AI 智能移除图片背景，支持人物、物品等各种场景。',
+    svgEditorTitle: 'SVG 编辑器',
+    svgEditorDesc: '可视化创建 SVG 图标。支持多选、顶点编辑、框选拖拽。导入导出 SVG 代码。',
     textDiffTitle: '文本对比',
     textDiffDesc: '并排显示差异，类似 Git Diff。可选择使用哪一侧内容，下载合并结果。',
     whiteboardTitle: '在线白板',

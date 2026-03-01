@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Icon Editor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 300px;
+      background: #252525;
+      padding: 20px;
+      border-right: 1px solid #333;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    .sidebar h2 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .tool-group {
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 16px;
+      margin: 0 4px 8px 0;
+      background: #333;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { background: #444; }
+    .btn.primary { background: #0066ff; border-color: #0066ff; }
+    .btn.danger { background: #ff3b30; border-color: #ff3b30; }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .input-group input, .input-group select, .input-group textarea {
+      width: 100%;
+      padding: 8px 12px;
+      background: #333;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .input-group textarea {
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-row .input-group {
+      flex: 1;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2a2a;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      cursor: crosshair;
+    }
+
+    #svgCanvas {
+      display: block;
+    }
+
+    #svgCanvas .shape {
+      cursor: move;
+    }
+
+    #svgCanvas .shape:hover {
+      filter: brightness(1.1);
+    }
+
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .selection-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .handle {
+      fill: #ff3b30;
+      stroke: none;
+      cursor: pointer;
+      pointer-events: all;
+    }
+
+    .handle:hover {
+      fill: #ff9f0a;
+    }
+
+    .handle-move { cursor: move; }
+    .handle-nw { cursor: nw-resize; }
+    .handle-ne { cursor: ne-resize; }
+    .handle-sw { cursor: sw-resize; }
+    .handle-se { cursor: se-resize; }
+    .handle-vertex { cursor: grab; }
+    .handle-vertex:hover { fill: #ff9f0a; }
+    .handle-active { fill: #0066ff; }
+
+    .shape-list {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+
+    .shape-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #333;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .shape-item:hover { background: #3a3a3a; }
+    .shape-item.selected { background: #0066ff; }
+
+    .shape-item .shape-name {
+      flex: 1;
+    }
+
+    .shape-item .shape-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .shape-item .icon-btn {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 14px;
+    }
+
+    .shape-item .icon-btn:hover { color: #fff; }
+    .shape-item.selected .icon-btn { color: rgba(255,255,255,0.7); }
+    .shape-item.selected .icon-btn:hover { color: #fff; }
+
+    .output-section {
+      margin-top: 16px;
+      background: #252525;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .output-section h3 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+
+    #svgOutput {
+      width: 100%;
+      height: 100px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      color: #0f0;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 11px;
+      padding: 12px;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    .preview-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      margin-top: 12px;
+    }
+
+    .preview-item {
+      text-align: center;
+    }
+
+    .preview-item span {
+      display: block;
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .preview-svg {
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    .zoom-info {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="tool-group">
+      <h2>Shapes</h2>
+      <div class="shape-list" id="shapeList"></div>
+      <div style="display:flex;flex-wrap:wrap;">
+        <button class="btn" onclick="addRect()">+ Rect</button>
+        <button class="btn" onclick="addCircle()">+ Circle</button>
+        <button class="btn" onclick="addLine()">+ Line</button>
+        <button class="btn" onclick="addArc()">+ Arc</button>
+        <button class="btn" onclick="addPolygon()">+ Polygon</button>
+        <button class="btn" onclick="addPath()">+ Path</button>
+      </div>
+      <div class="help-text" style="margin-top:8px;">
+        <strong>Fill说明:</strong><br>
+        • fill="none" → 空心(只有边框)<br>
+        • fill="currentColor" → 实心<br>
+        • Polygon可创建封闭填充形状
+      </div>
+    </div>
+
+    <div class="tool-group" id="propertiesSection">
+      <h2>Properties</h2>
+      <div id="propertiesPanel">
+        <p style="color:#666;font-size:13px;">Click a shape to select</p>
+      </div>
+    </div>
+
+    <div class="tool-group">
+      <h2>Canvas Settings</h2>
+      <div class="input-row">
+        <div class="input-group">
+          <label>ViewBox W</label>
+          <input type="number" id="canvasWidth" value="24" onchange="render()">
+        </div>
+        <div class="input-group">
+          <label>ViewBox H</label>
+          <input type="number" id="canvasHeight" value="24" onchange="render()">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Zoom: <span id="zoomLabel">12x</span></label>
+        <input type="range" id="displayScale" min="8" max="24" value="12" oninput="updateZoomLabel();render()">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <input type="checkbox" id="showGrid" checked onchange="render()"> Show Grid
+      </label>
+    </div>
+
+    <div class="tool-group">
+      <button class="btn danger" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <div class="help-text">
+      <strong>Shortcuts:</strong><br>
+      框选 - 拖拽空白区域多选<br>
+      Ctrl+Click - 添加/取消选中<br>
+      Ctrl+A - 全选<br>
+      Delete - 删除选中<br>
+      Ctrl+D - 复制<br>
+      Arrow - 移动0.1 / Shift+Arrow 1
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="canvas-container" id="canvasContainer">
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <svg id="gridOverlay" class="grid-overlay"></svg>
+        <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="selectionOverlay" class="selection-overlay"></svg>
+      </div>
+      <div class="zoom-info" id="zoomInfo">24 × 24</div>
+    </div>
+
+    <div class="output-section">
+      <h3>SVG Output</h3>
+      <textarea id="svgOutput" placeholder="粘贴SVG代码到这里，点击Import导入"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn primary" onclick="copySVG()">Copy SVG</button>
+        <button class="btn" onclick="importSVG()">Import 导入</button>
+      </div>
+      <div class="preview-row" id="previewRow"></div>
+    </div>
+  </div>
+
+  <script>
+    let shapes = [];
+    let selectedIds = []; // Support multi-selection
+    let clipboard = null;
+    let dragState = null;
+    let idCounter = 1;
+    let lastTouchedVertex = null; // Track last touched polygon vertex index
+    let marqueeState = null; // For marquee selection
+
+    const svgCanvas = document.getElementById('svgCanvas');
+    const gridOverlay = document.getElementById('gridOverlay');
+    const selectionOverlay = document.getElementById('selectionOverlay');
+    const wrapper = document.getElementById('canvasWrapper');
+
+    // Helper for selection
+    function isSelected(id) {
+      return selectedIds.includes(id);
+    }
+
+    function getSelectedShape() {
+      return selectedIds.length === 1 ? shapes.find(s => s.id === selectedIds[0]) : null;
+    }
+
+    // Toast message
+    function showMessage(msg) {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:999;opacity:0;transition:opacity 0.3s;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    }
+
+    function generateId() {
+      return 'shape_' + (idCounter++);
+    }
+
+    function addRect() {
+      shapes.push({
+        id: generateId(),
+        type: 'rect',
+        x: 4, y: 4, width: 16, height: 16, rx: 0,
+        fill: 'none', stroke: 'currentColor', strokeWidth: 2
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      render();
+    }
+
+    function addCircle() {
+      shapes.push({
+        id: generateId(),
+        type: 'circle',
+        cx: 12, cy: 12, r: 8,
+        fill: 'none', stroke: 'currentColor', strokeWidth: 2
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      render();
+    }
+
+    function addLine() {
+      shapes.push({
+        id: generateId(),
+        type: 'line',
+        x1: 4, y1: 4, x2: 20, y2: 20,
+        stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round'
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      render();
+    }
+
+    function addPath() {
+      shapes.push({
+        id: generateId(),
+        type: 'path',
+        d: 'M 4 12 L 12 4 L 20 12 L 12 20 Z',
+        fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+        strokeLinecap: 'round', strokeLinejoin: 'round'
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      render();
+    }
+
+    function addArc() {
+      // Arc: M startX startY A rx ry rotation large-arc sweep endX endY
+      shapes.push({
+        id: generateId(),
+        type: 'path',
+        subtype: 'arc',
+        // 半圆弧从左到右
+        d: 'M 4 12 A 8 8 0 0 1 20 12',
+        fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+        strokeLinecap: 'round'
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      render();
+    }
+
+    function addPolygon() {
+      // 封闭多边形 - 三角形示例
+      shapes.push({
+        id: generateId(),
+        type: 'polygon',
+        points: '12,4 20,20 4,20',
+        fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+        strokeLinejoin: 'round'
+      });
+      selectedIds = [shapes[shapes.length - 1].id];
+      lastTouchedVertex = null;
+      render();
+    }
+
+    function addPolygonVertex() {
+      const shape = getSelectedShape();
+      if (!shape || shape.type !== 'polygon') return;
+
+      const pts = shape.points.split(/[\s,]+/).map(Number);
+      const vertexCount = pts.length / 2;
+
+      // Determine insert position based on last touched vertex
+      let insertAfter = lastTouchedVertex;
+      if (insertAfter === null || insertAfter >= vertexCount) {
+        insertAfter = vertexCount - 1; // Default: after last vertex
+      }
+
+      // Calculate next vertex index (wrap around for closed polygon)
+      const nextVertex = (insertAfter + 1) % vertexCount;
+
+      // Get coordinates of current and next vertex
+      const x1 = pts[insertAfter * 2], y1 = pts[insertAfter * 2 + 1];
+      const x2 = pts[nextVertex * 2], y2 = pts[nextVertex * 2 + 1];
+
+      // New vertex at midpoint
+      const nx = snap((x1 + x2) / 2);
+      const ny = snap((y1 + y2) / 2);
+
+      // Build new points array with inserted vertex
+      const newPts = [];
+      for (let i = 0; i < vertexCount; i++) {
+        newPts.push(pts[i * 2] + ',' + pts[i * 2 + 1]);
+        if (i === insertAfter) {
+          newPts.push(nx + ',' + ny);
+        }
+      }
+
+      shape.points = newPts.join(' ');
+      // Update last touched to the new vertex
+      lastTouchedVertex = insertAfter + 1;
+      render();
+    }
+
+    function removePolygonVertex() {
+      const shape = getSelectedShape();
+      if (!shape || shape.type !== 'polygon') return;
+
+      const pts = shape.points.split(/[\s,]+/).map(Number);
+      const vertexCount = pts.length / 2;
+
+      if (vertexCount <= 3) {
+        showMessage('多边形至少需要3个顶点');
+        return;
+      }
+
+      // Determine which vertex to delete
+      let deleteIndex = lastTouchedVertex;
+      if (deleteIndex === null || deleteIndex >= vertexCount) {
+        deleteIndex = vertexCount - 1; // Default: last vertex
+      }
+
+      // Build new points array without the deleted vertex
+      const newPts = [];
+      for (let i = 0; i < vertexCount; i++) {
+        if (i !== deleteIndex) {
+          newPts.push(pts[i * 2] + ',' + pts[i * 2 + 1]);
+        }
+      }
+
+      shape.points = newPts.join(' ');
+
+      // Adjust lastTouchedVertex
+      if (lastTouchedVertex !== null) {
+        if (lastTouchedVertex >= newPts.length) {
+          lastTouchedVertex = newPts.length - 1;
+        } else if (lastTouchedVertex === deleteIndex) {
+          lastTouchedVertex = null;
+        }
+      }
+
+      render();
+    }
+
+    function selectShape(id, e, addToSelection = false) {
+      if (e) e.stopPropagation();
+
+      if (addToSelection && e && e.ctrlKey) {
+        // Ctrl+click to toggle in multi-selection
+        if (isSelected(id)) {
+          selectedIds = selectedIds.filter(sid => sid !== id);
+        } else {
+          selectedIds.push(id);
+        }
+      } else {
+        if (!isSelected(id)) {
+          lastTouchedVertex = null; // Reset when switching shapes
+        }
+        selectedIds = [id];
+      }
+      render();
+    }
+
+    function deleteShape(id, e) {
+      if (e) e.stopPropagation();
+      shapes = shapes.filter(s => s.id !== id);
+      selectedIds = selectedIds.filter(sid => sid !== id);
+      render();
+    }
+
+    function duplicateShape(id, e) {
+      if (e) e.stopPropagation();
+      const shape = shapes.find(s => s.id === id);
+      if (shape) {
+        const newShape = JSON.parse(JSON.stringify(shape));
+        newShape.id = generateId();
+        // Offset the duplicate
+        if (newShape.x !== undefined) newShape.x += 2;
+        if (newShape.y !== undefined) newShape.y += 2;
+        if (newShape.cx !== undefined) newShape.cx += 2;
+        if (newShape.cy !== undefined) newShape.cy += 2;
+        if (newShape.x1 !== undefined) { newShape.x1 += 2; newShape.x2 += 2; }
+        if (newShape.y1 !== undefined) { newShape.y1 += 2; newShape.y2 += 2; }
+        shapes.push(newShape);
+        selectedIds = [newShape.id];
+        render();
+      }
+    }
+
+    function moveShapeUp(id, e) {
+      if (e) e.stopPropagation();
+      const idx = shapes.findIndex(s => s.id === id);
+      if (idx < shapes.length - 1) {
+        [shapes[idx], shapes[idx + 1]] = [shapes[idx + 1], shapes[idx]];
+        render();
+      }
+    }
+
+    function moveShapeDown(id, e) {
+      if (e) e.stopPropagation();
+      const idx = shapes.findIndex(s => s.id === id);
+      if (idx > 0) {
+        [shapes[idx], shapes[idx - 1]] = [shapes[idx - 1], shapes[idx]];
+        render();
+      }
+    }
+
+    function clearAll() {
+      if (confirm('Clear all shapes?')) {
+        shapes = [];
+        selectedIds = [];
+        lastTouchedVertex = null;
+        render();
+      }
+    }
+
+    function getScale() {
+      return parseInt(document.getElementById('displayScale').value);
+    }
+
+    function updateZoomLabel() {
+      document.getElementById('zoomLabel').textContent = getScale() + 'x';
+    }
+
+    function render() {
+      const w = parseInt(document.getElementById('canvasWidth').value) || 24;
+      const h = parseInt(document.getElementById('canvasHeight').value) || 24;
+      const scale = getScale();
+      const showGrid = document.getElementById('showGrid').checked;
+
+      const displayW = w * scale;
+      const displayH = h * scale;
+
+      // Update canvas sizes
+      [svgCanvas, gridOverlay, selectionOverlay].forEach(svg => {
+        svg.setAttribute('width', displayW);
+        svg.setAttribute('height', displayH);
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      });
+
+      wrapper.style.width = displayW + 'px';
+      wrapper.style.height = displayH + 'px';
+
+      document.getElementById('zoomInfo').textContent = `${w} × ${h}`;
+
+      // Render grid
+      if (showGrid) {
+        gridOverlay.style.display = 'block';
+        let gridContent = '';
+        for (let x = 0; x <= w; x++) {
+          const opacity = x % 4 === 0 ? 0.2 : 0.08;
+          gridContent += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="#000" stroke-width="0.05" opacity="${opacity}"/>`;
+        }
+        for (let y = 0; y <= h; y++) {
+          const opacity = y % 4 === 0 ? 0.2 : 0.08;
+          gridContent += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="#000" stroke-width="0.05" opacity="${opacity}"/>`;
+        }
+        gridOverlay.innerHTML = gridContent;
+      } else {
+        gridOverlay.style.display = 'none';
+      }
+
+      // Render shapes
+      svgCanvas.innerHTML = shapes.map(shape => renderShapeElement(shape)).join('');
+
+      // Render selection handles
+      renderSelectionHandles();
+
+      // Render shape list
+      renderShapeList();
+
+      // Render properties
+      renderProperties();
+
+      // Update output
+      updateOutput();
+
+      // Update previews
+      updatePreviews();
+
+      // Bind shape events
+      bindShapeEvents();
+    }
+
+    function renderShapeElement(shape) {
+      const isSelected = shape.id === selectedId;
+      let attrs = `class="shape" data-id="${shape.id}"`;
+
+      const addAttr = (name, value, allowNone = false) => {
+        if (value !== undefined && value !== '') {
+          if (value === 'none' && !allowNone) return;
+          // Replace currentColor with #333 for display
+          if (value === 'currentColor') value = '#333333';
+          attrs += ` ${name}="${value}"`;
+        }
+      };
+
+      // fill="none" must be explicit, otherwise SVG defaults to black
+      const fillVal = shape.fill || 'none';
+      attrs += ` fill="${fillVal === 'currentColor' ? '#333333' : fillVal}"`;
+      addAttr('stroke', shape.stroke);
+      addAttr('stroke-width', shape.strokeWidth);
+      addAttr('stroke-linecap', shape.strokeLinecap);
+      addAttr('stroke-linejoin', shape.strokeLinejoin);
+      addAttr('opacity', shape.opacity);
+      addAttr('transform', shape.transform);
+
+      switch (shape.type) {
+        case 'rect':
+          return `<rect ${attrs} x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${shape.rx || 0}"/>`;
+        case 'circle':
+          return `<circle ${attrs} cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}"/>`;
+        case 'line':
+          return `<line ${attrs} x1="${shape.x1}" y1="${shape.y1}" x2="${shape.x2}" y2="${shape.y2}"/>`;
+        case 'path':
+          return `<path ${attrs} d="${shape.d}"/>`;
+        case 'polygon':
+          return `<polygon ${attrs} points="${shape.points}"/>`;
+        default:
+          return '';
+      }
+    }
+
+    function renderSelectionHandles() {
+      if (selectedIds.length === 0) {
+        selectionOverlay.innerHTML = '';
+        return;
+      }
+
+      let handles = '';
+      const hs = 0.15; // handle size in viewBox units (small red dot)
+
+      // Draw selection for each selected shape
+      selectedIds.forEach(id => {
+        const shape = shapes.find(s => s.id === id);
+        if (!shape) return;
+
+        const bounds = getShapeBounds(shape);
+        if (bounds) {
+          const { x, y, w, h } = bounds;
+          // Selection rectangle
+          handles += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
+            fill="none" stroke="#0066ff" stroke-width="0.1" stroke-dasharray="0.3"/>`;
+        }
+      });
+
+      // Only show resize handles for single selection
+      if (selectedIds.length === 1) {
+        const shape = shapes.find(s => s.id === selectedIds[0]);
+        if (shape) {
+          const bounds = getShapeBounds(shape);
+          if (bounds) {
+            const { x, y, w, h } = bounds;
+            // Corner handles (small circles)
+            handles += `<circle class="handle handle-nw" data-handle="nw" cx="${x}" cy="${y}" r="${hs}"/>`;
+            handles += `<circle class="handle handle-ne" data-handle="ne" cx="${x + w}" cy="${y}" r="${hs}"/>`;
+            handles += `<circle class="handle handle-sw" data-handle="sw" cx="${x}" cy="${y + h}" r="${hs}"/>`;
+            handles += `<circle class="handle handle-se" data-handle="se" cx="${x + w}" cy="${y + h}" r="${hs}"/>`;
+          }
+
+          // Line endpoints
+          if (shape.type === 'line') {
+            handles += `<circle class="handle" data-handle="p1" cx="${shape.x1}" cy="${shape.y1}" r="${hs}"/>`;
+            handles += `<circle class="handle" data-handle="p2" cx="${shape.x2}" cy="${shape.y2}" r="${hs}"/>`;
+          }
+
+          // Polygon vertex handles
+          if (shape.type === 'polygon' && shape.points) {
+            const pts = shape.points.split(/[\s,]+/).map(Number);
+            for (let i = 0; i < pts.length; i += 2) {
+              const vx = pts[i];
+              const vy = pts[i + 1];
+              const vertexIndex = i / 2;
+              const isActive = vertexIndex === lastTouchedVertex;
+              handles += `<circle class="handle handle-vertex${isActive ? ' handle-active' : ''}" data-handle="vertex" data-vertex="${vertexIndex}" cx="${vx}" cy="${vy}" r="${hs}"/>`;
+            }
+          }
+        }
+      }
+
+      // Marquee selection rectangle
+      if (marqueeState) {
+        const mx = Math.min(marqueeState.startX, marqueeState.currentX);
+        const my = Math.min(marqueeState.startY, marqueeState.currentY);
+        const mw = Math.abs(marqueeState.currentX - marqueeState.startX);
+        const mh = Math.abs(marqueeState.currentY - marqueeState.startY);
+        handles += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}"
+          fill="rgba(0,102,255,0.1)" stroke="#0066ff" stroke-width="0.1"/>`;
+      }
+
+      selectionOverlay.innerHTML = handles;
+      bindHandleEvents();
+    }
+
+    function getShapeBounds(shape) {
+      switch (shape.type) {
+        case 'rect':
+          return { x: shape.x, y: shape.y, w: shape.width, h: shape.height };
+        case 'circle':
+          return { x: shape.cx - shape.r, y: shape.cy - shape.r, w: shape.r * 2, h: shape.r * 2 };
+        case 'line':
+          const minX = Math.min(shape.x1, shape.x2);
+          const minY = Math.min(shape.y1, shape.y2);
+          const maxX = Math.max(shape.x1, shape.x2);
+          const maxY = Math.max(shape.y1, shape.y2);
+          return { x: minX, y: minY, w: maxX - minX || 0.5, h: maxY - minY || 0.5 };
+        case 'path':
+          // Rough bounds estimation for path
+          return { x: 2, y: 2, w: 20, h: 20 };
+        case 'polygon':
+          // Parse points and get bounds
+          const pts = shape.points.split(/[\s,]+/).map(Number);
+          let minPx = Infinity, minPy = Infinity, maxPx = -Infinity, maxPy = -Infinity;
+          for (let i = 0; i < pts.length; i += 2) {
+            minPx = Math.min(minPx, pts[i]);
+            maxPx = Math.max(maxPx, pts[i]);
+            minPy = Math.min(minPy, pts[i + 1]);
+            maxPy = Math.max(maxPy, pts[i + 1]);
+          }
+          return { x: minPx, y: minPy, w: maxPx - minPx, h: maxPy - minPy };
+        default:
+          return null;
+      }
+    }
+
+    function renderShapeList() {
+      const listEl = document.getElementById('shapeList');
+      listEl.innerHTML = shapes.map((s, i) => {
+        let typeName = s.type;
+        if (s.subtype === 'arc') typeName = 'arc';
+        return `
+        <div class="shape-item ${isSelected(s.id) ? 'selected' : ''}" onclick="selectShape('${s.id}', event, true)">
+          <span class="shape-name">${typeName} #${i + 1}</span>
+          <div class="shape-actions">
+            <button class="icon-btn" onclick="moveShapeUp('${s.id}', event)" title="Move Up">↑</button>
+            <button class="icon-btn" onclick="moveShapeDown('${s.id}', event)" title="Move Down">↓</button>
+            <button class="icon-btn" onclick="duplicateShape('${s.id}', event)" title="Duplicate">⧉</button>
+            <button class="icon-btn" onclick="deleteShape('${s.id}', event)" title="Delete">×</button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function renderProperties() {
+      const panel = document.getElementById('propertiesPanel');
+
+      if (selectedIds.length === 0) {
+        panel.innerHTML = '<p style="color:#666;font-size:13px;">Click a shape to select</p>';
+        return;
+      }
+
+      if (selectedIds.length > 1) {
+        panel.innerHTML = `<p style="color:#666;font-size:13px;">已选中 ${selectedIds.length} 个图形<br>拖拽可同时移动</p>`;
+        return;
+      }
+
+      const shape = shapes.find(s => s.id === selectedIds[0]);
+      if (!shape) {
+        panel.innerHTML = '<p style="color:#666;font-size:13px;">Click a shape to select</p>';
+        return;
+      }
+
+      let html = '';
+
+      // Type-specific properties first
+      switch (shape.type) {
+        case 'rect':
+          html += `
+            <div class="input-row">
+              <div class="input-group">
+                <label>X</label>
+                <input type="number" step="0.5" value="${shape.x}" onchange="updateProp('x', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Y</label>
+                <input type="number" step="0.5" value="${shape.y}" onchange="updateProp('y', parseFloat(this.value))">
+              </div>
+            </div>
+            <div class="input-row">
+              <div class="input-group">
+                <label>Width</label>
+                <input type="number" step="0.5" value="${shape.width}" onchange="updateProp('width', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Height</label>
+                <input type="number" step="0.5" value="${shape.height}" onchange="updateProp('height', parseFloat(this.value))">
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Corner Radius (rx)</label>
+              <input type="number" step="0.5" value="${shape.rx || 0}" onchange="updateProp('rx', parseFloat(this.value))">
+            </div>
+          `;
+          break;
+        case 'circle':
+          html += `
+            <div class="input-row">
+              <div class="input-group">
+                <label>Center X</label>
+                <input type="number" step="0.5" value="${shape.cx}" onchange="updateProp('cx', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Center Y</label>
+                <input type="number" step="0.5" value="${shape.cy}" onchange="updateProp('cy', parseFloat(this.value))">
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Radius</label>
+              <input type="number" step="0.5" value="${shape.r}" onchange="updateProp('r', parseFloat(this.value))">
+            </div>
+          `;
+          break;
+        case 'line':
+          html += `
+            <div class="input-row">
+              <div class="input-group">
+                <label>X1</label>
+                <input type="number" step="0.5" value="${shape.x1}" onchange="updateProp('x1', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Y1</label>
+                <input type="number" step="0.5" value="${shape.y1}" onchange="updateProp('y1', parseFloat(this.value))">
+              </div>
+            </div>
+            <div class="input-row">
+              <div class="input-group">
+                <label>X2</label>
+                <input type="number" step="0.5" value="${shape.x2}" onchange="updateProp('x2', parseFloat(this.value))">
+              </div>
+              <div class="input-group">
+                <label>Y2</label>
+                <input type="number" step="0.5" value="${shape.y2}" onchange="updateProp('y2', parseFloat(this.value))">
+              </div>
+            </div>
+          `;
+          break;
+        case 'path':
+          html += `
+            <div class="input-group">
+              <label>Path Data (d)</label>
+              <textarea rows="3" onchange="updateProp('d', this.value)">${shape.d}</textarea>
+            </div>
+          `;
+          if (shape.subtype === 'arc') {
+            html += `<p style="color:#666;font-size:11px;margin-top:4px;">Arc格式: M x1 y1 A rx ry rotation large-arc sweep x2 y2</p>`;
+          }
+          break;
+        case 'polygon':
+          const vertexCount = shape.points.split(/[\s,]+/).length / 2;
+          html += `
+            <div class="input-group">
+              <label>Vertices 顶点 (${vertexCount}个)</label>
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="addPolygonVertex()">+ 添加顶点</button>
+                <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="removePolygonVertex()">- 删除顶点</button>
+              </div>
+              <textarea rows="2" onchange="updateProp('points', this.value)">${shape.points}</textarea>
+            </div>
+            <p style="color:#666;font-size:11px;">拖拽绿色圆点移动单个顶点</p>
+          `;
+          break;
+      }
+
+      // Common properties
+      html += `
+        <div class="input-group">
+          <label>Fill (填充)</label>
+          <div style="display:flex;gap:4px;margin-bottom:4px;">
+            <button class="btn" style="padding:4px 8px;font-size:11px;${shape.fill === 'none' ? 'background:#0066ff;' : ''}" onclick="updateProp('fill','none')">空心</button>
+            <button class="btn" style="padding:4px 8px;font-size:11px;${shape.fill === 'currentColor' ? 'background:#0066ff;' : ''}" onclick="updateProp('fill','currentColor')">实心</button>
+          </div>
+          <input type="text" value="${shape.fill || 'none'}" onchange="updateProp('fill', this.value)" placeholder="none, currentColor, #333...">
+        </div>
+        <div class="input-group">
+          <label>Stroke (边框)</label>
+          <input type="text" value="${shape.stroke || 'none'}" onchange="updateProp('stroke', this.value)">
+        </div>
+        <div class="input-group">
+          <label>Stroke Width</label>
+          <input type="number" step="0.1" value="${shape.strokeWidth || 1}" onchange="updateProp('strokeWidth', parseFloat(this.value))">
+        </div>
+        <div class="input-group">
+          <label>Transform</label>
+          <input type="text" placeholder="e.g. rotate(45 12 12)" value="${shape.transform || ''}" onchange="updateProp('transform', this.value)">
+        </div>
+      `;
+
+      panel.innerHTML = html;
+    }
+
+    function updateProp(prop, value) {
+      const shape = getSelectedShape();
+      if (shape) {
+        shape[prop] = value;
+        render();
+      }
+    }
+
+    function bindShapeEvents() {
+      document.querySelectorAll('#svgCanvas .shape').forEach(el => {
+        el.addEventListener('mousedown', onShapeMouseDown);
+      });
+    }
+
+    function bindHandleEvents() {
+      document.querySelectorAll('#selectionOverlay .handle').forEach(el => {
+        el.addEventListener('mousedown', onHandleMouseDown);
+      });
+    }
+
+    function getSvgPoint(e) {
+      const rect = svgCanvas.getBoundingClientRect();
+      const scale = getScale();
+      return {
+        x: (e.clientX - rect.left) / scale,
+        y: (e.clientY - rect.top) / scale
+      };
+    }
+
+    function onShapeMouseDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const shapeId = e.target.dataset.id;
+
+      // If Ctrl held, toggle selection
+      if (e.ctrlKey) {
+        if (isSelected(shapeId)) {
+          selectedIds = selectedIds.filter(id => id !== shapeId);
+        } else {
+          selectedIds.push(shapeId);
+        }
+        render();
+        return;
+      }
+
+      // If clicking unselected shape, select only it
+      if (!isSelected(shapeId)) {
+        selectedIds = [shapeId];
+        lastTouchedVertex = null;
+      }
+
+      const startPoint = getSvgPoint(e);
+
+      // Prepare to move all selected shapes
+      const selectedShapes = shapes.filter(s => isSelected(s.id));
+      const origPropsMap = {};
+      selectedShapes.forEach(s => {
+        origPropsMap[s.id] = JSON.parse(JSON.stringify(s));
+      });
+
+      dragState = {
+        type: 'move-multi',
+        selectedShapes,
+        origPropsMap,
+        startX: startPoint.x,
+        startY: startPoint.y
+      };
+
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', onDragEnd);
+
+      render();
+    }
+
+    function onHandleMouseDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const handle = e.target.dataset.handle;
+      const vertexIndex = e.target.dataset.vertex !== undefined ? parseInt(e.target.dataset.vertex) : null;
+      const shape = getSelectedShape();
+      if (!shape) return;
+
+      // Track last touched vertex for polygon
+      if (handle === 'vertex' && vertexIndex !== null) {
+        lastTouchedVertex = vertexIndex;
+      }
+
+      const startPoint = getSvgPoint(e);
+
+      dragState = {
+        type: 'resize',
+        handle,
+        vertexIndex,
+        shape,
+        startX: startPoint.x,
+        startY: startPoint.y,
+        origProps: JSON.parse(JSON.stringify(shape))
+      };
+
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', onDragEnd);
+    }
+
+    function onDrag(e) {
+      if (!dragState) return;
+
+      const point = getSvgPoint(e);
+      const dx = point.x - dragState.startX;
+      const dy = point.y - dragState.startY;
+
+      if (dragState.type === 'move-multi') {
+        // Move all selected shapes
+        dragState.selectedShapes.forEach(shape => {
+          const orig = dragState.origPropsMap[shape.id];
+          moveShapeBy(shape, orig, dx, dy);
+        });
+        render();
+        return;
+      }
+
+      const shape = dragState.shape;
+      const orig = dragState.origProps;
+
+      if (dragState.type === 'move') {
+        // Move shape
+        switch (shape.type) {
+          case 'rect':
+            shape.x = snap(orig.x + dx);
+            shape.y = snap(orig.y + dy);
+            break;
+          case 'circle':
+            shape.cx = snap(orig.cx + dx);
+            shape.cy = snap(orig.cy + dy);
+            break;
+          case 'line':
+            shape.x1 = snap(orig.x1 + dx);
+            shape.y1 = snap(orig.y1 + dy);
+            shape.x2 = snap(orig.x2 + dx);
+            shape.y2 = snap(orig.y2 + dy);
+            break;
+          case 'polygon':
+            // Move all points
+            const pts = orig.points.split(/[\s,]+/).map(Number);
+            const newPts = [];
+            for (let i = 0; i < pts.length; i += 2) {
+              newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
+            }
+            shape.points = newPts.join(' ');
+            break;
+        }
+      } else if (dragState.type === 'resize') {
+        const h = dragState.handle;
+
+        if (shape.type === 'rect') {
+          if (h === 'se') {
+            shape.width = Math.max(1, snap(orig.width + dx));
+            shape.height = Math.max(1, snap(orig.height + dy));
+          } else if (h === 'nw') {
+            shape.x = snap(orig.x + dx);
+            shape.y = snap(orig.y + dy);
+            shape.width = Math.max(1, snap(orig.width - dx));
+            shape.height = Math.max(1, snap(orig.height - dy));
+          } else if (h === 'ne') {
+            shape.y = snap(orig.y + dy);
+            shape.width = Math.max(1, snap(orig.width + dx));
+            shape.height = Math.max(1, snap(orig.height - dy));
+          } else if (h === 'sw') {
+            shape.x = snap(orig.x + dx);
+            shape.width = Math.max(1, snap(orig.width - dx));
+            shape.height = Math.max(1, snap(orig.height + dy));
+          }
+        } else if (shape.type === 'circle') {
+          if (h === 'se' || h === 'ne' || h === 'sw' || h === 'nw') {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const sign = (dx + dy) > 0 ? 1 : -1;
+            shape.r = Math.max(1, snap(orig.r + sign * dist / 1.5));
+          }
+        } else if (shape.type === 'line') {
+          if (h === 'p1') {
+            shape.x1 = snap(orig.x1 + dx);
+            shape.y1 = snap(orig.y1 + dy);
+          } else if (h === 'p2') {
+            shape.x2 = snap(orig.x2 + dx);
+            shape.y2 = snap(orig.y2 + dy);
+          }
+        } else if (shape.type === 'polygon') {
+          if (h === 'vertex' && dragState.vertexIndex !== null) {
+            // Drag individual vertex
+            const pts = orig.points.split(/[\s,]+/).map(Number);
+            const vi = dragState.vertexIndex;
+            pts[vi * 2] = snap(pts[vi * 2] + dx);
+            pts[vi * 2 + 1] = snap(pts[vi * 2 + 1] + dy);
+            const newPts = [];
+            for (let i = 0; i < pts.length; i += 2) {
+              newPts.push(pts[i] + ',' + pts[i + 1]);
+            }
+            shape.points = newPts.join(' ');
+          } else {
+            // Scale polygon from center (corner handles)
+            const pts = orig.points.split(/[\s,]+/).map(Number);
+            const bounds = getShapeBounds(orig);
+            const cx = bounds.x + bounds.w / 2;
+            const cy = bounds.y + bounds.h / 2;
+            let scaleX = 1, scaleY = 1;
+            if (h === 'se') {
+              scaleX = (bounds.w + dx) / bounds.w;
+              scaleY = (bounds.h + dy) / bounds.h;
+            } else if (h === 'nw') {
+              scaleX = (bounds.w - dx) / bounds.w;
+              scaleY = (bounds.h - dy) / bounds.h;
+            }
+            scaleX = Math.max(0.1, scaleX);
+            scaleY = Math.max(0.1, scaleY);
+            const newPts = [];
+            for (let i = 0; i < pts.length; i += 2) {
+              const nx = snap(cx + (pts[i] - cx) * scaleX);
+              const ny = snap(cy + (pts[i + 1] - cy) * scaleY);
+              newPts.push(nx + ',' + ny);
+            }
+            shape.points = newPts.join(' ');
+          }
+        }
+      }
+
+      render();
+    }
+
+    function onDragEnd() {
+      dragState = null;
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', onDragEnd);
+    }
+
+    function snap(value) {
+      return Math.round(value * 10) / 10; // Snap to 0.1
+    }
+
+    function moveShapeBy(shape, orig, dx, dy) {
+      switch (shape.type) {
+        case 'rect':
+          shape.x = snap(orig.x + dx);
+          shape.y = snap(orig.y + dy);
+          break;
+        case 'circle':
+          shape.cx = snap(orig.cx + dx);
+          shape.cy = snap(orig.cy + dy);
+          break;
+        case 'line':
+          shape.x1 = snap(orig.x1 + dx);
+          shape.y1 = snap(orig.y1 + dy);
+          shape.x2 = snap(orig.x2 + dx);
+          shape.y2 = snap(orig.y2 + dy);
+          break;
+        case 'polygon':
+          const pts = orig.points.split(/[\s,]+/).map(Number);
+          const newPts = [];
+          for (let i = 0; i < pts.length; i += 2) {
+            newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
+          }
+          shape.points = newPts.join(' ');
+          break;
+        case 'path':
+          // Path移动比较复杂，暂时跳过
+          break;
+      }
+    }
+
+    // Marquee selection on canvas background
+    wrapper.addEventListener('mousedown', (e) => {
+      if (e.target === svgCanvas || e.target === wrapper || e.target === gridOverlay) {
+        const startPoint = getSvgPoint(e);
+
+        // Start marquee selection
+        marqueeState = {
+          startX: startPoint.x,
+          startY: startPoint.y,
+          currentX: startPoint.x,
+          currentY: startPoint.y
+        };
+
+        // If not holding Ctrl, clear selection
+        if (!e.ctrlKey) {
+          selectedIds = [];
+        }
+
+        const onMarqueeMove = (me) => {
+          const pt = getSvgPoint(me);
+          marqueeState.currentX = pt.x;
+          marqueeState.currentY = pt.y;
+          render();
+        };
+
+        const onMarqueeEnd = () => {
+          if (marqueeState) {
+            // Find shapes inside marquee
+            const mx1 = Math.min(marqueeState.startX, marqueeState.currentX);
+            const my1 = Math.min(marqueeState.startY, marqueeState.currentY);
+            const mx2 = Math.max(marqueeState.startX, marqueeState.currentX);
+            const my2 = Math.max(marqueeState.startY, marqueeState.currentY);
+
+            // Only select if marquee has some size
+            if (Math.abs(mx2 - mx1) > 0.2 || Math.abs(my2 - my1) > 0.2) {
+              shapes.forEach(shape => {
+                const bounds = getShapeBounds(shape);
+                if (bounds) {
+                  const sx1 = bounds.x, sy1 = bounds.y;
+                  const sx2 = bounds.x + bounds.w, sy2 = bounds.y + bounds.h;
+                  // Check intersection
+                  if (sx1 < mx2 && sx2 > mx1 && sy1 < my2 && sy2 > my1) {
+                    if (!isSelected(shape.id)) {
+                      selectedIds.push(shape.id);
+                    }
+                  }
+                }
+              });
+            } else {
+              // Just a click, deselect if not Ctrl
+              if (!e.ctrlKey) {
+                selectedIds = [];
+              }
+            }
+          }
+          marqueeState = null;
+          document.removeEventListener('mousemove', onMarqueeMove);
+          document.removeEventListener('mouseup', onMarqueeEnd);
+          render();
+        };
+
+        document.addEventListener('mousemove', onMarqueeMove);
+        document.addEventListener('mouseup', onMarqueeEnd);
+        render();
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const step = e.shiftKey ? 1 : 0.1;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedIds.length > 0) {
+          const toDelete = [...selectedIds];
+          toDelete.forEach(id => {
+            shapes = shapes.filter(s => s.id !== id);
+          });
+          selectedIds = [];
+          render();
+        }
+      } else if (e.key === 'd' && e.ctrlKey) {
+        e.preventDefault();
+        if (selectedIds.length > 0) {
+          const newIds = [];
+          selectedIds.forEach(id => {
+            const shape = shapes.find(s => s.id === id);
+            if (shape) {
+              const newShape = JSON.parse(JSON.stringify(shape));
+              newShape.id = generateId();
+              if (newShape.x !== undefined) newShape.x += 2;
+              if (newShape.y !== undefined) newShape.y += 2;
+              if (newShape.cx !== undefined) newShape.cx += 2;
+              if (newShape.cy !== undefined) newShape.cy += 2;
+              shapes.push(newShape);
+              newIds.push(newShape.id);
+            }
+          });
+          selectedIds = newIds;
+          render();
+        }
+      } else if (e.key === 'c' && e.ctrlKey) {
+        if (selectedIds.length > 0) {
+          clipboard = selectedIds.map(id => JSON.parse(JSON.stringify(shapes.find(s => s.id === id)))).filter(Boolean);
+        }
+      } else if (e.key === 'v' && e.ctrlKey) {
+        if (clipboard && clipboard.length > 0) {
+          const newIds = [];
+          clipboard.forEach(shape => {
+            const newShape = JSON.parse(JSON.stringify(shape));
+            newShape.id = generateId();
+            shapes.push(newShape);
+            newIds.push(newShape.id);
+          });
+          selectedIds = newIds;
+          render();
+        }
+      } else if (e.key === 'a' && e.ctrlKey) {
+        e.preventDefault();
+        selectedIds = shapes.map(s => s.id);
+        render();
+      } else if (selectedIds.length > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+
+        selectedIds.forEach(id => {
+          const shape = shapes.find(s => s.id === id);
+          if (!shape) return;
+
+          switch (shape.type) {
+            case 'rect':
+              shape.x = snap(shape.x + dx);
+              shape.y = snap(shape.y + dy);
+              break;
+            case 'circle':
+              shape.cx = snap(shape.cx + dx);
+              shape.cy = snap(shape.cy + dy);
+              break;
+            case 'line':
+              shape.x1 = snap(shape.x1 + dx);
+              shape.y1 = snap(shape.y1 + dy);
+              shape.x2 = snap(shape.x2 + dx);
+              shape.y2 = snap(shape.y2 + dy);
+              break;
+            case 'polygon':
+              const pts = shape.points.split(/[\s,]+/).map(Number);
+              const newPts = [];
+              for (let i = 0; i < pts.length; i += 2) {
+                newPts.push(snap(pts[i] + dx) + ',' + snap(pts[i + 1] + dy));
+              }
+              shape.points = newPts.join(' ');
+              break;
+          }
+        });
+        render();
+      }
+    });
+
+    function updateOutput() {
+      const w = parseInt(document.getElementById('canvasWidth').value) || 24;
+      const h = parseInt(document.getElementById('canvasHeight').value) || 24;
+
+      let content = shapes.map(s => '  ' + renderShapeForOutput(s)).join('\n');
+
+      const svg = `<svg width="22" height="22" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">\n${content}\n</svg>`;
+
+      document.getElementById('svgOutput').value = svg;
+    }
+
+    function renderShapeForOutput(shape) {
+      let attrs = '';
+
+      const addAttr = (name, value) => {
+        if (value !== undefined && value !== '') {
+          attrs += ` ${name}="${value}"`;
+        }
+      };
+
+      if (shape.fill && shape.fill !== 'none') addAttr('fill', shape.fill);
+      else attrs += ' fill="none"';
+
+      if (shape.stroke) addAttr('stroke', shape.stroke);
+      if (shape.strokeWidth) addAttr('stroke-width', shape.strokeWidth);
+      if (shape.strokeLinecap) addAttr('stroke-linecap', shape.strokeLinecap);
+      if (shape.strokeLinejoin) addAttr('stroke-linejoin', shape.strokeLinejoin);
+      if (shape.opacity) addAttr('opacity', shape.opacity);
+      if (shape.transform) addAttr('transform', shape.transform);
+
+      switch (shape.type) {
+        case 'rect':
+          return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"${shape.rx ? ` rx="${shape.rx}"` : ''}${attrs}/>`;
+        case 'circle':
+          return `<circle cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}"${attrs}/>`;
+        case 'line':
+          return `<line x1="${shape.x1}" y1="${shape.y1}" x2="${shape.x2}" y2="${shape.y2}"${attrs}/>`;
+        case 'path':
+          return `<path d="${shape.d}"${attrs}/>`;
+        case 'polygon':
+          return `<polygon points="${shape.points}"${attrs}/>`;
+        default:
+          return '';
+      }
+    }
+
+    function updatePreviews() {
+      const w = parseInt(document.getElementById('canvasWidth').value) || 24;
+      const h = parseInt(document.getElementById('canvasHeight').value) || 24;
+
+      let content = shapes.map(s => {
+        let svg = renderShapeForOutput(s);
+        // Replace currentColor for preview
+        return svg.replace(/currentColor/g, '#333333');
+      }).join('');
+
+      const sizes = [16, 22, 32, 48];
+      document.getElementById('previewRow').innerHTML = sizes.map(size => `
+        <div class="preview-item">
+          <svg class="preview-svg" width="${size}" height="${size}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+            ${content}
+          </svg>
+          <span>${size}px</span>
+        </div>
+      `).join('');
+    }
+
+    function copySVG() {
+      const output = document.getElementById('svgOutput');
+      navigator.clipboard.writeText(output.value).then(() => {
+        showMessage('SVG copied!');
+      }).catch(() => {
+        output.select();
+        document.execCommand('copy');
+        showMessage('SVG copied!');
+      });
+    }
+
+    function importSVG() {
+      const code = document.getElementById('svgOutput').value.trim();
+      if (!code) return;
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(code, 'image/svg+xml');
+      const svg = doc.querySelector('svg');
+
+      if (!svg) {
+        showMessage('Invalid SVG code');
+        return;
+      }
+
+      // Parse viewBox
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox) {
+        const [, , w, h] = viewBox.split(/\s+/).map(Number);
+        document.getElementById('canvasWidth').value = w || 24;
+        document.getElementById('canvasHeight').value = h || 24;
+      }
+
+      // Clear existing shapes
+      shapes = [];
+      selectedId = null;
+
+      // Parse each shape element
+      svg.querySelectorAll('rect, circle, line, path, polygon, ellipse').forEach(el => {
+        const tag = el.tagName.toLowerCase();
+        const shape = {
+          id: generateId(),
+          type: tag,
+          fill: el.getAttribute('fill') || 'none',
+          stroke: el.getAttribute('stroke') || '',
+          strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 0,
+          strokeLinecap: el.getAttribute('stroke-linecap') || '',
+          strokeLinejoin: el.getAttribute('stroke-linejoin') || '',
+          transform: el.getAttribute('transform') || ''
+        };
+
+        switch (tag) {
+          case 'rect':
+            shape.x = parseFloat(el.getAttribute('x')) || 0;
+            shape.y = parseFloat(el.getAttribute('y')) || 0;
+            shape.width = parseFloat(el.getAttribute('width')) || 10;
+            shape.height = parseFloat(el.getAttribute('height')) || 10;
+            shape.rx = parseFloat(el.getAttribute('rx')) || 0;
+            break;
+          case 'circle':
+            shape.cx = parseFloat(el.getAttribute('cx')) || 12;
+            shape.cy = parseFloat(el.getAttribute('cy')) || 12;
+            shape.r = parseFloat(el.getAttribute('r')) || 8;
+            break;
+          case 'ellipse':
+            // Convert ellipse to circle (average radii) or keep as-is
+            shape.type = 'circle';
+            shape.cx = parseFloat(el.getAttribute('cx')) || 12;
+            shape.cy = parseFloat(el.getAttribute('cy')) || 12;
+            shape.r = (parseFloat(el.getAttribute('rx')) + parseFloat(el.getAttribute('ry'))) / 2 || 8;
+            break;
+          case 'line':
+            shape.x1 = parseFloat(el.getAttribute('x1')) || 0;
+            shape.y1 = parseFloat(el.getAttribute('y1')) || 0;
+            shape.x2 = parseFloat(el.getAttribute('x2')) || 10;
+            shape.y2 = parseFloat(el.getAttribute('y2')) || 10;
+            break;
+          case 'path':
+            shape.d = el.getAttribute('d') || '';
+            // Check if it looks like an arc
+            if (shape.d.includes(' A ') || shape.d.includes('A ')) {
+              shape.subtype = 'arc';
+            }
+            break;
+          case 'polygon':
+            shape.points = el.getAttribute('points') || '';
+            break;
+        }
+
+        shapes.push(shape);
+      });
+
+      if (shapes.length > 0) {
+        selectedIds = [shapes[0].id];
+      } else {
+        selectedIds = [];
+      }
+
+      lastTouchedVertex = null;
+      render();
+      showMessage(`导入成功! 共 ${shapes.length} 个图形`);
+    }
+
+    // Initialize
+    updateZoomLabel();
+    render();
+  </script>
+</body>
+</html>

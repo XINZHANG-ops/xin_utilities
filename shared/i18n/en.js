@@ -58,7 +58,7 @@ I18n.register('en', {
     shareToolsDesc: 'QR codes, link sharing',
 
     // Tool counts
-    imageToolsCount: '5 tools',
+    imageToolsCount: '6 tools',
     textToolsCount: '1 tool',
     canvasToolsCount: '1 tool',
     shareToolsCount: '2 tools',
@@ -73,6 +73,7 @@ I18n.register('en', {
     badgeCompare: 'Compare',
     badgeDoodle: 'Doodle',
     badgeGenerate: 'Generate',
+    badgeCreate: 'Create',
 
     // Tool Cards
     cropperTitle: 'Image Cropper',
@@ -85,6 +86,8 @@ I18n.register('en', {
     annotateDesc: 'Brush drawing, add rectangles, circles, arrows. Adjustable shape size and position. Ctrl+Z undo.',
     bgRemoveTitle: 'Background Remover',
     bgRemoveDesc: 'AI-powered background removal for people, objects, and various scenes.',
+    svgEditorTitle: 'SVG Editor',
+    svgEditorDesc: 'Visually create SVG icons. Multi-select, vertex editing, marquee drag. Import/export SVG code.',
     textDiffTitle: 'Text Diff',
     textDiffDesc: 'Side-by-side diff display, like Git Diff. Choose which side to use, download merged result.',
     whiteboardTitle: 'Whiteboard',
