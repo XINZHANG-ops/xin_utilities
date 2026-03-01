@@ -1832,16 +1832,12 @@
       updateConnectionStatus('connecting');
 
       socket = io(API_CONFIG.getBaseUrl(), {
-        // Use polling first (sends headers), then upgrade to websocket
-        transports: ['polling', 'websocket'],
-        extraHeaders: {
-          'ngrok-skip-browser-warning': 'true'
-        },
+        // Use WebSocket only to avoid HTTP polling (saves ngrok requests)
+        transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
-        timeout: 20000,
-        upgrade: true
+        timeout: 20000
       });
 
       let hasConnectedBefore = false;
