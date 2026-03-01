@@ -184,6 +184,7 @@ function setupBoardModal() {
 
   // Create board
   createBoardBtn.addEventListener('click', async () => {
+    isLocalMode = false; // Reset in case user was previously in local mode
     const boardName = newBoardNameInput.value.trim();
     const userName = userNameInput.value.trim() || generateRandomName();
     if (!boardName) return;
@@ -221,6 +222,7 @@ function setupBoardModal() {
 
   // Join board
   joinBoardBtn.addEventListener('click', async () => {
+    isLocalMode = false; // Reset in case user was previously in local mode
     const boardName = joinBoardNameInput.value.trim();
     const userName = joinUserNameInput.value.trim() || generateRandomName();
     if (!boardName) return;
@@ -1170,3 +1172,6 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// Redraw after fonts load to fix text layout (Google Fonts may load async)
+document.fonts.ready.then(() => redraw());

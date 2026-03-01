@@ -83,6 +83,12 @@ function startEditing(obj) {
     }
   });
 
+  // Exit editing when canvas is scrolled (textarea position would become misaligned)
+  const wrapper = document.getElementById('canvasWrapper');
+  const onScroll = () => stopEditing();
+  wrapper.addEventListener('scroll', onScroll, { once: true });
+  textarea._scrollHandler = { wrapper, onScroll };
+
   // Auto-resize for textbox
   if (obj.type === 'textbox') {
     textarea.addEventListener('input', () => {
@@ -103,6 +109,11 @@ function stopEditing() {
   if (textarea) {
     // Remove blur listener to prevent re-entry
     textarea.removeEventListener('blur', stopEditing);
+
+    // Remove scroll listener if still attached
+    if (textarea._scrollHandler) {
+      textarea._scrollHandler.wrapper.removeEventListener('scroll', textarea._scrollHandler.onScroll);
+    }
 
     editingObject.text = textarea.value;
 

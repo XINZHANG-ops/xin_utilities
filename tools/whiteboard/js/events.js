@@ -693,8 +693,9 @@ function initCanvasDragAndDrop() {
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
 
     const rect = canvas.getBoundingClientRect();
-    let dropX = e.clientX - rect.left;
-    let dropY = e.clientY - rect.top;
+    const zoomScale = canvasZoom / 100;
+    let dropX = (e.clientX - rect.left) / zoomScale;
+    let dropY = (e.clientY - rect.top) / zoomScale;
 
     files.forEach((file, index) => {
       const reader = new FileReader();

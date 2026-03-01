@@ -38,6 +38,12 @@ function resetCanvasView() {
 }
 
 function connectWebSocket() {
+  // Disconnect existing socket to prevent leaks when rejoining
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
   const wsStatus = document.getElementById('wsStatus');
   wsStatus.style.display = 'flex';
   updateConnectionStatus('connecting');
