@@ -981,7 +981,7 @@ function handleRemotePageInsert(data) {
 
 // Debounce timer for server saves
 let saveDebounceTimer = null;
-const SAVE_DEBOUNCE_MS = 2000; // Wait 2 seconds after last change before saving
+const SAVE_DEBOUNCE_MS = 3000; // Wait 3 seconds after last change before saving
 
 // Save board to server (debounced to avoid excessive requests)
 // Use immediate=true for critical saves (e.g., board creation)

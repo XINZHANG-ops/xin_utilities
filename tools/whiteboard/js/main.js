@@ -1177,8 +1177,31 @@ if (document.readyState === 'loading') {
 document.fonts.ready.then(() => redraw());
 
 // Save before user leaves the page (flush any pending debounced saves)
+// Use sendBeacon for reliable delivery during page unload
 window.addEventListener('beforeunload', () => {
   if (!isLocalMode && currentBoard) {
-    saveBoardToServer(true);
+    saveCurrentPageState();
+    const pagesData = pages.map(page => ({
+      objects: page.objects.map(obj => {
+        const ratioObj = toRatio(obj);
+        if (obj.type === 'image') {
+          return { ...ratioObj, imgSrc: obj.imgSrc, img: undefined };
+        }
+        return ratioObj;
+      }),
+      background: page.background || { pattern: 'none', color: '#ffffff' }
+    }));
+    const boardData = JSON.stringify({
+      id: currentBoard.id,
+      name: currentBoard.name,
+      pages: pagesData,
+      currentPageIndex,
+      updatedAt: new Date().toISOString()
+    });
+    // sendBeacon is reliable during page unload (unlike fetch/XHR)
+    navigator.sendBeacon(
+      API_CONFIG.getBaseUrl() + `/whiteboard/${currentBoard.id}`,
+      new Blob([boardData], { type: 'application/json' })
+    );
   }
 });
