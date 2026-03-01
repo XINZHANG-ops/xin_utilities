@@ -737,6 +737,39 @@ function initCanvasDragAndDrop() {
 }
 
 // ============================================================================
+// Touch Event Handlers (Mobile Support)
+// ============================================================================
+
+function touchToMouseEvent(touch) {
+  return {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    shiftKey: false
+  };
+}
+
+function handleTouchStart(e) {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    handleMouseDown(touchToMouseEvent(e.touches[0]));
+  }
+}
+
+function handleTouchMove(e) {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    handleMouseMove(touchToMouseEvent(e.touches[0]));
+  }
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  // Use changedTouches for the ending touch point
+  const touch = e.changedTouches[0];
+  handleMouseUp(touchToMouseEvent(touch));
+}
+
+// ============================================================================
 // Event Initialization
 // ============================================================================
 
@@ -746,6 +779,11 @@ function initEventListeners() {
   document.addEventListener('mousemove', handleMouseMove);
   document.addEventListener('mouseup', handleMouseUp);
   canvas.addEventListener('dblclick', handleDoubleClick);
+
+  // Touch events for mobile support
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  document.addEventListener('touchmove', handleTouchMove, { passive: false });
+  document.addEventListener('touchend', handleTouchEnd, { passive: false });
 
   // Keyboard events
   document.addEventListener('keydown', handleKeyDown);

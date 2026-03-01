@@ -70,6 +70,9 @@ function switchToPage(pageIndex, isAutoFollow = false) {
   currentPageIndex = pageIndex;
   loadPageState(pageIndex);
 
+  // Clear laser strokes when switching pages (they're page-specific)
+  laserStrokes.length = 0;
+
   selectedObjects = [];
   updateSelectedControls();
   redraw();

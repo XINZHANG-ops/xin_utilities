@@ -3,6 +3,9 @@
 // Depends on: state.js globals, pages.js functions (saveCurrentPageState, loadPageState), history.js functions (loadState)
 
 function saveToLocalStorage() {
+  // Only save to localStorage in local mode to avoid overwriting local data with collab data
+  if (!isLocalMode) return;
+
   saveIndicator.textContent = I18n.t('whiteboard.status.saving');
   saveIndicator.classList.add('saving');
 
@@ -40,6 +43,9 @@ function saveToLocalStorage() {
 }
 
 async function loadFromLocalStorage() {
+  // Only load from localStorage in local mode
+  if (!isLocalMode) return;
+
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {

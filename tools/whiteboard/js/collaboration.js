@@ -205,6 +205,11 @@ function connectWebSocket() {
     handleRemoteLaser(data);
   });
 
+  // Z-index change events
+  socket.on('wb_zindex_update', (data) => {
+    handleRemoteZIndexChange(data);
+  });
+
   // Full sync
   socket.on('wb_synced', (data) => {
     console.log('[WB] Board synced:', data);
@@ -438,11 +443,19 @@ function emitPageChange() {
 function emitObjectChange(action, obj, pageIndex) {
   if (!socket || !socket.connected || !currentBoard) return;
   saveBoardToServer();
+
+  // Strip imgSrc on updates to avoid sending large base64 on every move/resize
+  // Only send imgSrc on 'add' action; remote clients already have the image
+  let ratioObj = obj ? toRatio(obj) : null;
+  if (ratioObj && action === 'update' && ratioObj.type === 'image') {
+    delete ratioObj.imgSrc;
+  }
+
   socket.emit('wb_object', {
     board_id: currentBoard.id,
     sid: userId,
     action,
-    object: obj ? toRatio(obj) : null,
+    object: ratioObj,
     page_index: pageIndex !== undefined ? pageIndex : currentPageIndex
   });
 }
@@ -547,7 +560,58 @@ function emitLaser(strokeId, point) {
   });
 }
 
+// Emit z-index change (object order)
+function emitZIndexChange() {
+  if (!socket || !socket.connected || !currentBoard) return;
+  // Send array of object IDs in current order
+  const objectOrder = objects.map(obj => obj.id);
+  socket.emit('wb_zindex', {
+    board_id: currentBoard.id,
+    sid: userId,
+    page_index: currentPageIndex,
+    order: objectOrder
+  });
+  saveBoardToServer();
+}
+
 // ========== Handle Remote Events (Incoming) ==========
+
+// Handle remote z-index change
+function handleRemoteZIndexChange(data) {
+  const pageIndex = data.page_index;
+  const order = data.order; // Array of object IDs in new order
+
+  if (!order || !Array.isArray(order)) return;
+
+  if (pageIndex === currentPageIndex) {
+    // Reorder current page objects
+    const newObjects = [];
+    order.forEach(id => {
+      const obj = objects.find(o => o.id === id);
+      if (obj) newObjects.push(obj);
+    });
+    // Add any objects not in the order (shouldn't happen, but safety)
+    objects.forEach(obj => {
+      if (!newObjects.includes(obj)) newObjects.push(obj);
+    });
+    objects.length = 0;
+    newObjects.forEach(obj => objects.push(obj));
+    redraw();
+  } else if (pageIndex < pages.length) {
+    // Reorder other page objects
+    const pageObjs = pages[pageIndex].objects;
+    const newObjects = [];
+    order.forEach(id => {
+      const obj = pageObjs.find(o => o.id === id);
+      if (obj) newObjects.push(obj);
+    });
+    pageObjs.forEach(obj => {
+      if (!newObjects.includes(obj)) newObjects.push(obj);
+    });
+    pages[pageIndex].objects = newObjects;
+    refreshPageGridIfOpen();
+  }
+}
 
 // Handle remote laser pointer
 function handleRemoteLaser(data) {
@@ -612,10 +676,12 @@ function handleRemoteObjectUpdate(data) {
     } else if ((data.action === 'update' || data.action === 'move') && localObj) {
       const idx = pages[pageIndex].objects.findIndex(o => o.id === localObj.id);
       if (idx >= 0) {
-        // Preserve local img object (not sent over network)
+        // Preserve local img object and imgSrc (not sent on move/resize to save bandwidth)
         const existingImg = pages[pageIndex].objects[idx].img;
+        const existingImgSrc = pages[pageIndex].objects[idx].imgSrc;
         Object.assign(pages[pageIndex].objects[idx], localObj);
         if (existingImg) pages[pageIndex].objects[idx].img = existingImg;
+        if (!localObj.imgSrc && existingImgSrc) pages[pageIndex].objects[idx].imgSrc = existingImgSrc;
         needsPageUIUpdate = true;
       }
     }
@@ -663,10 +729,12 @@ function handleRemoteObjectUpdate(data) {
   } else if (data.action === 'update' && localObj) {
     const idx = objects.findIndex(o => o.id === localObj.id);
     if (idx >= 0) {
-      // Preserve local img object (not sent over network)
+      // Preserve local img object and imgSrc (not sent on move/resize to save bandwidth)
       const existingImg = objects[idx].img;
+      const existingImgSrc = objects[idx].imgSrc;
       Object.assign(objects[idx], localObj);
       if (existingImg) objects[idx].img = existingImg;
+      if (!localObj.imgSrc && existingImgSrc) objects[idx].imgSrc = existingImgSrc;
       // Load image if needed
       if (localObj.type === 'image' && localObj.imgSrc && !objects[idx].img) {
         const img = new Image();
@@ -694,10 +762,12 @@ function handleRemoteObjectUpdate(data) {
   } else if (data.action === 'move' && localObj) {
     const idx = objects.findIndex(o => o.id === localObj.id);
     if (idx >= 0) {
-      // Preserve local img object (not sent over network)
+      // Preserve local img object and imgSrc (not sent on move to save bandwidth)
       const existingImg = objects[idx].img;
+      const existingImgSrc = objects[idx].imgSrc;
       Object.assign(objects[idx], localObj);
       if (existingImg) objects[idx].img = existingImg;
+      if (!localObj.imgSrc && existingImgSrc) objects[idx].imgSrc = existingImgSrc;
       redraw();
       updatePageUI();
     }

@@ -252,66 +252,74 @@ function setupObjectMenuHandlers() {
 
 function bringToFront() {
   if (selectedObjects.length === 0) return;
+  let changed = false;
   selectedObjects.forEach(obj => {
     const idx = objects.indexOf(obj);
     if (idx >= 0 && idx < objects.length - 1) {
-      const prevState = cloneObjectState(obj);
       objects.splice(idx, 1);
       objects.push(obj);
-      saveLocalOperation('move', obj, prevState);
-      emitObjectChange('move', obj);
+      changed = true;
     }
   });
-  saveState();
-  redraw();
+  if (changed) {
+    saveState();
+    redraw();
+    emitZIndexChange();
+  }
 }
 
 function bringForward() {
   if (selectedObjects.length === 0) return;
+  let changed = false;
   selectedObjects.forEach(obj => {
     const idx = objects.indexOf(obj);
     if (idx >= 0 && idx < objects.length - 1) {
-      const prevState = cloneObjectState(obj);
       objects.splice(idx, 1);
       objects.splice(idx + 1, 0, obj);
-      saveLocalOperation('move', obj, prevState);
-      emitObjectChange('move', obj);
+      changed = true;
     }
   });
-  saveState();
-  redraw();
+  if (changed) {
+    saveState();
+    redraw();
+    emitZIndexChange();
+  }
 }
 
 function sendBackward() {
   if (selectedObjects.length === 0) return;
+  let changed = false;
   selectedObjects.forEach(obj => {
     const idx = objects.indexOf(obj);
     if (idx > 0) {
-      const prevState = cloneObjectState(obj);
       objects.splice(idx, 1);
       objects.splice(idx - 1, 0, obj);
-      saveLocalOperation('move', obj, prevState);
-      emitObjectChange('move', obj);
+      changed = true;
     }
   });
-  saveState();
-  redraw();
+  if (changed) {
+    saveState();
+    redraw();
+    emitZIndexChange();
+  }
 }
 
 function sendToBack() {
   if (selectedObjects.length === 0) return;
+  let changed = false;
   selectedObjects.forEach(obj => {
     const idx = objects.indexOf(obj);
     if (idx > 0) {
-      const prevState = cloneObjectState(obj);
       objects.splice(idx, 1);
       objects.unshift(obj);
-      saveLocalOperation('move', obj, prevState);
-      emitObjectChange('move', obj);
+      changed = true;
     }
   });
-  saveState();
-  redraw();
+  if (changed) {
+    saveState();
+    redraw();
+    emitZIndexChange();
+  }
 }
 
 function deleteSelected() {
