@@ -1129,4 +1129,7 @@ async function loadBoardData(data) {
   redraw();
   updatePageUI();
   refreshPageGridIfOpen();
+
+  // Redraw again after fonts load to fix text rendering
+  document.fonts.ready.then(() => redraw());
 }
