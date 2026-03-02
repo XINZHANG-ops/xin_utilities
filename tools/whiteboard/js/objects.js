@@ -162,6 +162,7 @@ function hitTestObjects(x, y) {
 function updateObjectProps(obj, props) {
   const prevState = cloneObjectState(obj);
   Object.assign(obj, props);
+  obj.lastModified = Date.now();  // Timestamp for Last Write Wins
   saveLocalOperation('update', obj, prevState);
   emitObjectChange('update', obj);
 }

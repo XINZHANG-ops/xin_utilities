@@ -591,6 +591,7 @@ function setupStickyControls() {
       // Edit existing sticky
       editingStickyObject.text = text;
       editingStickyObject.color = currentStickyColor;
+      editingStickyObject.lastModified = Date.now();  // Timestamp for Last Write Wins
       saveLocalOperation('update', editingStickyObject, editingStickyPrevState);
       saveState();
       emitObjectChange('update', editingStickyObject);

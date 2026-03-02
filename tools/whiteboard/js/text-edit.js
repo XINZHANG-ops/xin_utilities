@@ -122,6 +122,7 @@ function stopEditing() {
 
     // Now safe to remove textarea and save
     textarea.remove();
+    objToSave.lastModified = Date.now();  // Timestamp for Last Write Wins
     saveLocalOperation('update', objToSave, prevState);
     saveState();
     emitObjectChange('update', objToSave);

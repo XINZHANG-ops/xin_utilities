@@ -273,6 +273,17 @@ function handleMouseMove(e) {
     if (selectedObjects.length === 1) {
       showObjectMenu(selectedObjects[0]);
     }
+
+    // Real-time sync: emit position during drag (throttled)
+    const now = Date.now();
+    if (now - lastDragEmit > DRAG_EMIT_INTERVAL) {
+      lastDragEmit = now;
+      selectedObjects.forEach(obj => {
+        obj.lastModified = now;  // Timestamp for Last Write Wins
+        emitObjectChange('move', obj);
+      });
+    }
+
     redraw();
     return;
   }
@@ -375,7 +386,9 @@ function handleMouseUp(e) {
 
     // Only save if there was actual change
     if (hasActualChange) {
+      const now = Date.now();
       selectedObjects.forEach(obj => {
+        obj.lastModified = now;  // Timestamp for Last Write Wins
         const prevState = dragPrevStates[obj.id];
         saveLocalOperation('move', obj, prevState);
       });
