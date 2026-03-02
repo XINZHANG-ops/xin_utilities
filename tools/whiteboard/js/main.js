@@ -1189,9 +1189,6 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// Redraw after fonts load to fix text layout (Google Fonts may load async)
-document.fonts.ready.then(() => redraw());
-
 // Save before user leaves the page (flush any pending debounced saves)
 // Use sendBeacon for reliable delivery during page unload
 window.addEventListener('beforeunload', () => {
