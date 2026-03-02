@@ -3,6 +3,17 @@
 // Uses global variables from state.js - see state.js for variable declarations.
 // shapePreview is declared in state.js
 
+// Cached rotation icon image
+let rotationIconImg = null;
+(function loadRotationIcon() {
+  const svg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 4V10H15" stroke="#007aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20.49 15C19.1078 18.4384 15.8632 21 12 21C6.47715 21 2 16.5228 2 11C2 5.47715 6.47715 1 12 1C15.8652 1 19.1112 3.56447 20.4925 7.00509" stroke="#007aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  rotationIconImg = new Image();
+  rotationIconImg.src = 'data:image/svg+xml;base64,' + btoa(svg);
+})();
+
 // ============================================================================
 // SMOOTH STROKE HELPER
 // ============================================================================
@@ -446,7 +457,7 @@ function drawShapeHandles(obj) {
   const handleY = minY;
   const handleRadius = 8;
 
-  // White circle background with rotation icon
+  // White circle background
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#007aff';
   ctx.lineWidth = 2;
@@ -455,29 +466,11 @@ function drawShapeHandles(obj) {
   ctx.fill();
   ctx.stroke();
 
-  // Draw rotation icon - opening toward bottom-right (toward the object)
-  ctx.strokeStyle = '#007aff';
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const r = 4;
-  // Arc: start at right (0°), go counterclockwise (through top, left) to bottom (π/2)
-  // This draws 270° arc, leaving 90° gap at bottom-right (toward the object)
-  const startAngle = -Math.PI * 0.05;  // slightly above right
-  const endAngle = Math.PI * 0.55;     // slightly past bottom
-  ctx.beginPath();
-  ctx.arc(handleX, handleY, r, startAngle, endAngle, true);  // counterclockwise = long way
-  ctx.stroke();
-  // Arrow head at end (bottom), pointing clockwise (toward the gap/object)
-  const ax = handleX + r * Math.cos(endAngle);
-  const ay = handleY + r * Math.sin(endAngle);
-  // Tangent direction at endAngle going clockwise (increasing angle in canvas)
-  const tangentAngle = endAngle + Math.PI / 2;
-  ctx.beginPath();
-  ctx.moveTo(ax - 2.5 * Math.cos(tangentAngle - 0.5), ay - 2.5 * Math.sin(tangentAngle - 0.5));
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(ax - 2.5 * Math.cos(tangentAngle + 0.5), ay - 2.5 * Math.sin(tangentAngle + 0.5));
-  ctx.stroke();
+  // Draw rotation icon (SVG image)
+  if (rotationIconImg && rotationIconImg.complete) {
+    const iconSize = 12;
+    ctx.drawImage(rotationIconImg, handleX - iconSize / 2, handleY - iconSize / 2, iconSize, iconSize);
+  }
 
   ctx.restore();
 }
@@ -758,7 +751,7 @@ function drawRectHandles(obj) {
   const handleY = obj.y;
   const handleRadius = 8;
 
-  // White circle background with rotation icon
+  // White circle background
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#007aff';
   ctx.lineWidth = 2;
@@ -767,29 +760,11 @@ function drawRectHandles(obj) {
   ctx.fill();
   ctx.stroke();
 
-  // Draw rotation icon - opening toward bottom-right (toward the object)
-  ctx.strokeStyle = '#007aff';
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const r = 4;
-  // Arc: start at right (0°), go counterclockwise (through top, left) to bottom (π/2)
-  // This draws 270° arc, leaving 90° gap at bottom-right (toward the object)
-  const startAngle = -Math.PI * 0.05;  // slightly above right
-  const endAngle = Math.PI * 0.55;     // slightly past bottom
-  ctx.beginPath();
-  ctx.arc(handleX, handleY, r, startAngle, endAngle, true);  // counterclockwise = long way
-  ctx.stroke();
-  // Arrow head at end (bottom), pointing clockwise (toward the gap/object)
-  const ax = handleX + r * Math.cos(endAngle);
-  const ay = handleY + r * Math.sin(endAngle);
-  // Tangent direction at endAngle going clockwise (increasing angle in canvas)
-  const tangentAngle = endAngle + Math.PI / 2;
-  ctx.beginPath();
-  ctx.moveTo(ax - 2.5 * Math.cos(tangentAngle - 0.5), ay - 2.5 * Math.sin(tangentAngle - 0.5));
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(ax - 2.5 * Math.cos(tangentAngle + 0.5), ay - 2.5 * Math.sin(tangentAngle + 0.5));
-  ctx.stroke();
+  // Draw rotation icon (SVG image)
+  if (rotationIconImg && rotationIconImg.complete) {
+    const iconSize = 12;
+    ctx.drawImage(rotationIconImg, handleX - iconSize / 2, handleY - iconSize / 2, iconSize, iconSize);
+  }
 
   ctx.restore();
 }
