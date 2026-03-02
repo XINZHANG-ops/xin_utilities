@@ -32,6 +32,7 @@ function saveLocalOperation(action, obj, previousState = null) {
   }
   // Clear redo stack when new operation is performed
   localRedoStack = [];
+  updateUndoRedoButtons();
 }
 
 /**
@@ -62,6 +63,7 @@ function saveState() {
   saveCurrentPageState();
   updatePageUI();
   saveToLocalStorage();
+  updateUndoRedoButtons();
 }
 
 /**
@@ -175,6 +177,7 @@ function undo() {
     refreshPageGridIfOpen();
     saveToLocalStorage();
     saveBoardToServer();
+    updateUndoRedoButtons();
     return;
   }
 
@@ -193,6 +196,7 @@ function undo() {
       updatePageUI();
       refreshPageGridIfOpen();
       saveToLocalStorage();
+      updateUndoRedoButtons();
     });
   } else if (historyIndex === 0) {
     objects = [];
@@ -202,6 +206,7 @@ function undo() {
     updatePageUI();
     refreshPageGridIfOpen();
     saveToLocalStorage();
+    updateUndoRedoButtons();
   }
 }
 
@@ -289,6 +294,7 @@ function redo() {
     refreshPageGridIfOpen();
     saveToLocalStorage();
     saveBoardToServer();
+    updateUndoRedoButtons();
     return;
   }
 
@@ -307,6 +313,7 @@ function redo() {
       updatePageUI();
       refreshPageGridIfOpen();
       saveToLocalStorage();
+      updateUndoRedoButtons();
     });
   }
 }
