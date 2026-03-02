@@ -358,15 +358,32 @@ function handleMouseUp(e) {
   }
 
   if (dragHandle) {
-    // Save local operations with previous states
+    // Check if any object actually moved (compare with previous state)
+    let hasActualChange = false;
     selectedObjects.forEach(obj => {
       const prevState = dragPrevStates[obj.id];
-      saveLocalOperation('move', obj, prevState);
+      if (prevState) {
+        // Check if position/size/rotation changed
+        const posChanged = (obj.x !== prevState.x || obj.y !== prevState.y ||
+                           obj.x1 !== prevState.x1 || obj.y1 !== prevState.y1 ||
+                           obj.x2 !== prevState.x2 || obj.y2 !== prevState.y2 ||
+                           obj.width !== prevState.width || obj.height !== prevState.height ||
+                           obj.rotation !== prevState.rotation);
+        if (posChanged) hasActualChange = true;
+      }
     });
+
+    // Only save if there was actual change
+    if (hasActualChange) {
+      selectedObjects.forEach(obj => {
+        const prevState = dragPrevStates[obj.id];
+        saveLocalOperation('move', obj, prevState);
+      });
+      saveState();
+      selectedObjects.forEach(obj => emitObjectChange('move', obj));
+    }
+
     dragPrevStates = {};
-    saveState();
-    // Emit move for all selected objects
-    selectedObjects.forEach(obj => emitObjectChange('move', obj));
     dragHandle = null;
     updateSelectedControls();
     return;
