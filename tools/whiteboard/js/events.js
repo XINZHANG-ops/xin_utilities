@@ -749,7 +749,16 @@ function touchToMouseEvent(touch) {
   };
 }
 
+// Track if touch started on canvas (to avoid blocking modal/UI touches)
+let touchStartedOnCanvas = false;
+
 function handleTouchStart(e) {
+  // Only handle touches that start on the canvas
+  if (e.target !== canvas && !canvas.contains(e.target)) {
+    touchStartedOnCanvas = false;
+    return; // Let the event propagate normally for UI elements
+  }
+  touchStartedOnCanvas = true;
   if (e.touches.length === 1) {
     e.preventDefault();
     handleMouseDown(touchToMouseEvent(e.touches[0]));
@@ -757,6 +766,8 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
+  // Only handle if touch started on canvas
+  if (!touchStartedOnCanvas) return;
   if (e.touches.length === 1) {
     e.preventDefault();
     handleMouseMove(touchToMouseEvent(e.touches[0]));
@@ -764,10 +775,13 @@ function handleTouchMove(e) {
 }
 
 function handleTouchEnd(e) {
+  // Only handle if touch started on canvas
+  if (!touchStartedOnCanvas) return;
   e.preventDefault();
   // Use changedTouches for the ending touch point
   const touch = e.changedTouches[0];
   handleMouseUp(touchToMouseEvent(touch));
+  touchStartedOnCanvas = false;
 }
 
 // ============================================================================
