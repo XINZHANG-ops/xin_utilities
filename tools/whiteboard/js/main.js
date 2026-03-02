@@ -16,6 +16,12 @@
  * are available as globals.
  */
 
+// Preload fonts immediately so they're ready when board loads
+if (document.fonts && document.fonts.load) {
+  document.fonts.load('600 16px Nunito');
+  document.fonts.load('400 16px "Plus Jakarta Sans"');
+}
+
 // ========== DOM Element References ==========
 let canvas;
 let ctx;
