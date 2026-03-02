@@ -1130,10 +1130,10 @@ async function loadBoardData(data) {
   refreshPageGridIfOpen();
 
   // Ensure Nunito font is loaded before redraw (preloaded in main.js)
-  if (document.fonts && document.fonts.check('600 16px Nunito')) {
+  if (document.fonts && document.fonts.check('700 16px Nunito')) {
     redraw();
   } else if (document.fonts && document.fonts.load) {
-    document.fonts.load('600 16px Nunito').then(() => redraw());
+    document.fonts.load('700 16px Nunito').then(() => redraw());
   } else {
     redraw();
   }

@@ -548,7 +548,7 @@ function drawSticky(obj, selected = false) {
   const radius = 12;
   const padding = 8;
   // Nunito font with bolder weight for sticky notes
-  const fontWeight = obj.bold ? '700' : '600';
+  const fontWeight = obj.bold ? '800' : '700';
   const fontFamily = "'Nunito', sans-serif";
   // Ensure positive values for text area (minimum 1px)
   const maxWidth = Math.max(1, obj.width - padding * 2);
