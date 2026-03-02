@@ -161,6 +161,18 @@ function deletePage(pageIndex) {
 
   pages.splice(pageIndex, 1);
 
+  // Clean up object undo/redo stacks - remove ops for deleted page, adjust indices
+  localUndoStack = localUndoStack.filter(op => {
+    if (op.pageIndex === pageIndex) return false;
+    if (op.pageIndex > pageIndex) op.pageIndex--;
+    return true;
+  });
+  localRedoStack = localRedoStack.filter(op => {
+    if (op.pageIndex === pageIndex) return false;
+    if (op.pageIndex > pageIndex) op.pageIndex--;
+    return true;
+  });
+
   // Adjust current page index if needed
   if (currentPageIndex >= pages.length) {
     currentPageIndex = pages.length - 1;

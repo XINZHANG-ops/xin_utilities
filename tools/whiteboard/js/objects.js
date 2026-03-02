@@ -262,6 +262,11 @@ function bringToFront() {
     }
   });
   if (changed) {
+    // In collab mode, clear undo stack for this page (z-index affects ordering)
+    if (currentBoard) {
+      localUndoStack = localUndoStack.filter(op => op.pageIndex !== currentPageIndex);
+      localRedoStack = localRedoStack.filter(op => op.pageIndex !== currentPageIndex);
+    }
     saveState();
     redraw();
     emitZIndexChange();
@@ -280,6 +285,10 @@ function bringForward() {
     }
   });
   if (changed) {
+    if (currentBoard) {
+      localUndoStack = localUndoStack.filter(op => op.pageIndex !== currentPageIndex);
+      localRedoStack = localRedoStack.filter(op => op.pageIndex !== currentPageIndex);
+    }
     saveState();
     redraw();
     emitZIndexChange();
@@ -298,6 +307,10 @@ function sendBackward() {
     }
   });
   if (changed) {
+    if (currentBoard) {
+      localUndoStack = localUndoStack.filter(op => op.pageIndex !== currentPageIndex);
+      localRedoStack = localRedoStack.filter(op => op.pageIndex !== currentPageIndex);
+    }
     saveState();
     redraw();
     emitZIndexChange();
@@ -316,6 +329,10 @@ function sendToBack() {
     }
   });
   if (changed) {
+    if (currentBoard) {
+      localUndoStack = localUndoStack.filter(op => op.pageIndex !== currentPageIndex);
+      localRedoStack = localRedoStack.filter(op => op.pageIndex !== currentPageIndex);
+    }
     saveState();
     redraw();
     emitZIndexChange();

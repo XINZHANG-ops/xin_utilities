@@ -106,9 +106,8 @@ function undo() {
 
     // Check if page still exists
     if (op.pageIndex >= pages.length) {
-      // Page was deleted - skip this operation
-      localRedoStack.push(op);
-      return undo(); // Try next operation
+      // Page was deleted - discard this operation and try next
+      return undo();
     }
 
     // Switch to the page where the operation happened
@@ -119,10 +118,11 @@ function undo() {
     if (op.action === 'add') {
       // Undo add = delete the object
       const idx = objects.findIndex(o => o.id === op.objId);
-      if (idx !== -1) {
+      if (idx >= 0) {
         objects.splice(idx, 1);
         emitObjectChange('delete', op.newState);
       }
+      // If idx === -1, object was already deleted by another user - that's fine
     } else if (op.action === 'delete') {
       // Undo delete = re-add the object (only if not already present)
       if (op.objState) {
@@ -157,6 +157,9 @@ function undo() {
           img.src = obj.imgSrc;
         }
         emitObjectChange('update', obj);
+      } else if (!obj) {
+        // Object was deleted by another user - discard and try next
+        return undo();
       }
     }
 
@@ -219,9 +222,8 @@ function redo() {
 
     // Check if page still exists
     if (op.pageIndex >= pages.length) {
-      // Page was deleted - skip this operation
-      localUndoStack.push(op);
-      return redo(); // Try next operation
+      // Page was deleted - discard this operation and try next
+      return redo();
     }
 
     // Switch to the page where the operation happened
@@ -250,10 +252,11 @@ function redo() {
     } else if (op.action === 'delete') {
       // Redo delete = delete the object again
       const idx = objects.findIndex(o => o.id === op.objId);
-      if (idx !== -1) {
+      if (idx >= 0) {
         objects.splice(idx, 1);
         emitObjectChange('delete', op.objState);
       }
+      // If idx === -1, object was already deleted by another user - that's fine
     } else if (op.action === 'update' || op.action === 'move') {
       // Redo update/move = apply new state
       const obj = objects.find(o => o.id === op.objId);
@@ -268,6 +271,9 @@ function redo() {
           img.src = obj.imgSrc;
         }
         emitObjectChange('update', obj);
+      } else if (!obj) {
+        // Object was deleted by another user - discard and try next
+        return redo();
       }
     }
 

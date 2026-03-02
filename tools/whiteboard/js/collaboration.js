@@ -589,6 +589,11 @@ function handleRemoteZIndexChange(data) {
 
   if (!order || !Array.isArray(order)) return;
 
+  // Z-index changes affect object ordering - clear undo stacks for this page
+  // because previous undo operations may reference wrong array positions
+  localUndoStack = localUndoStack.filter(op => op.pageIndex !== pageIndex);
+  localRedoStack = localRedoStack.filter(op => op.pageIndex !== pageIndex);
+
   if (pageIndex === currentPageIndex) {
     // Reorder current page objects
     const newObjects = [];
@@ -859,7 +864,21 @@ function handleRemotePageUpdate(data) {
     redraw();
   } else if (data.action === 'delete') {
     if (pages.length > 1 && data.page_index < pages.length) {
-      pages.splice(data.page_index, 1);
+      const deletedPageIndex = data.page_index;
+      pages.splice(deletedPageIndex, 1);
+
+      // Clean up undo/redo stacks - remove operations for deleted page, adjust indices
+      localUndoStack = localUndoStack.filter(op => {
+        if (op.pageIndex === deletedPageIndex) return false;
+        if (op.pageIndex > deletedPageIndex) op.pageIndex--;
+        return true;
+      });
+      localRedoStack = localRedoStack.filter(op => {
+        if (op.pageIndex === deletedPageIndex) return false;
+        if (op.pageIndex > deletedPageIndex) op.pageIndex--;
+        return true;
+      });
+
       // Adjust current page index if needed
       if (currentPageIndex >= pages.length) {
         currentPageIndex = pages.length - 1;
@@ -879,6 +898,19 @@ function handleRemotePageUpdate(data) {
       // Reorder pages array
       const [movedPage] = pages.splice(fromIndex, 1);
       pages.splice(toIndex, 0, movedPage);
+
+      // Adjust undo/redo stack page indices
+      const adjustPageIndex = (op) => {
+        if (op.pageIndex === fromIndex) {
+          op.pageIndex = toIndex;
+        } else if (fromIndex < op.pageIndex && toIndex >= op.pageIndex) {
+          op.pageIndex--;
+        } else if (fromIndex > op.pageIndex && toIndex <= op.pageIndex) {
+          op.pageIndex++;
+        }
+      };
+      localUndoStack.forEach(adjustPageIndex);
+      localRedoStack.forEach(adjustPageIndex);
 
       // Adjust currentPageIndex
       if (currentPageIndex === fromIndex) {
