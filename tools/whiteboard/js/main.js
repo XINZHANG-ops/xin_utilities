@@ -587,7 +587,16 @@ function setupStickyControls() {
   // Save button
   stickySaveBtn.addEventListener('click', () => {
     const text = stickyTextarea.value.trim();
-    if (pendingStickyPosition) {
+    if (editingStickyObject) {
+      // Edit existing sticky
+      editingStickyObject.text = text;
+      editingStickyObject.color = currentStickyColor;
+      saveLocalOperation('update', editingStickyObject, editingStickyPrevState);
+      saveState();
+      emitObjectChange('update', editingStickyObject);
+      redraw();
+    } else if (pendingStickyPosition) {
+      // Create new sticky
       const newSticky = {
         id: generateObjectId(),
         type: 'sticky',

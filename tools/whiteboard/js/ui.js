@@ -208,11 +208,26 @@ function updateColorButtons() {
 
 function openStickyModal(x, y) {
   pendingStickyPosition = { x, y };
+  editingStickyObject = null;
+  editingStickyPrevState = null;
   stickyTextarea.value = '';
   stickyTextarea.style.background = currentStickyColor;
-  // Reset color selection UI
   document.querySelectorAll('.sticky-color-opt').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.color === currentStickyColor);
+  });
+  stickyModal.classList.add('open');
+  setTimeout(() => stickyTextarea.focus(), 100);
+}
+
+function openStickyModalForEdit(obj) {
+  pendingStickyPosition = null;
+  editingStickyObject = obj;
+  editingStickyPrevState = cloneObjectState(obj);
+  stickyTextarea.value = obj.text || '';
+  currentStickyColor = obj.color;
+  stickyTextarea.style.background = obj.color;
+  document.querySelectorAll('.sticky-color-opt').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === obj.color);
   });
   stickyModal.classList.add('open');
   setTimeout(() => stickyTextarea.focus(), 100);
@@ -221,6 +236,8 @@ function openStickyModal(x, y) {
 function closeStickyModal() {
   stickyModal.classList.remove('open');
   pendingStickyPosition = null;
+  editingStickyObject = null;
+  editingStickyPrevState = null;
 }
 
 // ========== Object Context Menu ==========

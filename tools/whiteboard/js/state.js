@@ -144,8 +144,10 @@ let draggedPageIndex = null;
 
 // ========== Sticky Note State ==========
 let pendingStickyPosition = null;
-let stickyColor = '#fff9c4';
-let currentStickyColor = '#fff9c4';
+let editingStickyObject = null;  // For editing existing sticky via modal
+let editingStickyPrevState = null;
+let stickyColor = '#ffd60a';
+let currentStickyColor = '#ffd60a';
 
 // ========== Shape Style State ==========
 let strokeColor = '#1d1d1f';

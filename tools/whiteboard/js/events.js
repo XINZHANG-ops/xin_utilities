@@ -441,7 +441,10 @@ function handleDoubleClick(e) {
   const pos = getMousePos(e);
   const hit = hitTestObjects(pos.x, pos.y);
 
-  if (hit && (hit.obj.type === 'sticky' || hit.obj.type === 'textbox')) {
+  if (hit && hit.obj.type === 'sticky') {
+    selectedObjects = [hit.obj];
+    openStickyModalForEdit(hit.obj);
+  } else if (hit && hit.obj.type === 'textbox') {
     selectedObjects = [hit.obj];
     startEditing(hit.obj);
   }

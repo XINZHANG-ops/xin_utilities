@@ -14,19 +14,6 @@
  */
 
 /**
- * Handle double-click on canvas to start editing text/sticky objects
- */
-function handleDoubleClick(e) {
-  const pos = getMousePos(e);
-  const hit = hitTestObjects(pos.x, pos.y);
-
-  if (hit && (hit.obj.type === 'sticky' || hit.obj.type === 'textbox')) {
-    selectedObjects = [hit.obj];
-    startEditing(hit.obj);
-  }
-}
-
-/**
  * Start editing a text or sticky object with inline textarea overlay
  * @param {Object} obj - The text/sticky object to edit
  */
