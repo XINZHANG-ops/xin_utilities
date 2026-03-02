@@ -1126,12 +1126,13 @@ async function loadBoardData(data) {
   if (currentPageIndex >= pages.length) currentPageIndex = 0;
 
   loadPageState(currentPageIndex);
-  redraw();
   updatePageUI();
   refreshPageGridIfOpen();
 
-  // Wait for Nunito font (used in sticky notes) then redraw
+  // Wait for Nunito font (used in sticky notes) before first redraw
   if (document.fonts && document.fonts.load) {
     document.fonts.load('600 16px Nunito').then(() => redraw());
+  } else {
+    redraw();
   }
 }
