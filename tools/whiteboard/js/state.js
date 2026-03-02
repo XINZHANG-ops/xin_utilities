@@ -132,6 +132,11 @@ const LASER_STROKE_SIZE = 3;
 // Cache for remote drawing objects being drawn in real-time
 let remoteDrawingObjects = {};
 
+// ========== Local Modification Cooldown ==========
+// Track recently modified objects to ignore incoming remote updates (avoid cross-update)
+let localModifiedObjects = {};  // { objId: timestamp }
+const LOCAL_MODIFY_COOLDOWN = 500;  // ms to ignore remote updates after local modification
+
 // ========== Cursor Emit Throttle ==========
 let lastCursorEmit = 0;
 

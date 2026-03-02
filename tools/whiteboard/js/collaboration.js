@@ -450,6 +450,11 @@ function emitObjectChange(action, obj, pageIndex) {
   if (!socket || !socket.connected || !currentBoard) return;
   saveBoardToServer();
 
+  // Record local modification time for move/update to avoid cross-update issues
+  if (obj && (action === 'move' || action === 'update')) {
+    localModifiedObjects[obj.id] = Date.now();
+  }
+
   // Strip imgSrc on updates to avoid sending large base64 on every move/resize
   // Only send imgSrc on 'add' action; remote clients already have the image
   let ratioObj = obj ? toRatio(obj) : null;
@@ -740,6 +745,14 @@ function handleRemoteObjectUpdate(data) {
   } else if (data.action === 'update' && localObj) {
     const idx = objects.findIndex(o => o.id === localObj.id);
     if (idx >= 0) {
+      // Skip if this object was recently modified locally (avoid cross-update)
+      const lastModified = localModifiedObjects[localObj.id];
+      const isInCooldown = lastModified && (Date.now() - lastModified < LOCAL_MODIFY_COOLDOWN);
+      const isLocallyDragging = dragHandle && selectedObjects.some(o => o.id === localObj.id);
+      if (isLocallyDragging || isInCooldown) {
+        console.log('[WB] Ignoring remote update for locally modified object:', localObj.id);
+        return;
+      }
       // Preserve local img object and imgSrc (not sent on move/resize to save bandwidth)
       const existingImg = objects[idx].img;
       const existingImgSrc = objects[idx].imgSrc;
@@ -773,6 +786,14 @@ function handleRemoteObjectUpdate(data) {
   } else if (data.action === 'move' && localObj) {
     const idx = objects.findIndex(o => o.id === localObj.id);
     if (idx >= 0) {
+      // Skip if this object was recently modified locally (avoid cross-update)
+      const lastModified = localModifiedObjects[localObj.id];
+      const isInCooldown = lastModified && (Date.now() - lastModified < LOCAL_MODIFY_COOLDOWN);
+      const isLocallyDragging = dragHandle && selectedObjects.some(o => o.id === localObj.id);
+      if (isLocallyDragging || isInCooldown) {
+        console.log('[WB] Ignoring remote move for locally modified object:', localObj.id);
+        return;
+      }
       // Preserve local img object and imgSrc (not sent on move to save bandwidth)
       const existingImg = objects[idx].img;
       const existingImgSrc = objects[idx].imgSrc;
