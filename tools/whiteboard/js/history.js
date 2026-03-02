@@ -149,6 +149,7 @@ function undo() {
       const obj = objects.find(o => o.id === op.objId);
       if (obj && op.objState) {
         Object.assign(obj, op.objState);
+        obj.lastModified = Date.now();  // New timestamp so remote accepts this update
         // Reload image if needed
         if (obj.type === 'image' && obj.imgSrc && !obj.img) {
           const img = new Image();
@@ -267,6 +268,7 @@ function redo() {
       const obj = objects.find(o => o.id === op.objId);
       if (obj && op.newState) {
         Object.assign(obj, op.newState);
+        obj.lastModified = Date.now();  // New timestamp so remote accepts this update
         if (obj.type === 'image' && obj.imgSrc && !obj.img) {
           const img = new Image();
           img.onload = () => {
