@@ -12,6 +12,12 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Touch-friendly defaults */
+button, a, input, .modal-tab, .modal-btn {
+  touch-action: manipulation; /* Disable double-tap zoom for faster clicks */
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
@@ -1249,4 +1255,39 @@ body {
   .tool-panel { left: auto; bottom: 80px; left: 50%; transform: translateX(-50%); }
   .board-title { display: none; }
   .download-btn span { display: none; }
+
+  /* Modal mobile fixes */
+  .modal-content {
+    width: 92%;
+    max-width: none;
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-tabs {
+    flex-direction: column;
+  }
+  .modal-tab {
+    padding: 1rem;
+    min-height: 48px; /* Touch-friendly size */
+  }
+  .modal-input {
+    padding: 1rem;
+    font-size: 16px; /* Prevent iOS zoom on focus */
+    min-height: 48px;
+  }
+  .modal-btn {
+    padding: 1rem;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  .modal-local-link {
+    padding: 1rem 0;
+  }
+  .modal-local-link a {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    min-height: 44px;
+    line-height: 28px;
+  }
 }
