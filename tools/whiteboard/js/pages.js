@@ -269,6 +269,13 @@ function closeAllPageMenus() {
   openPageMenuIndex = null;
 }
 
+// Close dropdown when clicking empty space in pageDropdown
+pageDropdown.addEventListener('click', (e) => {
+  if (openPageMenuIndex !== null && !e.target.closest('.page-thumb-menu-wrapper')) {
+    closeAllPageMenus();
+  }
+});
+
 function refreshPageGridIfOpen() {
   if (pageDropdown.classList.contains('open')) {
     renderPageGrid();
