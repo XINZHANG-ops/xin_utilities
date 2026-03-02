@@ -1130,6 +1130,8 @@ async function loadBoardData(data) {
   updatePageUI();
   refreshPageGridIfOpen();
 
-  // Redraw again after fonts load to fix text rendering
-  document.fonts.ready.then(() => redraw());
+  // Wait for Nunito font (used in sticky notes) then redraw
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('600 16px Nunito').then(() => redraw());
+  }
 }
