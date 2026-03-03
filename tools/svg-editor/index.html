@@ -1901,6 +1901,11 @@
             shape.x = snap(orig.x + localDx);
             shape.width = Math.max(1, snap(orig.width - localDx));
             shape.height = Math.max(1, snap(orig.height + localDy));
+          } else if (h === 'nw') {
+            shape.x = snap(orig.x + localDx);
+            shape.y = snap(orig.y + localDy);
+            shape.width = Math.max(1, snap(orig.width - localDx));
+            shape.height = Math.max(1, snap(orig.height - localDy));
           }
 
           // Scale holes for rect
@@ -1917,13 +1922,34 @@
             );
           }
         } else if (shape.type === 'ellipse') {
-          // Ellipse: resize rx and ry independently
-          let deltaX = 0, deltaY = 0;
-          if (h === 'se') { deltaX = localDx; deltaY = localDy; }
-          else if (h === 'ne') { deltaX = localDx; deltaY = -localDy; }
-          else if (h === 'sw') { deltaX = -localDx; deltaY = localDy; }
-          shape.rx = Math.max(0.5, snap(orig.rx + deltaX / 2));
-          shape.ry = Math.max(0.5, snap(orig.ry + deltaY / 2));
+          // Ellipse: resize rx and ry, and adjust center to keep opposite corner fixed
+          let deltaRx = 0, deltaRy = 0;
+          let deltaCx = 0, deltaCy = 0;
+          if (h === 'se') {
+            deltaRx = localDx / 2;
+            deltaRy = localDy / 2;
+            deltaCx = localDx / 2;
+            deltaCy = localDy / 2;
+          } else if (h === 'ne') {
+            deltaRx = localDx / 2;
+            deltaRy = -localDy / 2;
+            deltaCx = localDx / 2;
+            deltaCy = localDy / 2;
+          } else if (h === 'sw') {
+            deltaRx = -localDx / 2;
+            deltaRy = localDy / 2;
+            deltaCx = localDx / 2;
+            deltaCy = localDy / 2;
+          } else if (h === 'nw') {
+            deltaRx = -localDx / 2;
+            deltaRy = -localDy / 2;
+            deltaCx = localDx / 2;
+            deltaCy = localDy / 2;
+          }
+          shape.rx = Math.max(0.5, snap(orig.rx + deltaRx));
+          shape.ry = Math.max(0.5, snap(orig.ry + deltaRy));
+          shape.cx = snap(orig.cx + deltaCx);
+          shape.cy = snap(orig.cy + deltaCy);
 
           // Scale holes for ellipse
           if (orig.holes) {
