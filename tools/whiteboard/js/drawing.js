@@ -157,8 +157,9 @@ function redrawNow() {
     }
   }
 
-  // Layer 3: Sticky notes and text boxes
+  // Layer 3: Sticky notes and text boxes (skip if being edited - textarea overlay is shown)
   for (const obj of objects) {
+    if (obj === editingObject) continue;  // Skip object being edited inline
     if (obj.type === 'sticky') {
       drawSticky(obj, selectedObjects.includes(obj));
     } else if (obj.type === 'textbox') {

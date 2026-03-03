@@ -83,6 +83,9 @@ function startEditing(obj) {
       textarea.style.height = textarea.scrollHeight + 'px';
     });
   }
+
+  // Redraw to hide the canvas text (textarea overlay replaces it)
+  redraw();
 }
 
 /**
