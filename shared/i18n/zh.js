@@ -345,6 +345,8 @@ I18n.register('zh', {
     tools: {
       select: '选择',
       brush: '画笔',
+      pen: '钢笔',
+      highlighter: '荧光笔',
       eraser: '橡皮擦',
       rectangle: '矩形',
       rect: '矩形',

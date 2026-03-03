@@ -128,12 +128,14 @@ function handleMouseDown(e) {
   }
 
   if (currentTool === 'brush' || currentTool === 'eraser') {
+    const isHighlighter = currentTool === 'brush' && brushType === 'highlighter';
     objects.push({
       id: currentDrawingId,
       type: currentTool,
+      brushType: currentTool === 'brush' ? brushType : undefined,
       color: currentTool === 'eraser' ? '#ffffff' : currentColor,
-      size: currentTool === 'eraser' ? eraserSize : strokeSize,
-      opacity: currentTool === 'eraser' ? 1 : opacity,
+      size: currentTool === 'eraser' ? eraserSize : (isHighlighter ? 20 : strokeSize),
+      opacity: currentTool === 'eraser' ? 1 : (isHighlighter ? 0.6 : opacity),
       points: [{ x: startX, y: startY }]
     });
   }
@@ -328,7 +330,8 @@ function handleMouseMove(e) {
       color: obj.color,
       size: obj.size,
       opacity: obj.opacity,
-      type: obj.type
+      type: obj.type,
+      brushType: obj.brushType
     });
   } else {
     // Store shape preview state for drawing after redraw

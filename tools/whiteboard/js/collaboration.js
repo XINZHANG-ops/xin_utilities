@@ -483,7 +483,8 @@ function emitDrawing(objId, points, brushProps) {
     color: brushProps?.color,
     size: brushProps?.size,
     opacity: brushProps?.opacity,
-    type: brushProps?.type || 'brush'
+    type: brushProps?.type || 'brush',
+    brushType: brushProps?.brushType
   });
 }
 
@@ -813,6 +814,7 @@ function handleRemoteDrawing(data) {
       obj = {
         id: data.obj_id,
         type: data.type || 'brush',
+        brushType: data.brushType,
         color: data.color || '#1d1d1f',
         size: data.size || 3,
         opacity: data.opacity !== undefined ? data.opacity : 1,

@@ -583,6 +583,22 @@ body {
 }
 .panel-row:last-child { margin-bottom: 0; }
 
+.brush-type-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.brush-type-btn:hover { border-color: var(--fg-muted); }
+.brush-type-btn.active { border-color: var(--accent); background: rgba(48, 209, 88, 0.1); }
+
 .brush-size-btn {
   width: 32px;
   height: 32px;

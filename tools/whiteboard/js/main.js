@@ -335,14 +335,18 @@ function setupToolButtons() {
     });
   });
 
-  // Brush panel buttons
-  document.querySelectorAll('#brushPanel [data-size]').forEach(btn => {
+  // Brush type buttons (pen / highlighter)
+  const brushToolIcon = document.getElementById('brushToolIcon');
+  document.querySelectorAll('#brushPanel .brush-type-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      strokeSize = parseInt(btn.dataset.size);
-      strokeSizeSlider.value = strokeSize;
-      document.querySelectorAll('#brushPanel [data-size]').forEach(b => b.classList.remove('active'));
+      brushType = btn.dataset.brushType;
+      document.querySelectorAll('#brushPanel .brush-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      // Update toolbar icon
+      if (brushToolIcon && brushIcons[brushType]) {
+        brushToolIcon.innerHTML = brushIcons[brushType];
+      }
     });
   });
 

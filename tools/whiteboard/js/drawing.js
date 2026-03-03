@@ -182,8 +182,10 @@ function redrawNow() {
       offCtx.globalAlpha = obj.opacity;
       offCtx.strokeStyle = obj.color;
       offCtx.lineWidth = obj.size;
-      offCtx.lineCap = 'round';
-      offCtx.lineJoin = 'round';
+      // Highlighter uses butt caps and bevel joins for flat marker look
+      const isHighlighter = obj.brushType === 'highlighter';
+      offCtx.lineCap = isHighlighter ? 'butt' : 'round';
+      offCtx.lineJoin = isHighlighter ? 'bevel' : 'round';
       drawSmoothStroke(offCtx, obj.points);
       offCtx.restore();
     } else if (obj.type === 'eraser') {
@@ -218,8 +220,9 @@ function drawBrushStroke(obj) {
   ctx.globalAlpha = obj.opacity;
   ctx.strokeStyle = obj.color;
   ctx.lineWidth = obj.size;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  const isHighlighter = obj.brushType === 'highlighter';
+  ctx.lineCap = isHighlighter ? 'butt' : 'round';
+  ctx.lineJoin = isHighlighter ? 'bevel' : 'round';
 
   const points = obj.points;
   const len = points.length;

@@ -63,6 +63,7 @@ const STORAGE_KEY = 'xin-whiteboard-state';
 // ========== Drawing Tool State ==========
 let currentTool = 'select';
 let currentColor = '#1d1d1f';
+let brushType = 'pen';  // 'pen' or 'highlighter'
 let strokeSize = 3;
 let eraserSize = 20;  // Separate size for eraser
 let opacity = 1;
@@ -167,6 +168,12 @@ const shapeIcons = {
   rect: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
   circle: '<circle cx="12" cy="12" r="9"/>',
   arrow: '<path d="M 3 5 H 12 V 3 L 21 12 L 12 21 V 19 H 3 Z"/>'
+};
+
+// Brush type icons (viewBox 0 0 12 12)
+const brushIcons = {
+  pen: '<rect x="8" y="0.9" width="2.9" height="5.6" rx="0.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" transform="rotate(41.8 9.5 2.3)"/><polygon points="5.2,5 7.3,6.9 3.3,11.3 1.2,11.6 1.2,9.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/><polygon points="7,1.3 7.7,2 7.3,2.2 7,1.9 4.1,5.2 3.8,4.9" fill="none" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>',
+  highlighter: '<polygon points="8.8,0.5 11.2,2.1 8.4,6.1 6.1,4.5" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" transform="rotate(9.6 8.7 3.3)"/><polygon points="1.7,9 2.6,10.7 0.2,10.7" fill="currentColor" stroke="currentColor" stroke-width="0.1" stroke-linejoin="round" transform="rotate(-0.1 1.5 10.3)"/><polygon points="4.3,5 6.7,6.6 3.9,10.6 1.6,9" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" transform="rotate(10.8 4.2 7.8)"/>'
 };
 
 // ========== Text Editing State ==========

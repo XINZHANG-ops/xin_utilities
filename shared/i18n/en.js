@@ -345,6 +345,8 @@ I18n.register('en', {
     tools: {
       select: 'Select',
       brush: 'Brush',
+      pen: 'Pen',
+      highlighter: 'Highlighter',
       eraser: 'Eraser',
       rectangle: 'Rectangle',
       rect: 'Rectangle',

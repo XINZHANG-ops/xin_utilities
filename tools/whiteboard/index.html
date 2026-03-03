@@ -303,7 +303,7 @@
   <div class="left-toolbar" id="leftToolbar">
     <!-- Brush -->
     <button class="tool-btn has-panel" id="brushTool" data-tool="brush" data-i18n-title="whiteboard.tools.brush" title="画笔">
-      <svg width="22" height="22" viewBox="0 0 12 12" fill="currentColor">
+      <svg width="22" height="22" viewBox="0 0 12 12" fill="currentColor" id="brushToolIcon">
         <rect x="8" y="0.9" width="2.9" height="5.6" rx="0.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" transform="rotate(41.8 9.5 2.3)"/>
         <polygon points="5.2,5 7.3,6.9 3.3,11.3 1.2,11.6 1.2,9.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
         <polygon points="7,1.3 7.7,2 7.3,2.2 7,1.9 4.1,5.2 3.8,4.9" fill="none" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
@@ -378,10 +378,20 @@
   <!-- Brush Panel -->
   <div class="tool-panel" id="brushPanel">
     <div class="panel-row">
-      <button class="brush-size-btn" data-size="2" title="细"><svg width="16" height="16"><circle cx="8" cy="8" r="2" fill="currentColor"/></svg></button>
-      <button class="brush-size-btn active" data-size="4" title="中"><svg width="16" height="16"><circle cx="8" cy="8" r="4" fill="currentColor"/></svg></button>
-      <button class="brush-size-btn" data-size="8" title="粗"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="currentColor"/></svg></button>
-      <button class="brush-size-btn" data-size="12" title="特粗"><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="currentColor"/></svg></button>
+      <button class="brush-type-btn active" data-brush-type="pen" data-i18n-title="whiteboard.tools.pen">
+        <svg width="24" height="24" viewBox="0 0 12 12" fill="currentColor">
+          <rect x="8" y="0.9" width="2.9" height="5.6" rx="0.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" transform="rotate(41.8 9.5 2.3)"/>
+          <polygon points="5.2,5 7.3,6.9 3.3,11.3 1.2,11.6 1.2,9.5" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
+          <polygon points="7,1.3 7.7,2 7.3,2.2 7,1.9 4.1,5.2 3.8,4.9" fill="none" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="brush-type-btn" data-brush-type="highlighter" data-i18n-title="whiteboard.tools.highlighter">
+        <svg width="24" height="24" viewBox="0 0 12 12" fill="currentColor">
+          <polygon points="8.8,0.5 11.2,2.1 8.4,6.1 6.1,4.5" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" transform="rotate(9.6 8.7 3.3)"/>
+          <polygon points="1.7,9 2.6,10.7 0.2,10.7" fill="currentColor" stroke="currentColor" stroke-width="0.1" stroke-linejoin="round" transform="rotate(-0.1 1.5 10.3)"/>
+          <polygon points="4.3,5 6.7,6.6 3.9,10.6 1.6,9" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" transform="rotate(10.8 4.2 7.8)"/>
+        </svg>
+      </button>
     </div>
     <div class="panel-row">
       <button class="color-btn active" data-color="#1d1d1f" style="background:#1d1d1f;" title="黑色"></button>
