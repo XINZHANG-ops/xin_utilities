@@ -361,6 +361,11 @@ I18n.register('zh', {
       shapes: '形状',
       laser: '激光笔'
     },
+    sizes: {
+      small: '小',
+      medium: '中',
+      large: '大'
+    },
     colors: {
       black: '黑色',
       blue: '蓝色',

@@ -361,6 +361,11 @@ I18n.register('en', {
       shapes: 'Shapes',
       laser: 'Laser Pointer'
     },
+    sizes: {
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large'
+    },
     colors: {
       black: 'Black',
       blue: 'Blue',
