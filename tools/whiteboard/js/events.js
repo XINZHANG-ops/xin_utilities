@@ -129,12 +129,17 @@ function handleMouseDown(e) {
 
   if (currentTool === 'brush' || currentTool === 'eraser') {
     const isHighlighter = currentTool === 'brush' && brushType === 'highlighter';
+    const isMarker = currentTool === 'brush' && brushType === 'marker';
+    // Brush sizes: pen=3, marker=8, highlighter=20
+    let brushSize = strokeSize;
+    if (isMarker) brushSize = 8;
+    else if (isHighlighter) brushSize = 20;
     objects.push({
       id: currentDrawingId,
       type: currentTool,
       brushType: currentTool === 'brush' ? brushType : undefined,
       color: currentTool === 'eraser' ? '#ffffff' : currentColor,
-      size: currentTool === 'eraser' ? eraserSize : (isHighlighter ? 20 : strokeSize),
+      size: currentTool === 'eraser' ? eraserSize : brushSize,
       opacity: currentTool === 'eraser' ? 1 : (isHighlighter ? 0.6 : opacity),
       points: [{ x: startX, y: startY }]
     });

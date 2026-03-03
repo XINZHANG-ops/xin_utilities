@@ -346,6 +346,7 @@ I18n.register('zh', {
       select: '选择',
       brush: '画笔',
       pen: '钢笔',
+      marker: '马克笔',
       highlighter: '荧光笔',
       eraser: '橡皮擦',
       rectangle: '矩形',
