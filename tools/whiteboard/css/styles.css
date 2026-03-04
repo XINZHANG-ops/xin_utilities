@@ -118,9 +118,10 @@ body {
 .page-indicator {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: 0;
+  padding: 4px 8px;
   cursor: pointer;
   user-select: none;
   transition: all 0.2s;
@@ -129,15 +130,15 @@ body {
 .page-indicator:hover .page-card-back { border-color: var(--fg); background: var(--bg-secondary); }
 .page-cards-icon {
   position: relative;
-  width: 36px;
-  height: 28px;
+  width: 52px;
+  height: 30px;
 }
 .page-card-back {
   position: absolute;
   top: 0;
   left: 4px;
-  width: 28px;
-  height: 20px;
+  width: 44px;
+  height: 22px;
   border: 1.5px solid var(--fg-muted);
   border-radius: 2px;
   background: var(--bg-card);
@@ -146,8 +147,8 @@ body {
   position: absolute;
   top: 6px;
   left: 0;
-  width: 28px;
-  height: 20px;
+  width: 44px;
+  height: 22px;
   border: 1.5px solid var(--fg-muted);
   border-radius: 2px;
   background: var(--bg-card);
@@ -162,7 +163,6 @@ body {
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
   border-top: 5px solid var(--fg-muted);
-  margin-left: 2px;
 }
 
 /* Page dropdown with thumbnails */

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File - <<'PSEOF'\n$logFile = \"$env:USERPROFILE\\\\.claude-mem\\\\logs\\\\worker-$\\(Get-Date -Format 'yyyy-MM-dd'\\).log\"\nGet-Content $logFile -Tail 100\nPSEOF)",
+      "Bash(powershell.exe -NoProfile -Command:*)"
     ]
   }
 }
