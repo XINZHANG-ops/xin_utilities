@@ -49,6 +49,7 @@ function loadPageState(pageIndex) {
   }
 
   selectedObjects = [];
+  if (typeof hideObjectMenu === 'function') hideObjectMenu();
   if (typeof updateSelectedControls === 'function') updateSelectedControls();
   if (typeof updateUndoRedoButtons === 'function') updateUndoRedoButtons();
 }

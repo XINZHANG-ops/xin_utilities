@@ -170,6 +170,7 @@ function connectWebSocket() {
       history = [];
       historyIndex = -1;
       selectedObjects = [];
+      hideObjectMenu();
       updateSelectedControls();
       saveCurrentPageState();
       redraw();
@@ -774,6 +775,15 @@ function handleRemoteObjectUpdate(data) {
   } else if (data.action === 'delete' && localObj) {
     const idx = objects.findIndex(o => o.id === localObj.id);
     if (idx >= 0) {
+      // Remove from selection if selected
+      const selIdx = selectedObjects.findIndex(o => o.id === localObj.id);
+      if (selIdx >= 0) {
+        selectedObjects.splice(selIdx, 1);
+        if (selectedObjects.length === 0) {
+          hideObjectMenu();
+        }
+        updateSelectedControls();
+      }
       objects.splice(idx, 1);
       redraw();
       updatePageUI();
@@ -862,6 +872,7 @@ function handleRemoteStateUpdate(data) {
     loadState(data.state).then(state => {
       objects = state;
       selectedObjects = [];
+      hideObjectMenu();
       updateSelectedControls();
       saveCurrentPageState();
       redraw();
@@ -902,6 +913,7 @@ function handleRemotePageUpdate(data) {
       // Always reload current page state (content at this index may have changed)
       loadPageState(currentPageIndex);
       selectedObjects = [];
+      hideObjectMenu();
       updateSelectedControls();
       updatePageUI();
       refreshPageGridIfOpen();
@@ -940,6 +952,7 @@ function handleRemotePageUpdate(data) {
       // Reload current page to ensure correct content
       loadPageState(currentPageIndex);
       selectedObjects = [];
+      hideObjectMenu();
       updateSelectedControls();
       updatePageUI();
       refreshPageGridIfOpen();
