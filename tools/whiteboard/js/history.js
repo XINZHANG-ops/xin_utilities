@@ -40,14 +40,16 @@ function saveLocalOperation(action, obj, previousState = null) {
  * @param {Array} clearedObjects - Array of objects that were cleared
  */
 function saveClearOperation(clearedObjects) {
-  if (!currentBoard) return;
+  if (!currentBoard || !clearedObjects || clearedObjects.length === 0) return;
 
   const operation = {
     action: 'clear',
-    objects: clearedObjects.map(obj => JSON.parse(JSON.stringify(cloneObjectState(obj)))),
+    objects: clearedObjects.map(obj => cloneObjectState(obj)).filter(o => o),
     pageIndex: currentPageIndex,
     seq: ++globalOpSequence
   };
+
+  if (operation.objects.length === 0) return;
 
   localUndoStack.push(operation);
   if (localUndoStack.length > MAX_LOCAL_UNDO) {
