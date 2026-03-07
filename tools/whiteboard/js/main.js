@@ -818,12 +818,18 @@ function setupBackgroundControls() {
 function setupClearButton() {
   document.getElementById('clearBtn').addEventListener('click', () => {
     if (objects.length === 0) return;
-    // Save current state before clearing (for undo)
-    saveState();
+
+    if (currentBoard) {
+      // Collaboration mode: record clear operation with all objects
+      saveClearOperation(objects);
+    } else {
+      // Local mode: save state snapshot
+      saveState();
+    }
+
     objects = [];
     selectedObjects = [];
     updateSelectedControls();
-    // Save to page state without adding to history again
     saveCurrentPageState();
     redraw();
     updatePageUI();

@@ -36,6 +36,28 @@ function saveLocalOperation(action, obj, previousState = null) {
 }
 
 /**
+ * Save clear operation to undo stack (collaboration mode only)
+ * @param {Array} clearedObjects - Array of objects that were cleared
+ */
+function saveClearOperation(clearedObjects) {
+  if (!currentBoard) return;
+
+  const operation = {
+    action: 'clear',
+    objects: clearedObjects.map(obj => JSON.parse(JSON.stringify(cloneObjectState(obj)))),
+    pageIndex: currentPageIndex,
+    seq: ++globalOpSequence
+  };
+
+  localUndoStack.push(operation);
+  if (localUndoStack.length > MAX_LOCAL_UNDO) {
+    localUndoStack.shift();
+  }
+  localRedoStack = [];
+  updateUndoRedoButtons();
+}
+
+/**
  * Save current state to history (local mode only)
  * Creates a snapshot of all objects and saves to history array
  */
@@ -132,6 +154,24 @@ function undo() {
         if (existingIdx === -1) {
           const restored = { ...op.objState };
           // Reload image if needed
+          if (restored.type === 'image' && restored.imgSrc) {
+            const img = new Image();
+            img.onload = () => {
+              restored.img = img;
+              redraw();
+            };
+            img.src = restored.imgSrc;
+          }
+          objects.push(restored);
+          emitObjectChange('add', restored);
+        }
+      }
+    } else if (op.action === 'clear') {
+      // Undo clear = restore all cleared objects
+      for (const objState of op.objects) {
+        const existingIdx = objects.findIndex(o => o.id === objState.id);
+        if (existingIdx === -1) {
+          const restored = { ...objState };
           if (restored.type === 'image' && restored.imgSrc) {
             const img = new Image();
             img.onload = () => {
@@ -263,6 +303,15 @@ function redo() {
         emitObjectChange('delete', op.objState);
       }
       // If idx === -1, object was already deleted by another user - that's fine
+    } else if (op.action === 'clear') {
+      // Redo clear = delete all objects that were cleared
+      for (const objState of op.objects) {
+        const idx = objects.findIndex(o => o.id === objState.id);
+        if (idx >= 0) {
+          objects.splice(idx, 1);
+          emitObjectChange('delete', objState);
+        }
+      }
     } else if (op.action === 'update' || op.action === 'move') {
       // Redo update/move = apply new state
       const obj = objects.find(o => o.id === op.objId);
