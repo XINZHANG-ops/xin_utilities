@@ -61,7 +61,7 @@ I18n.register('zh', {
     imageToolsCount: '6 个工具',
     textToolsCount: '1 个工具',
     canvasToolsCount: '1 个工具',
-    shareToolsCount: '2 个工具',
+    shareToolsCount: '3 个工具',
 
     // Badges
     badgeEdit: '编辑',
@@ -96,6 +96,9 @@ I18n.register('zh', {
     qrGeneratorDesc: '快速生成二维码，支持链接、文本、WiFi 信息等。可调整大小，下载 PNG 图片。',
     kanbanTitle: '看板',
     kanbanDesc: '简单的任务看板，支持拖拽排序。通过分享码与他人协作。',
+    textShareTitle: '文本共享',
+    textShareDesc: '实时共享文本内容。创建房间，多人同时编辑，内容即时同步。',
+    badgeShare: '共享',
 
     startUsing: '开始使用'
   },

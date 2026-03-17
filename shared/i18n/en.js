@@ -61,7 +61,7 @@ I18n.register('en', {
     imageToolsCount: '6 tools',
     textToolsCount: '1 tool',
     canvasToolsCount: '1 tool',
-    shareToolsCount: '2 tools',
+    shareToolsCount: '3 tools',
 
     // Badges
     badgeEdit: 'Edit',
@@ -96,6 +96,9 @@ I18n.register('en', {
     qrGeneratorDesc: 'Quickly generate QR codes for links, text, WiFi, etc. Adjustable size, download PNG.',
     kanbanTitle: 'Kanban Board',
     kanbanDesc: 'Simple task board with drag-and-drop. Share with others via board code.',
+    textShareTitle: 'Text Share',
+    textShareDesc: 'Share text in real-time. Create a room, edit together, content syncs instantly.',
+    badgeShare: 'Share',
 
     startUsing: 'Use Tool'
   },

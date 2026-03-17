@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Share</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000;
+      --bg-card: #1a1a1a;
+      --bg-hover: #2a2a2a;
+      --accent: #ff9f0a;
+      --accent-hover: #ffb340;
+      --text: #fff;
+      --text-muted: #888;
+      --border: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: var(--bg-hover); }
+    .input-field {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      width: 100%;
+      font-size: 14px;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .lang-switch {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .lang-switch:hover { background: var(--bg-hover); }
+    .room-code {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+    .copy-btn:hover { color: var(--text); }
+    .status-indicator {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #30d158;
+    }
+    .status-dot.saving { background: var(--accent); }
+    .status-dot.error { background: #ff3b30; }
+    .hidden { display: none !important; }
+    .text-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .text-box:focus-within {
+      border-color: var(--accent);
+    }
+    .text-box-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .text-box-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .text-box textarea {
+      width: 100%;
+      min-height: 120px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 12px;
+      font-size: 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .text-box textarea:focus {
+      outline: none;
+    }
+    .text-box textarea::placeholder {
+      color: #555;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+    }
+    .bottom-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      padding: 16px;
+    }
+    .bottom-controls button {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .bottom-controls button:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    .bottom-controls button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .copy-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <!-- Entry View -->
+  <div id="entryView" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <nav class="mb-8">
+        <a href="../../index.html" class="text-gray-400 hover:text-white text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          <span data-i18n="back">Back</span>
+        </a>
+      </nav>
+
+      <h1 class="text-3xl font-bold mb-2" data-i18n="pageTitle">Text Share</h1>
+      <p class="text-gray-400 mb-8" data-i18n="entryDesc">Create or join a shared text room</p>
+
+      <div class="space-y-6">
+        <div class="card p-6">
+          <h2 class="font-semibold mb-4" data-i18n="createRoom">Create New Room</h2>
+          <div class="space-y-3">
+            <input type="text" id="newRoomId" class="input-field" data-i18n-placeholder="roomCodePlaceholder" placeholder="Enter room code (e.g. my-notes)">
+            <button id="createBtn" class="btn-primary w-full" data-i18n="create">Create</button>
+          </div>
+          <p id="createError" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
+
+        <div class="card p-6">
+          <h2 class="font-semibold mb-4" data-i18n="joinRoom">Join Existing Room</h2>
+          <div class="space-y-3">
+            <input type="text" id="joinRoomId" class="input-field" data-i18n-placeholder="enterCodePlaceholder" placeholder="Enter room code">
+            <button id="joinBtn" class="btn-primary w-full" data-i18n="join">Join</button>
+          </div>
+          <p id="joinError" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-center">
+        <button id="langSwitchEntry" class="lang-switch">中文 / EN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room View -->
+  <div id="roomView" class="min-h-screen hidden">
+    <header class="border-b border-gray-800 px-4 py-3">
+      <div class="max-w-3xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <button id="backToEntry" class="text-gray-400 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <h1 class="font-semibold" data-i18n="pageTitle">Text Share</h1>
+          <div class="room-code">
+            <span id="currentRoomId"></span>
+            <button id="copyCodeBtn" class="copy-btn" title="Copy code">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div id="wsStatus" class="status-indicator">
+            <span class="status-dot"></span>
+            <span data-i18n="connecting">Connecting...</span>
+          </div>
+          <button id="langSwitchRoom" class="lang-switch">中文 / EN</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-4">
+      <div class="max-w-3xl mx-auto">
+        <div id="boxContainer" class="space-y-4"></div>
+        <div class="bottom-controls">
+          <button id="addBoxBtn" title="Add text box">+</button>
+          <button id="removeBoxBtn" title="Remove last text box">&minus;</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Copy Toast -->
+  <div id="copyToast" class="copy-toast" data-i18n="copied">Copied!</div>
+
+  <script src="../../shared/api-config.js"></script>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script>
+    // ============ i18n ============
+    const translations = {
+      en: {
+        back: 'Back',
+        pageTitle: 'Text Share',
+        entryDesc: 'Create or join a shared text room',
+        createRoom: 'Create New Room',
+        joinRoom: 'Join Existing Room',
+        roomCodePlaceholder: 'Enter room code (e.g. my-notes)',
+        enterCodePlaceholder: 'Enter room code',
+        create: 'Create',
+        join: 'Join',
+        textBoxLabel: 'Text Box',
+        textPlaceholder: 'Type or paste text here...',
+        connecting: 'Connecting...',
+        liveSync: 'Live Sync',
+        disconnected: 'Disconnected',
+        reconnecting: 'Reconnecting...',
+        copied: 'Copied!',
+        errorRoomExists: 'This room code already exists',
+        errorRoomNotFound: 'Room not found',
+        errorEmptyCode: 'Please enter a room code',
+        errorInvalidCode: 'Code can only contain letters, numbers, - and _'
+      },
+      zh: {
+        back: '返回',
+        pageTitle: '文本共享',
+        entryDesc: '创建或加入共享文本房间',
+        createRoom: '创建新房间',
+        joinRoom: '加入已有房间',
+        roomCodePlaceholder: '输入房间代码 (例如 my-notes)',
+        enterCodePlaceholder: '输入房间代码',
+        create: '创建',
+        join: '加入',
+        textBoxLabel: '文本框',
+        textPlaceholder: '在此输入或粘贴文本...',
+        connecting: '连接中...',
+        liveSync: '实时同步',
+        disconnected: '已断开',
+        reconnecting: '重连中...',
+        copied: '已复制！',
+        errorRoomExists: '此房间代码已存在',
+        errorRoomNotFound: '房间不存在',
+        errorEmptyCode: '请输入房间代码',
+        errorInvalidCode: '代码只能包含字母、数字、- 和 _'
+      }
+    };
+
+    let currentLang = localStorage.getItem('textshare-lang') || 'en';
+
+    function t(key) {
+      return translations[currentLang][key] || key;
+    }
+
+    function updateUI() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+      });
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'zh' : 'en';
+      localStorage.setItem('textshare-lang', currentLang);
+      updateUI();
+      renderBoxes();
+    }
+
+    // ============ State ============
+    let currentRoom = null;
+    let saveTimeout = null;
+    let socket = null;
+    let hasConnectedBefore = false;
+
+    // ============ WebSocket ============
+    function updateWsStatus(status) {
+      const el = document.getElementById('wsStatus');
+      if (!el) return;
+      const dot = el.querySelector('.status-dot');
+      const text = el.querySelector('[data-i18n]');
+
+      dot.classList.remove('saving', 'error');
+      if (status === 'connected') {
+        text.dataset.i18n = 'liveSync';
+        text.textContent = t('liveSync');
+      } else if (status === 'disconnected') {
+        dot.classList.add('error');
+        text.dataset.i18n = 'disconnected';
+        text.textContent = t('disconnected');
+      } else if (status === 'reconnecting') {
+        dot.classList.add('saving');
+        text.dataset.i18n = 'reconnecting';
+        text.textContent = t('reconnecting');
+      } else {
+        dot.classList.add('saving');
+        text.dataset.i18n = 'connecting';
+        text.textContent = t('connecting');
+      }
+    }
+
+    function connectWebSocket(roomId) {
+      if (socket) socket.disconnect();
+
+      updateWsStatus('connecting');
+      hasConnectedBefore = false;
+
+      try {
+        socket = io(API_CONFIG.getBaseUrl(), {
+          transports: ['websocket'],
+          reconnection: true,
+          reconnectionAttempts: Infinity,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          timeout: 20000
+        });
+
+        socket.on('connect', () => {
+          socket.emit('ts_join', { room_id: roomId });
+          updateWsStatus('connected');
+
+          if (hasConnectedBefore) {
+            loadRoomFromServer(roomId);
+          }
+          hasConnectedBefore = true;
+        });
+
+        socket.on('ts_joined', (data) => {
+          console.log('[WS] Joined room:', data.room_id);
+        });
+
+        socket.on('ts_updated', (data) => {
+          applyRemoteUpdate(data);
+        });
+
+        socket.on('ts_synced', (room) => {
+          currentRoom = room;
+          renderBoxes();
+        });
+
+        socket.on('disconnect', () => {
+          updateWsStatus('disconnected');
+        });
+
+        socket.on('reconnect_attempt', () => {
+          updateWsStatus('reconnecting');
+        });
+
+        socket.on('connect_error', () => {
+          updateWsStatus('disconnected');
+        });
+
+      } catch (e) {
+        console.error('[WS] Init failed:', e);
+        updateWsStatus('disconnected');
+      }
+    }
+
+    function disconnectWebSocket() {
+      if (socket) {
+        if (currentRoom) {
+          socket.emit('ts_leave', { room_id: currentRoom.id });
+        }
+        socket.disconnect();
+        socket = null;
+      }
+    }
+
+    async function loadRoomFromServer(roomId) {
+      try {
+        const res = await fetch(API_CONFIG.getUrl(`/textshare/${roomId}`), {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (res.ok) {
+          currentRoom = await res.json();
+          renderBoxes();
+        }
+      } catch (e) {
+        console.error('[HTTP] Reload failed:', e);
+      }
+    }
+
+    function emitBoxUpdate(action, box) {
+      autoSave();
+
+      if (socket && socket.connected && currentRoom) {
+        socket.emit('ts_broadcast', {
+          room_id: currentRoom.id,
+          action: action,
+          box: box
+        });
+      }
+    }
+
+    function applyRemoteUpdate(data) {
+      const { action, box } = data;
+      if (!currentRoom || !box) return;
+
+      if (action === 'add') {
+        const exists = currentRoom.boxes.some(b => b.id === box.id);
+        if (!exists) {
+          currentRoom.boxes.push(box);
+        }
+      } else if (action === 'update') {
+        const idx = currentRoom.boxes.findIndex(b => b.id === box.id);
+        if (idx >= 0) {
+          // Preserve local textarea focus — only update content
+          const textarea = document.querySelector(`[data-box-id="${box.id}"] textarea`);
+          currentRoom.boxes[idx] = box;
+          if (textarea && document.activeElement !== textarea) {
+            textarea.value = box.content;
+          }
+          return; // Skip full re-render for update
+        }
+      } else if (action === 'delete') {
+        currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== box.id);
+      }
+
+      renderBoxes();
+    }
+
+    // ============ API ============
+    async function checkRoomExists(roomId) {
+      const res = await fetch(API_CONFIG.getUrl(`/textshare/${roomId}/exists`), {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      return data.exists;
+    }
+
+    async function loadRoom(roomId) {
+      const res = await fetch(API_CONFIG.getUrl(`/textshare/${roomId}`), {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      if (!res.ok) throw new Error('Room not found');
+      return await res.json();
+    }
+
+    async function saveRoom() {
+      if (!currentRoom) return;
+      try {
+        await fetch(API_CONFIG.getUrl(`/textshare/${currentRoom.id}`), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify(currentRoom)
+        });
+      } catch (e) {
+        console.error('[HTTP] Save error:', e);
+      }
+    }
+
+    function autoSave() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveRoom();
+        saveTimeout = null;
+      }, 500);
+    }
+
+    // ============ Room Operations ============
+    function validateRoomId(id) {
+      if (!id.trim()) return { valid: false, error: 'errorEmptyCode' };
+      if (!/^[a-zA-Z0-9_-]+$/.test(id)) return { valid: false, error: 'errorInvalidCode' };
+      return { valid: true };
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    async function createRoom() {
+      const input = document.getElementById('newRoomId');
+      const error = document.getElementById('createError');
+      const roomId = input.value.trim();
+
+      const validation = validateRoomId(roomId);
+      if (!validation.valid) {
+        error.textContent = t(validation.error);
+        error.classList.remove('hidden');
+        return;
+      }
+      error.classList.add('hidden');
+
+      try {
+        const exists = await checkRoomExists(roomId);
+        if (exists) {
+          error.textContent = t('errorRoomExists');
+          error.classList.remove('hidden');
+          return;
+        }
+
+        currentRoom = {
+          id: roomId,
+          createdAt: new Date().toISOString(),
+          boxes: [{ id: generateId(), content: '', lastModified: Date.now() }]
+        };
+
+        await saveRoom();
+        showRoomView();
+      } catch (e) {
+        error.textContent = e.message;
+        error.classList.remove('hidden');
+      }
+    }
+
+    async function joinRoom() {
+      const input = document.getElementById('joinRoomId');
+      const error = document.getElementById('joinError');
+      const roomId = input.value.trim();
+
+      const validation = validateRoomId(roomId);
+      if (!validation.valid) {
+        error.textContent = t(validation.error);
+        error.classList.remove('hidden');
+        return;
+      }
+      error.classList.add('hidden');
+
+      try {
+        currentRoom = await loadRoom(roomId);
+        showRoomView();
+      } catch (e) {
+        error.textContent = t('errorRoomNotFound');
+        error.classList.remove('hidden');
+      }
+    }
+
+    function showRoomView() {
+      document.getElementById('entryView').classList.add('hidden');
+      document.getElementById('roomView').classList.remove('hidden');
+      document.getElementById('currentRoomId').textContent = currentRoom.id;
+      renderBoxes();
+      connectWebSocket(currentRoom.id);
+    }
+
+    function showEntryView() {
+      document.getElementById('roomView').classList.add('hidden');
+      document.getElementById('entryView').classList.remove('hidden');
+      disconnectWebSocket();
+      currentRoom = null;
+    }
+
+    // ============ Box Operations ============
+    function renderBoxes() {
+      const container = document.getElementById('boxContainer');
+      if (!currentRoom) return;
+
+      container.innerHTML = currentRoom.boxes.map((box, idx) => `
+        <div class="text-box" data-box-id="${box.id}">
+          <div class="text-box-header">
+            <span class="text-box-label">${t('textBoxLabel')} ${idx + 1}</span>
+            <button class="icon-btn copy-box-btn" data-box-id="${box.id}" title="Copy">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+          </div>
+          <textarea data-i18n-placeholder="textPlaceholder" placeholder="${t('textPlaceholder')}">${escapeHtml(box.content)}</textarea>
+        </div>
+      `).join('');
+
+      // Bind events
+      container.querySelectorAll('textarea').forEach(textarea => {
+        const boxEl = textarea.closest('[data-box-id]');
+        const boxId = boxEl.dataset.boxId;
+
+        textarea.addEventListener('input', () => {
+          const box = currentRoom.boxes.find(b => b.id === boxId);
+          if (box) {
+            box.content = textarea.value;
+            box.lastModified = Date.now();
+            emitBoxUpdate('update', box);
+          }
+        });
+      });
+
+      container.querySelectorAll('.copy-box-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const boxId = btn.dataset.boxId;
+          const box = currentRoom.boxes.find(b => b.id === boxId);
+          if (box) {
+            navigator.clipboard.writeText(box.content);
+            showToast();
+          }
+        });
+      });
+
+      updateRemoveBtn();
+    }
+
+    function addBox() {
+      if (!currentRoom) return;
+      const newBox = { id: generateId(), content: '', lastModified: Date.now() };
+      currentRoom.boxes.push(newBox);
+      renderBoxes();
+      emitBoxUpdate('add', newBox);
+
+      // Focus the new textarea
+      const container = document.getElementById('boxContainer');
+      const lastTextarea = container.querySelector(`[data-box-id="${newBox.id}"] textarea`);
+      if (lastTextarea) lastTextarea.focus();
+    }
+
+    function removeLastBox() {
+      if (!currentRoom || currentRoom.boxes.length <= 1) return;
+      const removed = currentRoom.boxes.pop();
+      renderBoxes();
+      emitBoxUpdate('delete', removed);
+    }
+
+    function updateRemoveBtn() {
+      const btn = document.getElementById('removeBoxBtn');
+      btn.disabled = !currentRoom || currentRoom.boxes.length <= 1;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showToast() {
+      const toast = document.getElementById('copyToast');
+      toast.textContent = t('copied');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+
+    // ============ Event Listeners ============
+    document.getElementById('createBtn').onclick = createRoom;
+    document.getElementById('joinBtn').onclick = joinRoom;
+    document.getElementById('backToEntry').onclick = showEntryView;
+    document.getElementById('addBoxBtn').onclick = addBox;
+    document.getElementById('removeBoxBtn').onclick = removeLastBox;
+    document.getElementById('langSwitchEntry').onclick = toggleLang;
+    document.getElementById('langSwitchRoom').onclick = toggleLang;
+
+    document.getElementById('copyCodeBtn').onclick = () => {
+      navigator.clipboard.writeText(currentRoom.id);
+      showToast();
+    };
+
+    document.getElementById('newRoomId').onkeydown = (e) => {
+      if (e.key === 'Enter') createRoom();
+    };
+    document.getElementById('joinRoomId').onkeydown = (e) => {
+      if (e.key === 'Enter') joinRoom();
+    };
+
+    updateUI();
+  </script>
+</body>
+</html>
