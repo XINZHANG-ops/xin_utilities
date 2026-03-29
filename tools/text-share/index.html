@@ -165,34 +165,6 @@
       color: var(--text);
       background: rgba(255,255,255,0.08);
     }
-    .bottom-controls {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      padding: 16px;
-    }
-    .bottom-controls button {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .bottom-controls button:hover {
-      border-color: var(--accent);
-      background: var(--bg-hover);
-    }
-    .bottom-controls button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
     .copy-toast {
       position: fixed;
       bottom: 24px;
@@ -213,6 +185,18 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+    .drag-handle {
+      cursor: grab;
+      color: var(--text-muted);
+      padding: 2px 4px;
+      border-radius: 4px;
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+    .drag-handle:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+    .drag-handle:active { cursor: grabbing; }
+    .text-box.drag-over { border-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -290,10 +274,6 @@
     <main class="p-4">
       <div class="max-w-3xl mx-auto">
         <div id="boxContainer" class="space-y-4"></div>
-        <div class="bottom-controls">
-          <button id="addBoxBtn" title="Add text box">+</button>
-          <button id="removeBoxBtn" title="Remove last text box">&minus;</button>
-        </div>
       </div>
     </main>
   </div>
@@ -377,6 +357,7 @@
     // ============ State ============
     let currentRoom = null;
     let saveTimeout = null;
+    let dragSrcId = null;
     let socket = null;
     let hasConnectedBefore = false;
 
@@ -507,6 +488,22 @@
         const exists = currentRoom.boxes.some(b => b.id === box.id);
         if (!exists) {
           currentRoom.boxes.push(box);
+        }
+      } else if (action === 'insert') {
+        const exists = currentRoom.boxes.some(b => b.id === box.id);
+        if (!exists) {
+          const afterIdx = currentRoom.boxes.findIndex(b => b.id === box.afterId);
+          if (afterIdx >= 0) {
+            currentRoom.boxes.splice(afterIdx + 1, 0, box);
+          } else {
+            currentRoom.boxes.push(box);
+          }
+        }
+      } else if (action === 'reorder') {
+        if (box.order) {
+          const boxMap = {};
+          currentRoom.boxes.forEach(b => { boxMap[b.id] = b; });
+          currentRoom.boxes = box.order.map(id => boxMap[id]).filter(Boolean);
         }
       } else if (action === 'update') {
         const idx = currentRoom.boxes.findIndex(b => b.id === box.id);
@@ -655,25 +652,42 @@
       const container = document.getElementById('boxContainer');
       if (!currentRoom) return;
 
+      const canDelete = currentRoom.boxes.length > 1;
+
       container.innerHTML = currentRoom.boxes.map((box, idx) => `
-        <div class="text-box" data-box-id="${box.id}">
+        <div class="text-box" data-box-id="${box.id}" draggable="true">
           <div class="text-box-header">
-            <span class="text-box-label">${t('textBoxLabel')} ${idx + 1}</span>
-            <button class="icon-btn copy-box-btn" data-box-id="${box.id}" title="Copy">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-              </svg>
-            </button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="drag-handle" title="Drag to reorder">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
+              </span>
+              <span class="text-box-label">${t('textBoxLabel')} ${idx + 1}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;">
+              <button class="icon-btn copy-box-btn" data-box-id="${box.id}" title="Copy">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <button class="icon-btn add-after-btn" data-box-id="${box.id}" title="Add box below">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+              ${canDelete ? `<button class="icon-btn delete-box-btn" data-box-id="${box.id}" title="Delete box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>` : ''}
+            </div>
           </div>
           <textarea data-i18n-placeholder="textPlaceholder" placeholder="${t('textPlaceholder')}">${escapeHtml(box.content)}</textarea>
         </div>
       `).join('');
 
-      // Bind events
+      // Textarea input events
       container.querySelectorAll('textarea').forEach(textarea => {
-        const boxEl = textarea.closest('[data-box-id]');
-        const boxId = boxEl.dataset.boxId;
-
+        const boxId = textarea.closest('[data-box-id]').dataset.boxId;
         textarea.addEventListener('input', () => {
           const box = currentRoom.boxes.find(b => b.id === boxId);
           if (box) {
@@ -684,43 +698,80 @@
         });
       });
 
+      // Copy buttons
       container.querySelectorAll('.copy-box-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const boxId = btn.dataset.boxId;
-          const box = currentRoom.boxes.find(b => b.id === boxId);
-          if (box) {
-            navigator.clipboard.writeText(box.content);
-            showToast();
-          }
+          const box = currentRoom.boxes.find(b => b.id === btn.dataset.boxId);
+          if (box) { navigator.clipboard.writeText(box.content); showToast(); }
         });
       });
 
-      updateRemoveBtn();
+      // Add-after buttons
+      container.querySelectorAll('.add-after-btn').forEach(btn => {
+        btn.addEventListener('click', () => addBoxAfter(btn.dataset.boxId));
+      });
+
+      // Delete buttons
+      container.querySelectorAll('.delete-box-btn').forEach(btn => {
+        btn.addEventListener('click', () => removeBox(btn.dataset.boxId));
+      });
+
+      // Drag-and-drop reorder
+      container.querySelectorAll('.text-box').forEach(boxEl => {
+        const boxId = boxEl.dataset.boxId;
+
+        boxEl.addEventListener('dragstart', (e) => {
+          if (!e.target.closest('.drag-handle')) { e.preventDefault(); return; }
+          dragSrcId = boxId;
+          e.dataTransfer.effectAllowed = 'move';
+          setTimeout(() => boxEl.style.opacity = '0.4', 0);
+        });
+
+        boxEl.addEventListener('dragend', () => {
+          boxEl.style.opacity = '';
+          container.querySelectorAll('.text-box').forEach(el => el.classList.remove('drag-over'));
+        });
+
+        boxEl.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          container.querySelectorAll('.text-box').forEach(el => el.classList.remove('drag-over'));
+          if (dragSrcId !== boxId) boxEl.classList.add('drag-over');
+        });
+
+        boxEl.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (!dragSrcId || dragSrcId === boxId) return;
+          const srcIdx = currentRoom.boxes.findIndex(b => b.id === dragSrcId);
+          const dstIdx = currentRoom.boxes.findIndex(b => b.id === boxId);
+          if (srcIdx < 0 || dstIdx < 0) return;
+          const [moved] = currentRoom.boxes.splice(srcIdx, 1);
+          currentRoom.boxes.splice(dstIdx, 0, moved);
+          dragSrcId = null;
+          renderBoxes();
+          emitBoxUpdate('reorder', { order: currentRoom.boxes.map(b => b.id) });
+        });
+      });
     }
 
-    function addBox() {
+    function addBoxAfter(afterBoxId) {
       if (!currentRoom) return;
-      const newBox = { id: generateId(), content: '', lastModified: Date.now() };
-      currentRoom.boxes.push(newBox);
+      const newBox = { id: generateId(), content: '', lastModified: Date.now(), afterId: afterBoxId };
+      const idx = currentRoom.boxes.findIndex(b => b.id === afterBoxId);
+      currentRoom.boxes.splice(idx >= 0 ? idx + 1 : currentRoom.boxes.length, 0, newBox);
       renderBoxes();
-      emitBoxUpdate('add', newBox);
-
-      // Focus the new textarea
-      const container = document.getElementById('boxContainer');
-      const lastTextarea = container.querySelector(`[data-box-id="${newBox.id}"] textarea`);
-      if (lastTextarea) lastTextarea.focus();
+      emitBoxUpdate('insert', newBox);
+      const newTextarea = document.querySelector(`[data-box-id="${newBox.id}"] textarea`);
+      if (newTextarea) newTextarea.focus();
     }
 
-    function removeLastBox() {
+    function removeBox(boxId) {
       if (!currentRoom || currentRoom.boxes.length <= 1) return;
-      const removed = currentRoom.boxes.pop();
+      const box = currentRoom.boxes.find(b => b.id === boxId);
+      if (!box) return;
+      currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== boxId);
       renderBoxes();
-      emitBoxUpdate('delete', removed);
-    }
-
-    function updateRemoveBtn() {
-      const btn = document.getElementById('removeBoxBtn');
-      btn.disabled = !currentRoom || currentRoom.boxes.length <= 1;
+      emitBoxUpdate('delete', box);
     }
 
     function escapeHtml(text) {
@@ -740,8 +791,6 @@
     document.getElementById('createBtn').onclick = createRoom;
     document.getElementById('joinBtn').onclick = joinRoom;
     document.getElementById('backToEntry').onclick = showEntryView;
-    document.getElementById('addBoxBtn').onclick = addBox;
-    document.getElementById('removeBoxBtn').onclick = removeLastBox;
     document.getElementById('langSwitchEntry').onclick = toggleLang;
     document.getElementById('langSwitchRoom').onclick = toggleLang;
 

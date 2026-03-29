@@ -4,7 +4,17 @@
       "Bash(git status:*)",
       "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File - <<'PSEOF'\n$logFile = \"$env:USERPROFILE\\\\.claude-mem\\\\logs\\\\worker-$\\(Get-Date -Format 'yyyy-MM-dd'\\).log\"\nGet-Content $logFile -Tail 100\nPSEOF)",
       "Bash(powershell.exe -NoProfile -Command:*)",
-      "mcp__plugin_claude-mem_mcp-search__search"
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "WebSearch",
+      "Bash(python scripts/tax_calculator.py --json \"{\"\"province\"\": \"\"ON\"\", \"\"employment_income\"\": 80000, \"\"interest_income\"\": 2000, \"\"cpp_contributions\"\": 2898, \"\"ei_premiums\"\": 856, \"\"income_tax_deducted\"\": 12000, \"\"rpp_contributions\"\": 2000, \"\"rrsp_deduction_claimed\"\": 15000, \"\"tuition_fees\"\": 5000}\")",
+      "Bash(python scripts/tax_calculator.py --json \"{\"\"province\"\": \"\"QC\"\", \"\"employment_income\"\": 70000, \"\"cpp_contributions\"\": 3900, \"\"ei_premiums\"\": 860, \"\"income_tax_deducted\"\": 15000}\")",
+      "Bash(python scripts/tax_calculator.py --json \"{\"\"province\"\": \"\"ON\"\", \"\"employment_income\"\": 80000, \"\"cpp_contributions\"\": 2898, \"\"ei_premiums\"\": 856, \"\"income_tax_deducted\"\": 12000, \"\"tuition_fees\"\": 5000, \"\"home_buyers_amount\"\": 10000}\")",
+      "Bash(python scripts/tax_calculator.py --json \"{\"\"province\"\": \"\"AB\"\", \"\"employment_income\"\": 60000, \"\"cpp_contributions\"\": 3354, \"\"ei_premiums\"\": 984, \"\"income_tax_deducted\"\": 8000, \"\"num_children_under_18\"\": 2}\")",
+      "Bash(python scripts/tax_calculator.py --json \"{\"\"province\"\": \"\"ON\"\", \"\"employment_income\"\": 85000, \"\"interest_income\"\": 1500, \"\"cpp_contributions\"\": 3200, \"\"cpp2_contributions\"\": 300, \"\"ei_premiums\"\": 1050, \"\"income_tax_deducted\"\": 14000, \"\"rpp_contributions\"\": 3000, \"\"rrsp_deduction_claimed\"\": 10000, \"\"tuition_fees\"\": 8000, \"\"home_buyers_amount\"\": 10000, \"\"donations\"\": 500, \"\"medical_expenses\"\": 3000, \"\"student_loan_interest\"\": 800, \"\"num_children_under_18\"\": 1}\")",
+      "Bash(python -c \"print\\(\\(12747 + 3200 + 300 + 1050 + 795\\) * 0.0505\\)\")",
+      "Bash(python -c \"\n# Provincial NR base = BPA + CPP + CPP2 + EI + medical + donation\n# Tuition and HBTC should NOT be included\nbpa = 12747; cpp = 3200; cpp2 = 300; ei = 1050; medical = 795\nnr_base = bpa + cpp + cpp2 + ei + medical\nnr_credit = nr_base * 0.0505\n# Donation credit: first 200 at 0.0505, rest at 0.1316 \\(ON top rate\\)\ndonations = 500\ndon_credit = 200 * 0.0505 + 300 * 0.1316\ntotal = nr_credit + don_credit\nprint\\(f''NR base \\(no tuition/HBTC\\): {nr_base}''\\)\nprint\\(f''NR credit: {nr_credit:.2f}''\\)\nprint\\(f''Donation credit: {don_credit:.2f}''\\)\nprint\\(f''Total provincial credits: {total:.2f}''\\)\n\")",
+      "Bash(dir \"D:\\\\python\\\\xin_utilities\\\\tools\")",
+      "Bash(dir \"D:\\\\python\\\\xin_utilities\\\\tools\\\\text-share\")"
     ]
   }
 }
