@@ -197,6 +197,95 @@
     .drag-handle:hover { color: var(--text); background: rgba(255,255,255,0.08); }
     .drag-handle:active { cursor: grabbing; }
     .text-box.drag-over { border-color: var(--accent); }
+    .file-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 12px;
+    }
+    .file-drop-zone:hover,
+    .file-drop-zone.drag-active {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(255,159,10,0.05);
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.06);
+    }
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-size {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .upload-progress {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 12px 8px;
+      overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.2s;
+    }
+    .add-box-bar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .add-box-btn {
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 10px 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .add-box-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: var(--bg-hover);
+    }
   </style>
 </head>
 <body>
@@ -274,6 +363,16 @@
     <main class="p-4">
       <div class="max-w-3xl mx-auto">
         <div id="boxContainer" class="space-y-4"></div>
+        <div class="add-box-bar">
+          <button id="addTextBoxBtn" class="add-box-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span data-i18n="addTextBox">+ Text Box</span>
+          </button>
+          <button id="addFileBoxBtn" class="add-box-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span data-i18n="addFileBox">+ File Box</span>
+          </button>
+        </div>
       </div>
     </main>
   </div>
@@ -285,6 +384,8 @@
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <script>
     // ============ i18n ============
+    const MAX_FILE_SIZE = 500 * 1024 * 1024;
+
     const translations = {
       en: {
         back: 'Back',
@@ -297,6 +398,7 @@
         create: 'Create',
         join: 'Join',
         textBoxLabel: 'Text Box',
+        fileBoxLabel: 'File Box',
         textPlaceholder: 'Type or paste text here...',
         connecting: 'Connecting...',
         liveSync: 'Live Sync',
@@ -306,7 +408,17 @@
         errorRoomExists: 'This room code already exists',
         errorRoomNotFound: 'Room not found',
         errorEmptyCode: 'Please enter a room code',
-        errorInvalidCode: 'Code can only contain letters, numbers, - and _'
+        errorInvalidCode: 'Code can only contain letters, numbers, - and _',
+        addTextBox: '+ Text Box',
+        addFileBox: '+ File Box',
+        dropFileHere: 'Drop files here or click to select',
+        addFile: 'Add File',
+        download: 'Download',
+        downloadAll: 'Download All',
+        uploading: 'Uploading...',
+        uploadError: 'Upload failed',
+        fileTooLarge: 'File exceeds 500 MB limit',
+        removeFile: 'Remove'
       },
       zh: {
         back: '返回',
@@ -319,6 +431,7 @@
         create: '创建',
         join: '加入',
         textBoxLabel: '文本框',
+        fileBoxLabel: '文件框',
         textPlaceholder: '在此输入或粘贴文本...',
         connecting: '连接中...',
         liveSync: '实时同步',
@@ -328,7 +441,17 @@
         errorRoomExists: '此房间代码已存在',
         errorRoomNotFound: '房间不存在',
         errorEmptyCode: '请输入房间代码',
-        errorInvalidCode: '代码只能包含字母、数字、- 和 _'
+        errorInvalidCode: '代码只能包含字母、数字、- 和 _',
+        addTextBox: '+ 文本框',
+        addFileBox: '+ 文件框',
+        dropFileHere: '拖拽文件到此处或点击选择',
+        addFile: '添加文件',
+        download: '下载',
+        downloadAll: '下载全部',
+        uploading: '上传中...',
+        uploadError: '上传失败',
+        fileTooLarge: '文件超过 500 MB 限制',
+        removeFile: '移除'
       }
     };
 
@@ -360,6 +483,27 @@
     let dragSrcId = null;
     let socket = null;
     let hasConnectedBefore = false;
+
+    // ============ Helpers ============
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+
+    function getFileIcon(mimeType) {
+      if (!mimeType) return '📄';
+      if (mimeType.startsWith('image/')) return '🖼️';
+      if (mimeType.startsWith('video/')) return '🎬';
+      if (mimeType.startsWith('audio/')) return '🎵';
+      if (mimeType.includes('pdf')) return '📕';
+      if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z') || mimeType.includes('tar')) return '📦';
+      if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+      if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
+      if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📽️';
+      return '📄';
+    }
 
     // ============ WebSocket ============
     function updateWsStatus(status) {
@@ -508,13 +652,17 @@
       } else if (action === 'update') {
         const idx = currentRoom.boxes.findIndex(b => b.id === box.id);
         if (idx >= 0) {
-          // Preserve local textarea focus — only update content
+          if (box.type === 'file') {
+            currentRoom.boxes[idx] = box;
+            renderBoxes();
+            return;
+          }
           const textarea = document.querySelector(`[data-box-id="${box.id}"] textarea`);
           currentRoom.boxes[idx] = box;
           if (textarea && document.activeElement !== textarea) {
             textarea.value = box.content;
           }
-          return; // Skip full re-render for update
+          return;
         }
       } else if (action === 'delete') {
         currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== box.id);
@@ -564,6 +712,99 @@
       }, 500);
     }
 
+    // ============ File Operations ============
+    async function uploadFile(file, boxId) {
+      if (file.size > MAX_FILE_SIZE) {
+        showToastMsg(t('fileTooLarge'));
+        return null;
+      }
+
+      const progressEl = document.querySelector(`[data-box-id="${boxId}"] .upload-progress-bar`);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const xhr = new XMLHttpRequest();
+        const result = await new Promise((resolve, reject) => {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && progressEl) {
+              progressEl.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              reject(new Error(t('uploadError')));
+            }
+          };
+          xhr.onerror = () => reject(new Error(t('uploadError')));
+          xhr.open('POST', API_CONFIG.getUrl(`/textshare/${currentRoom.id}/upload`));
+          xhr.setRequestHeader('ngrok-skip-browser-warning', 'true');
+          xhr.send(formData);
+        });
+
+        if (progressEl) progressEl.style.width = '100%';
+        return result;
+      } catch (e) {
+        console.error('[Upload]', e);
+        showToastMsg(t('uploadError'));
+        return null;
+      }
+    }
+
+    async function handleFilesForBox(boxId, fileList) {
+      const box = currentRoom.boxes.find(b => b.id === boxId);
+      if (!box) return;
+
+      for (const file of fileList) {
+        const meta = await uploadFile(file, boxId);
+        if (meta) {
+          if (!box.files) box.files = [];
+          box.files.push(meta);
+          box.lastModified = Date.now();
+        }
+      }
+
+      renderBoxes();
+      emitBoxUpdate('update', box);
+    }
+
+    function removeFileFromBox(boxId, fileId) {
+      const box = currentRoom.boxes.find(b => b.id === boxId);
+      if (!box || !box.files) return;
+      box.files = box.files.filter(f => f.fileId !== fileId);
+      box.lastModified = Date.now();
+      renderBoxes();
+      emitBoxUpdate('update', box);
+
+      fetch(API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${fileId}`), {
+        method: 'DELETE',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      }).catch(() => {});
+    }
+
+    function downloadBoxFiles(boxId) {
+      const box = currentRoom.boxes.find(b => b.id === boxId);
+      if (!box || !box.files || box.files.length === 0) return;
+
+      if (box.files.length === 1) {
+        const f = box.files[0];
+        const url = API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${f.fileId}`);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = f.fileName;
+        a.click();
+      } else {
+        const url = API_CONFIG.getUrl(`/textshare/${currentRoom.id}/download/${boxId}`);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = boxId + '.zip';
+        a.click();
+      }
+    }
+
     // ============ Room Operations ============
     function validateRoomId(id) {
       if (!id.trim()) return { valid: false, error: 'errorEmptyCode' };
@@ -599,7 +840,7 @@
         currentRoom = {
           id: roomId,
           createdAt: new Date().toISOString(),
-          boxes: [{ id: generateId(), content: '', lastModified: Date.now() }]
+          boxes: [{ id: generateId(), type: 'text', content: '', lastModified: Date.now() }]
         };
 
         await saveRoom();
@@ -647,15 +888,10 @@
       currentRoom = null;
     }
 
-    // ============ Box Operations ============
-    function renderBoxes() {
-      const container = document.getElementById('boxContainer');
-      if (!currentRoom) return;
-
-      const canDelete = currentRoom.boxes.length > 1;
-
-      container.innerHTML = currentRoom.boxes.map((box, idx) => `
-        <div class="text-box" data-box-id="${box.id}">
+    // ============ Box Rendering ============
+    function renderTextBox(box, idx, canDelete) {
+      return `
+        <div class="text-box" data-box-id="${box.id}" data-box-type="text">
           <div class="text-box-header">
             <div style="display:flex;align-items:center;gap:8px;">
               <span class="drag-handle" title="Drag to reorder">
@@ -669,24 +905,90 @@
                   <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
               </button>
-              <button class="icon-btn add-after-btn" data-box-id="${box.id}" title="Add box below">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
-              ${canDelete ? `<button class="icon-btn delete-box-btn" data-box-id="${box.id}" title="Delete box">
+              ${canDelete ? `<button class="icon-btn delete-box-btn" data-box-id="${box.id}" title="Delete">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
               </button>` : ''}
             </div>
           </div>
-          <textarea data-i18n-placeholder="textPlaceholder" placeholder="${t('textPlaceholder')}">${escapeHtml(box.content)}</textarea>
+          <textarea data-i18n-placeholder="textPlaceholder" placeholder="${t('textPlaceholder')}">${escapeHtml(box.content || '')}</textarea>
+        </div>`;
+    }
+
+    function renderFileBox(box, idx, canDelete) {
+      const files = box.files || [];
+      const fileListHtml = files.map(f => `
+        <div class="file-item">
+          <div class="file-icon">${getFileIcon(f.mimeType)}</div>
+          <div class="file-info">
+            <div class="file-name" title="${escapeHtml(f.fileName)}">${escapeHtml(f.fileName)}</div>
+            <div class="file-size">${formatFileSize(f.fileSize)}</div>
+          </div>
+          <button class="icon-btn download-single-btn" data-file-id="${f.fileId}" data-file-name="${escapeHtml(f.fileName)}" title="${t('download')}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <button class="icon-btn remove-file-btn" data-file-id="${f.fileId}" title="${t('removeFile')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
       `).join('');
 
-      // Textarea input events
-      container.querySelectorAll('textarea').forEach(textarea => {
+      return `
+        <div class="text-box" data-box-id="${box.id}" data-box-type="file">
+          <div class="text-box-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="drag-handle" title="Drag to reorder">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
+              </span>
+              <span class="text-box-label">${t('fileBoxLabel')} ${idx + 1}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;">
+              ${files.length > 1 ? `<button class="icon-btn download-all-btn" data-box-id="${box.id}" title="${t('downloadAll')}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>` : ''}
+              <label class="icon-btn add-file-label" data-box-id="${box.id}" title="${t('addFile')}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <input type="file" multiple style="display:none" data-box-id="${box.id}" class="file-input-hidden">
+              </label>
+              ${canDelete ? `<button class="icon-btn delete-box-btn" data-box-id="${box.id}" title="Delete">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>` : ''}
+            </div>
+          </div>
+          ${fileListHtml}
+          <div class="upload-progress hidden"><div class="upload-progress-bar"></div></div>
+          <div class="file-drop-zone" data-box-id="${box.id}">${t('dropFileHere')}</div>
+        </div>`;
+    }
+
+    function renderBoxes() {
+      const container = document.getElementById('boxContainer');
+      if (!currentRoom) return;
+
+      const canDelete = currentRoom.boxes.length > 1;
+      let textIdx = 0, fileIdx = 0;
+
+      container.innerHTML = currentRoom.boxes.map((box) => {
+        const boxType = box.type || 'text';
+        if (boxType === 'file') {
+          return renderFileBox(box, fileIdx++, canDelete);
+        }
+        return renderTextBox(box, textIdx++, canDelete);
+      }).join('');
+
+      // --- Text box events ---
+      container.querySelectorAll('[data-box-type="text"] textarea').forEach(textarea => {
         const boxId = textarea.closest('[data-box-id]').dataset.boxId;
         textarea.addEventListener('input', () => {
           const box = currentRoom.boxes.find(b => b.id === boxId);
@@ -698,25 +1000,82 @@
         });
       });
 
-      // Copy buttons
       container.querySelectorAll('.copy-box-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const box = currentRoom.boxes.find(b => b.id === btn.dataset.boxId);
-          if (box) { navigator.clipboard.writeText(box.content); showToast(); }
+          if (box) { navigator.clipboard.writeText(box.content || ''); showToast(); }
         });
       });
 
-      // Add-after buttons
-      container.querySelectorAll('.add-after-btn').forEach(btn => {
-        btn.addEventListener('click', () => addBoxAfter(btn.dataset.boxId));
+      // --- File box events ---
+      container.querySelectorAll('.file-drop-zone').forEach(zone => {
+        const boxId = zone.dataset.boxId;
+
+        zone.addEventListener('click', () => {
+          const input = zone.closest('[data-box-id]').querySelector('.file-input-hidden');
+          if (input) input.click();
+        });
+
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.add('drag-active');
+        });
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('drag-active');
+        });
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.remove('drag-active');
+          if (e.dataTransfer.files.length > 0) {
+            const progressEl = zone.closest('[data-box-id]').querySelector('.upload-progress');
+            if (progressEl) progressEl.classList.remove('hidden');
+            handleFilesForBox(boxId, e.dataTransfer.files);
+          }
+        });
       });
 
-      // Delete buttons
+      container.querySelectorAll('.file-input-hidden').forEach(input => {
+        input.addEventListener('change', () => {
+          if (input.files.length > 0) {
+            const boxId = input.dataset.boxId;
+            const progressEl = input.closest('[data-box-id]').querySelector('.upload-progress');
+            if (progressEl) progressEl.classList.remove('hidden');
+            handleFilesForBox(boxId, input.files);
+          }
+        });
+      });
+
+      container.querySelectorAll('.download-single-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fileId = btn.dataset.fileId;
+          const fileName = btn.dataset.fileName;
+          const url = API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${fileId}`);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+        });
+      });
+
+      container.querySelectorAll('.download-all-btn').forEach(btn => {
+        btn.addEventListener('click', () => downloadBoxFiles(btn.dataset.boxId));
+      });
+
+      container.querySelectorAll('.remove-file-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const boxId = btn.closest('[data-box-id]').dataset.boxId;
+          removeFileFromBox(boxId, btn.dataset.fileId);
+        });
+      });
+
+      // --- Delete buttons (shared) ---
       container.querySelectorAll('.delete-box-btn').forEach(btn => {
         btn.addEventListener('click', () => removeBox(btn.dataset.boxId));
       });
 
-      // Drag-and-drop reorder (mousedown on handle enables draggable)
+      // --- Drag-and-drop reorder (shared) ---
       container.querySelectorAll('.text-box').forEach(boxEl => {
         const boxId = boxEl.dataset.boxId;
         const handle = boxEl.querySelector('.drag-handle');
@@ -726,6 +1085,7 @@
         });
 
         boxEl.addEventListener('dragstart', (e) => {
+          if (!boxEl.getAttribute('draggable') || boxEl.getAttribute('draggable') === 'false') return;
           dragSrcId = boxId;
           e.dataTransfer.effectAllowed = 'move';
           setTimeout(() => boxEl.style.opacity = '0.4', 0);
@@ -734,10 +1094,12 @@
         boxEl.addEventListener('dragend', () => {
           boxEl.style.opacity = '';
           boxEl.setAttribute('draggable', 'false');
+          dragSrcId = null;
           container.querySelectorAll('.text-box').forEach(el => el.classList.remove('drag-over'));
         });
 
         boxEl.addEventListener('dragover', (e) => {
+          if (!dragSrcId) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
           container.querySelectorAll('.text-box').forEach(el => el.classList.remove('drag-over'));
@@ -745,8 +1107,8 @@
         });
 
         boxEl.addEventListener('drop', (e) => {
-          e.preventDefault();
           if (!dragSrcId || dragSrcId === boxId) return;
+          e.preventDefault();
           const srcIdx = currentRoom.boxes.findIndex(b => b.id === dragSrcId);
           const dstIdx = currentRoom.boxes.findIndex(b => b.id === boxId);
           if (srcIdx < 0 || dstIdx < 0) return;
@@ -759,21 +1121,38 @@
       });
     }
 
-    function addBoxAfter(afterBoxId) {
+    function addTextBoxAtEnd() {
       if (!currentRoom) return;
-      const newBox = { id: generateId(), content: '', lastModified: Date.now(), afterId: afterBoxId };
-      const idx = currentRoom.boxes.findIndex(b => b.id === afterBoxId);
-      currentRoom.boxes.splice(idx >= 0 ? idx + 1 : currentRoom.boxes.length, 0, newBox);
+      const newBox = { id: generateId(), type: 'text', content: '', lastModified: Date.now() };
+      currentRoom.boxes.push(newBox);
       renderBoxes();
-      emitBoxUpdate('insert', newBox);
+      emitBoxUpdate('add', newBox);
       const newTextarea = document.querySelector(`[data-box-id="${newBox.id}"] textarea`);
       if (newTextarea) newTextarea.focus();
+    }
+
+    function addFileBoxAtEnd() {
+      if (!currentRoom) return;
+      const newBox = { id: generateId(), type: 'file', files: [], lastModified: Date.now() };
+      currentRoom.boxes.push(newBox);
+      renderBoxes();
+      emitBoxUpdate('add', newBox);
     }
 
     function removeBox(boxId) {
       if (!currentRoom || currentRoom.boxes.length <= 1) return;
       const box = currentRoom.boxes.find(b => b.id === boxId);
       if (!box) return;
+
+      if (box.type === 'file' && box.files) {
+        box.files.forEach(f => {
+          fetch(API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${f.fileId}`), {
+            method: 'DELETE',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+          }).catch(() => {});
+        });
+      }
+
       currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== boxId);
       renderBoxes();
       emitBoxUpdate('delete', box);
@@ -786,8 +1165,12 @@
     }
 
     function showToast() {
+      showToastMsg(t('copied'));
+    }
+
+    function showToastMsg(msg) {
       const toast = document.getElementById('copyToast');
-      toast.textContent = t('copied');
+      toast.textContent = msg;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1500);
     }
@@ -798,6 +1181,8 @@
     document.getElementById('backToEntry').onclick = showEntryView;
     document.getElementById('langSwitchEntry').onclick = toggleLang;
     document.getElementById('langSwitchRoom').onclick = toggleLang;
+    document.getElementById('addTextBoxBtn').onclick = addTextBoxAtEnd;
+    document.getElementById('addFileBoxBtn').onclick = addFileBoxAtEnd;
 
     document.getElementById('copyCodeBtn').onclick = () => {
       navigator.clipboard.writeText(currentRoom.id);
