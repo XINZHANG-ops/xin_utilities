@@ -248,19 +248,41 @@
       font-size: 11px;
       color: var(--text-muted);
     }
+    .upload-status-area {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .upload-status-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .upload-status-filename {
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70%;
+    }
+    .upload-status-pct {
+      color: var(--accent);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
     .upload-progress {
-      height: 3px;
+      height: 6px;
       background: var(--border);
-      border-radius: 2px;
-      margin: 0 12px 8px;
+      border-radius: 3px;
       overflow: hidden;
     }
     .upload-progress-bar {
       height: 100%;
       background: var(--accent);
-      border-radius: 2px;
+      border-radius: 3px;
       width: 0%;
-      transition: width 0.2s;
+      transition: width 0.15s;
     }
     .add-box-bar {
       display: flex;
@@ -713,13 +735,46 @@
     }
 
     // ============ File Operations ============
+    function showUploadStatus(boxId, fileName) {
+      const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
+      if (!boxEl) return;
+      const area = boxEl.querySelector('.upload-status-area');
+      const nameEl = boxEl.querySelector('.upload-status-filename');
+      const pctEl = boxEl.querySelector('.upload-status-pct');
+      const bar = boxEl.querySelector('.upload-progress-bar');
+      const dropZone = boxEl.querySelector('.file-drop-zone');
+      if (area) area.classList.remove('hidden');
+      if (nameEl) nameEl.textContent = fileName;
+      if (pctEl) pctEl.textContent = '0%';
+      if (bar) bar.style.width = '0%';
+      if (dropZone) dropZone.style.display = 'none';
+    }
+
+    function updateUploadProgress(boxId, pct) {
+      const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
+      if (!boxEl) return;
+      const pctEl = boxEl.querySelector('.upload-status-pct');
+      const bar = boxEl.querySelector('.upload-progress-bar');
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (bar) bar.style.width = pct + '%';
+    }
+
+    function hideUploadStatus(boxId) {
+      const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
+      if (!boxEl) return;
+      const area = boxEl.querySelector('.upload-status-area');
+      const dropZone = boxEl.querySelector('.file-drop-zone');
+      if (area) area.classList.add('hidden');
+      if (dropZone) dropZone.style.display = '';
+    }
+
     async function uploadFile(file, boxId) {
       if (file.size > MAX_FILE_SIZE) {
         showToastMsg(t('fileTooLarge'));
         return null;
       }
 
-      const progressEl = document.querySelector(`[data-box-id="${boxId}"] .upload-progress-bar`);
+      showUploadStatus(boxId, file.name);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -728,8 +783,8 @@
         const xhr = new XMLHttpRequest();
         const result = await new Promise((resolve, reject) => {
           xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable && progressEl) {
-              progressEl.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+            if (e.lengthComputable) {
+              updateUploadProgress(boxId, Math.round((e.loaded / e.total) * 100));
             }
           };
           xhr.onload = () => {
@@ -745,12 +800,14 @@
           xhr.send(formData);
         });
 
-        if (progressEl) progressEl.style.width = '100%';
+        updateUploadProgress(boxId, 100);
         return result;
       } catch (e) {
         console.error('[Upload]', e);
         showToastMsg(t('uploadError'));
         return null;
+      } finally {
+        hideUploadStatus(boxId);
       }
     }
 
@@ -967,7 +1024,13 @@
             </div>
           </div>
           ${fileListHtml}
-          <div class="upload-progress hidden"><div class="upload-progress-bar"></div></div>
+          <div class="upload-status-area hidden">
+            <div class="upload-status-info">
+              <span class="upload-status-filename"></span>
+              <span class="upload-status-pct">0%</span>
+            </div>
+            <div class="upload-progress"><div class="upload-progress-bar"></div></div>
+          </div>
           <div class="file-drop-zone" data-box-id="${box.id}">${t('dropFileHere')}</div>
         </div>`;
     }
@@ -1029,8 +1092,6 @@
           e.stopPropagation();
           zone.classList.remove('drag-active');
           if (e.dataTransfer.files.length > 0) {
-            const progressEl = zone.closest('[data-box-id]').querySelector('.upload-progress');
-            if (progressEl) progressEl.classList.remove('hidden');
             handleFilesForBox(boxId, e.dataTransfer.files);
           }
         });
@@ -1040,8 +1101,6 @@
         input.addEventListener('change', () => {
           if (input.files.length > 0) {
             const boxId = input.dataset.boxId;
-            const progressEl = input.closest('[data-box-id]').querySelector('.upload-progress');
-            if (progressEl) progressEl.classList.remove('hidden');
             handleFilesForBox(boxId, input.files);
           }
         });
