@@ -505,6 +505,7 @@
     let dragSrcId = null;
     let socket = null;
     let hasConnectedBefore = false;
+    const activeUploads = new Map();
 
     // ============ Helpers ============
     function formatFileSize(bytes) {
@@ -735,7 +736,7 @@
     }
 
     // ============ File Operations ============
-    function showUploadStatus(boxId, fileName) {
+    function applyUploadStatusToDOM(boxId, fileName, pct) {
       const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
       if (!boxEl) return;
       const area = boxEl.querySelector('.upload-status-area');
@@ -745,27 +746,36 @@
       const dropZone = boxEl.querySelector('.file-drop-zone');
       if (area) area.classList.remove('hidden');
       if (nameEl) nameEl.textContent = fileName;
-      if (pctEl) pctEl.textContent = '0%';
-      if (bar) bar.style.width = '0%';
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (bar) bar.style.width = pct + '%';
       if (dropZone) dropZone.style.display = 'none';
     }
 
+    function showUploadStatus(boxId, fileName) {
+      activeUploads.set(boxId, { fileName, pct: 0 });
+      applyUploadStatusToDOM(boxId, fileName, 0);
+    }
+
     function updateUploadProgress(boxId, pct) {
-      const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
-      if (!boxEl) return;
-      const pctEl = boxEl.querySelector('.upload-status-pct');
-      const bar = boxEl.querySelector('.upload-progress-bar');
-      if (pctEl) pctEl.textContent = pct + '%';
-      if (bar) bar.style.width = pct + '%';
+      const state = activeUploads.get(boxId);
+      if (state) state.pct = pct;
+      applyUploadStatusToDOM(boxId, state ? state.fileName : '', pct);
     }
 
     function hideUploadStatus(boxId) {
+      activeUploads.delete(boxId);
       const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
       if (!boxEl) return;
       const area = boxEl.querySelector('.upload-status-area');
       const dropZone = boxEl.querySelector('.file-drop-zone');
       if (area) area.classList.add('hidden');
       if (dropZone) dropZone.style.display = '';
+    }
+
+    function restoreActiveUploads() {
+      activeUploads.forEach(({ fileName, pct }, boxId) => {
+        applyUploadStatusToDOM(boxId, fileName, pct);
+      });
     }
 
     async function uploadFile(file, boxId) {
@@ -1178,6 +1188,8 @@
           emitBoxUpdate('reorder', { order: currentRoom.boxes.map(b => b.id) });
         });
       });
+
+      restoreActiveUploads();
     }
 
     function addTextBoxAtEnd() {
