@@ -463,7 +463,8 @@
         fileTooLarge: 'File exceeds 500 MB limit',
         removeFile: 'Remove',
         remoteUploading: '{n} file(s) uploading...',
-        remoteDownloading: '{n} file(s) downloading...'
+        remoteDownloading: '{n} file(s) downloading...',
+        cancelUpload: 'Cancel upload'
       },
       zh: {
         back: '返回',
@@ -498,7 +499,8 @@
         fileTooLarge: '文件超过 500 MB 限制',
         removeFile: '移除',
         remoteUploading: '{n} 个文件上传中...',
-        remoteDownloading: '{n} 个文件下载中...'
+        remoteDownloading: '{n} 个文件下载中...',
+        cancelUpload: '取消上传'
       }
     };
 
@@ -532,6 +534,7 @@
     let hasConnectedBefore = false;
     const activeUploads = new Map();
     const remoteActivity = new Map();
+    const activeXHRs = new Map();
 
     // ============ Helpers ============
     function formatFileSize(bytes) {
@@ -874,6 +877,7 @@
 
       try {
         const xhr = new XMLHttpRequest();
+        activeXHRs.set(boxId, xhr);
         const result = await new Promise((resolve, reject) => {
           xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
@@ -888,6 +892,7 @@
             }
           };
           xhr.onerror = () => reject(new Error(t('uploadError')));
+          xhr.onabort = () => reject(new Error('aborted'));
           xhr.open('POST', API_CONFIG.getUrl(`/textshare/${currentRoom.id}/upload`));
           xhr.setRequestHeader('ngrok-skip-browser-warning', 'true');
           xhr.send(formData);
@@ -896,20 +901,32 @@
         updateUploadProgress(boxId, 100);
         return result;
       } catch (e) {
+        if (e.message === 'aborted') return null;
         console.error('[Upload]', e);
         showToastMsg(t('uploadError'));
         return null;
       } finally {
+        activeXHRs.delete(boxId);
         hideUploadStatus(boxId);
         emitActivity('upload_end', boxId);
       }
     }
 
+    const cancelledUploads = new Set();
+
+    function cancelUpload(boxId) {
+      cancelledUploads.add(boxId);
+      const xhr = activeXHRs.get(boxId);
+      if (xhr) xhr.abort();
+    }
+
     async function handleFilesForBox(boxId, fileList) {
       if (!currentRoom) return;
+      cancelledUploads.delete(boxId);
 
       const newFiles = [];
       for (const file of fileList) {
+        if (cancelledUploads.has(boxId)) break;
         const meta = await uploadFile(file, boxId);
         if (meta) newFiles.push(meta);
       }
@@ -1129,7 +1146,14 @@
           <div class="upload-status-area hidden">
             <div class="upload-status-info">
               <span class="upload-status-filename"></span>
-              <span class="upload-status-pct">0%</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="upload-status-pct">0%</span>
+                <button class="cancel-upload-btn icon-btn" data-box-id="${box.id}" title="${t('cancelUpload')}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="upload-progress"><div class="upload-progress-bar"></div></div>
           </div>
@@ -1234,6 +1258,12 @@
         });
       });
 
+      container.querySelectorAll('.cancel-upload-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          cancelUpload(btn.dataset.boxId);
+        });
+      });
+
       // --- Delete buttons (shared) ---
       container.querySelectorAll('.delete-box-btn').forEach(btn => {
         btn.addEventListener('click', () => removeBox(btn.dataset.boxId));
@@ -1320,6 +1350,7 @@
         });
       }
 
+      cancelUpload(boxId);
       activeUploads.delete(boxId);
       remoteActivity.delete(boxId);
       currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== boxId);
