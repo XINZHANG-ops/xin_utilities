@@ -284,6 +284,27 @@
       width: 0%;
       transition: width 0.15s;
     }
+    .remote-activity {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,159,10,0.04);
+    }
+    .remote-activity .activity-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
     .add-box-bar {
       display: flex;
       gap: 8px;
@@ -440,7 +461,9 @@
         uploading: 'Uploading...',
         uploadError: 'Upload failed',
         fileTooLarge: 'File exceeds 500 MB limit',
-        removeFile: 'Remove'
+        removeFile: 'Remove',
+        remoteUploading: '{n} file(s) uploading...',
+        remoteDownloading: '{n} file(s) downloading...'
       },
       zh: {
         back: '返回',
@@ -473,7 +496,9 @@
         uploading: '上传中...',
         uploadError: '上传失败',
         fileTooLarge: '文件超过 500 MB 限制',
-        removeFile: '移除'
+        removeFile: '移除',
+        remoteUploading: '{n} 个文件上传中...',
+        remoteDownloading: '{n} 个文件下载中...'
       }
     };
 
@@ -506,6 +531,7 @@
     let socket = null;
     let hasConnectedBefore = false;
     const activeUploads = new Map();
+    const remoteActivity = new Map();
 
     // ============ Helpers ============
     function formatFileSize(bytes) {
@@ -575,6 +601,7 @@
           updateWsStatus('connected');
 
           if (hasConnectedBefore) {
+            remoteActivity.clear();
             loadRoomFromServer(roomId);
           }
           hasConnectedBefore = true;
@@ -647,6 +674,16 @@
       }
     }
 
+    function emitActivity(action, boxId) {
+      if (socket && socket.connected && currentRoom) {
+        socket.emit('ts_broadcast', {
+          room_id: currentRoom.id,
+          action: action,
+          box: { id: boxId }
+        });
+      }
+    }
+
     function applyRemoteUpdate(data) {
       const { action, box } = data;
       if (!currentRoom || !box) return;
@@ -689,9 +726,54 @@
         }
       } else if (action === 'delete') {
         currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== box.id);
+        remoteActivity.delete(box.id);
+      } else if (action === 'upload_start' || action === 'upload_end' ||
+                 action === 'download_start' || action === 'download_end') {
+        updateRemoteActivity(action, box.id);
+        return;
       }
 
       renderBoxes();
+    }
+
+    function updateRemoteActivity(action, boxId) {
+      let state = remoteActivity.get(boxId) || { uploading: 0, downloading: 0 };
+      if (action === 'upload_start') state.uploading++;
+      else if (action === 'upload_end') state.uploading = Math.max(0, state.uploading - 1);
+      else if (action === 'download_start') state.downloading++;
+      else if (action === 'download_end') state.downloading = Math.max(0, state.downloading - 1);
+
+      if (state.uploading === 0 && state.downloading === 0) {
+        remoteActivity.delete(boxId);
+      } else {
+        remoteActivity.set(boxId, state);
+      }
+      renderRemoteActivityForBox(boxId);
+    }
+
+    function renderRemoteActivityForBox(boxId) {
+      const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
+      if (!boxEl) return;
+      let indicator = boxEl.querySelector('.remote-activity');
+      const state = remoteActivity.get(boxId);
+
+      if (!state) {
+        if (indicator) indicator.remove();
+        return;
+      }
+
+      const parts = [];
+      if (state.uploading > 0) parts.push(t('remoteUploading').replace('{n}', state.uploading));
+      if (state.downloading > 0) parts.push(t('remoteDownloading').replace('{n}', state.downloading));
+      const text = parts.join('  ');
+
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'remote-activity';
+        const header = boxEl.querySelector('.text-box-header');
+        header.insertAdjacentElement('afterend', indicator);
+      }
+      indicator.innerHTML = `<span class="activity-dot"></span>${text}`;
     }
 
     // ============ API ============
@@ -785,6 +867,7 @@
       }
 
       showUploadStatus(boxId, file.name);
+      emitActivity('upload_start', boxId);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -818,21 +901,26 @@
         return null;
       } finally {
         hideUploadStatus(boxId);
+        emitActivity('upload_end', boxId);
       }
     }
 
     async function handleFilesForBox(boxId, fileList) {
-      const box = currentRoom.boxes.find(b => b.id === boxId);
-      if (!box) return;
+      if (!currentRoom) return;
 
+      const newFiles = [];
       for (const file of fileList) {
         const meta = await uploadFile(file, boxId);
-        if (meta) {
-          if (!box.files) box.files = [];
-          box.files.push(meta);
-          box.lastModified = Date.now();
-        }
+        if (meta) newFiles.push(meta);
       }
+
+      if (newFiles.length === 0) return;
+
+      const box = currentRoom.boxes.find(b => b.id === boxId);
+      if (!box) return;
+      if (!box.files) box.files = [];
+      box.files.push(...newFiles);
+      box.lastModified = Date.now();
 
       renderBoxes();
       emitBoxUpdate('update', box);
@@ -856,6 +944,8 @@
       const box = currentRoom.boxes.find(b => b.id === boxId);
       if (!box || !box.files || box.files.length === 0) return;
 
+      emitActivity('download_start', boxId);
+
       if (box.files.length === 1) {
         const f = box.files[0];
         const url = API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${f.fileId}`);
@@ -870,6 +960,8 @@
         a.download = boxId + '.zip';
         a.click();
       }
+
+      setTimeout(() => emitActivity('download_end', boxId), 2000);
     }
 
     // ============ Room Operations ============
@@ -1118,6 +1210,7 @@
 
       container.querySelectorAll('.download-single-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          const boxId = btn.closest('[data-box-id]').dataset.boxId;
           const fileId = btn.dataset.fileId;
           const fileName = btn.dataset.fileName;
           const url = API_CONFIG.getUrl(`/textshare/${currentRoom.id}/files/${fileId}`);
@@ -1125,6 +1218,8 @@
           a.href = url;
           a.download = fileName;
           a.click();
+          emitActivity('download_start', boxId);
+          setTimeout(() => emitActivity('download_end', boxId), 2000);
         });
       });
 
@@ -1190,6 +1285,7 @@
       });
 
       restoreActiveUploads();
+      remoteActivity.forEach((_, boxId) => renderRemoteActivityForBox(boxId));
     }
 
     function addTextBoxAtEnd() {
@@ -1224,6 +1320,8 @@
         });
       }
 
+      activeUploads.delete(boxId);
+      remoteActivity.delete(boxId);
       currentRoom.boxes = currentRoom.boxes.filter(b => b.id !== boxId);
       renderBoxes();
       emitBoxUpdate('delete', box);
